@@ -21,6 +21,7 @@ bioimpedanceFileArray = bioimpedanceFileArrayInfo(arrayfun(@(x) x.name(1), ...
 bioimpedanceFileArray = bioimpedanceFileArray(arrayfun(@(x) x.isdir, ...
     bioimpedanceFileArray) ~= 1);
 
+%%
 % Look for viable trials 
 for trial = 1:size(ultrasoundFileArray,1)
     ultrasoundFile = ultrasoundFileArray(trial).name;
@@ -47,14 +48,35 @@ trialCheckArray = logical(trialCheckArray);
 ultrasoundFileArray = ultrasoundFileArray(trialCheckArray);
 
 % Time of file
-ultrasoundFileArray(1).name(9:14);
-
+for nTrials = 1:size(ultrasoundFileArray,1)
+    x = str2num(ultrasoundFileArray(nTrials).name(9:14));
+    timeMarkerUltrasound(nTrials) = x;
+end
+clear x;
 
 %%
 % Bioimpedance
 
-bioimpedanceFile = bioimpedanceFileArray(1);
+bioimpedanceFile = bioimpedanceFileArray(5).name;
 acq = load_acq(bioimpedanceFile);
+
+bioimpedanceArm = acq.data(:,1);
+bioimpedanceLeg = acq.data(:,2);
+biomipedanceChest = acq.data(:,3);
+bioimpedanceForearm = acq.data(:,4);
+
+dtBioimpedance = acq.hdr.graph.sample_time;
+timeStartBioimpedance = acq.hdr.graph.first_time_offset/1000;
+
+day = 60*60*24;
+timeStartBioimpedance6 = str2num(datestr(timeStartBioimpedance/day,'HHMMSS'))
+
+
+% Test marker script
+for nMarkers = 1:length(acq.markers.lSample)
+    str2num(datestr(timeStartBioimpedance/day+...
+        (double(acq.markers.lSample(nMarkers)/200)/day),'HHMMSS'))
+end
 
 
 
