@@ -47,8 +47,9 @@ trialCheckArray = logical(trialCheckArray);
 ultrasoundFileArray = ultrasoundFileArray(trialCheckArray);
 
 % Time of file
-ultrasoundFileArray(1).name(9:14);
-
+for nTrials = 1:size(ultrasoundFileArray,1)
+    timeMarker = ultrasoundFileArray(nTrials).name(9:14);
+end
 
 %%
 % Bioimpedance
