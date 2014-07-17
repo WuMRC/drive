@@ -57,7 +57,7 @@ clear x;
 %%
 % Bioimpedance
 
-bioimpedanceFile = bioimpedanceFileArray(5).name;
+bioimpedanceFile = bioimpedanceFileArray(1).name;
 acq = load_acq(bioimpedanceFile);
 
 bioimpedanceArm = acq.data(:,1);
@@ -86,7 +86,7 @@ end
 
 % [image, map, alpha, overlays] = dicomread(filename);
 
-ultrasoundFile = ultrasoundFileArray(6).name;
+ultrasoundFile = ultrasoundFileArray(1).name;
 
 image = dicomread(ultrasoundFile);
 image_new = imageperm(image);
@@ -106,7 +106,7 @@ figHandle = gcf;
 close
 
 poiX = round(poiX);     poiY = round(poiY);
-nPoints = size(poiX);
+nPoints = size(poiX,1);
 
 
 %%
@@ -175,18 +175,19 @@ for ind = 1:total
 %     [motionVectARPS, computationsARPS] = motionEstARPS(currentFrameData,nextFrameData,...
 %         colKernel,colSearch);
     
-    prog = (ind)/(total);
+    prog = (ind*i)/(total*nPoints);
     waitbar(prog,h,'Progress')
 %     disp(horzcat('Frame ',num2str(ind),' of ', num2str(total)))
 end
 
-close(h)
+% close(h)
 clear rowMove colMove rowMove_total colMove_total posNew posOriginal
 
 % implay(rho_n)
 % implay(imageTrack./max(max(max(imageTrack))))
 end
 
+close(h)
 implay(imageTrack./max(max(max(imageTrack))))
 
 

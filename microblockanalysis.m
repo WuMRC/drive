@@ -3,12 +3,17 @@
 
 [nBlockRows, nBlockCols, nFrames] = size(image_roiNORM);
 
-blockSize = 20;
+blockSize = 8;
 % nBlockRows = floor(nBlockRows/blockSize);
 % nBlockCols = floor(nBlockCols/blockSize);
 
-currentFrameData = image_roiNORM(:,:,1);
-nextFrameData = image_roiNORM(:,:,2);
+
+h = waitbar(0 ,'Progress');
+total = nFrames-1;
+for indFrames = 1:total
+    
+currentFrameData = image_roiNORM(:,:,indFrames);
+nextFrameData = image_roiNORM(:,:,indFrames+1);
 
 
 for indRow = 1:blockSize:nBlockRows-blockSize
@@ -33,15 +38,15 @@ for indRow = 1:blockSize:nBlockRows-blockSize
         [max_c, imax] = max(abs(x(:)));
         [ypeak, xpeak] = ind2sub(size(x),imax(1));
         
-        rowMove(indRowSave,indColSave) = (ypeak-size(currentBlock,1));
-        colMove(indRowSave,indColSave) = (xpeak-size(currentBlock,2));
+        rowMove(indRowSave,indColSave,indFrames) = (ypeak-size(currentBlock,1));
+        colMove(indRowSave,indColSave,indFrames) = (xpeak-size(currentBlock,2));
         
-        corr_offset = [(ypeak-size(currentBlock,1)),...
-            (xpeak-size(currentBlock,2))];
+%         corr_offset = [(ypeak-size(currentBlock,1)),...
+%             (xpeak-size(currentBlock,2))];
         
         
         ctotal((indRow):(indRow+blockSize),...
-            (indCol):(indCol+blockSize)) = y;
+            (indCol):(indCol+blockSize),indFrames) = y;
         
         
 %         x((indRowOffset-blockSize):(indRowOffset+blockSize),...
@@ -63,29 +68,23 @@ for indRow = 1:blockSize:nBlockRows-blockSize
     end
 end
 
+prog = (indFrames)/(total);
+waitbar(prog,h,'Progress')
+end
 % figure, imagesc(ctotal)
-
-[xx,yy] = meshgrid(indRow,indCol);
-figure,imshow(image_roiNORM(:,:,1))
-hold on, quiver(xx,yy,rowMove,colMove)
-
-clear ctotal
+close(h)
 
 %%
-h = waitbar(0 ,'Progress');
-frameIncrement = 1;
-total = nFrames-1;
-for ind = 1:total
-    
-    currentFrameData = image_roiNORM(:,:,ind);
-    nextFrameData = image_roiNORM(:,:,ind+1);
-    
-    c(:,:,ind) = normxcorr2(currentFrameData,nextFrameData);
-    
-    prog = ind/total;
-    waitbar(prog,h,'Progress')
-    
-end
-close(h)
+frame = 200;
+indRow = 1:blockSize:nBlockRows-blockSize;
+indCol = 1:blockSize:nBlockRows-blockSize;
+[xx,yy] = meshgrid(indRow,indCol);
+figure,imshow(image_roiNORM(:,:,frame))
+hold on, quiver(xx,yy,rowMove(:,:,frame),colMove(:,:,frame),'Color','y')
+
+
+%%
+clear ctotal xx yy rowMove colMove indRow inCol
+
 
 
