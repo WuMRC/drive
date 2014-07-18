@@ -75,7 +75,7 @@ timeStartBioimpedance6 = str2num(datestr(timeStartBioimpedance/day,'HHMMSS'));
 % Test marker script
 for nMarkers = 1:length(acq.markers.lSample)
     str2num(datestr(timeStartBioimpedance/day+...
-        (double(acq.markers.lSample(nMarkers)/200)/day),'HHMMSS'))
+        (double(acq.markers.lSample(nMarkers)/200)/day),'HHMMSS'));
 end
 
 
@@ -189,6 +189,16 @@ end
 
 close(h)
 implay(imageTrack./max(max(max(imageTrack))))
+
+
+
+
+%%
+total = nFrames-1;
+frame2frame = 2;
+ctotal = microblockanalysis(image_roiNORM,20,2);
+
+
 
 
 %%
