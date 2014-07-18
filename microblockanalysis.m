@@ -1,23 +1,24 @@
+function [ctotal] = microblockanalysis(imageStack,blockSize,frame2frame)
 
 
+[nBlockRows, nBlockCols, nFrames] = size(imageStack);
 
-[nBlockRows, nBlockCols, nFrames] = size(image_roiNORM);
+% blockSize = 8;
 
-blockSize = 8;
 % nBlockRows = floor(nBlockRows/blockSize);
 % nBlockCols = floor(nBlockCols/blockSize);
 
 
-h = waitbar(0 ,'Progress');
+% h = waitbar(0 ,'Progress');
 total = nFrames-1;
 for indFrames = 1:total
     
-currentFrameData = image_roiNORM(:,:,indFrames);
-nextFrameData = image_roiNORM(:,:,indFrames+1);
+currentFrameData = imageStack(:,:,indFrames);
+nextFrameData = imageStack(:,:,indFrames+frame2frame);
 
 
 for indRow = 1:blockSize:nBlockRows-blockSize
-    for indCol = 1:blockSize:nBlockRows-blockSize
+    for indCol = 1:blockSize:nBlockCols-blockSize
         
         indRowOffset = indRow + blockSize/2;
         indColOffset = indCol + blockSize/2;
@@ -40,6 +41,15 @@ for indRow = 1:blockSize:nBlockRows-blockSize
         
         rowMove(indRowSave,indColSave,indFrames) = (ypeak-size(currentBlock,1));
         colMove(indRowSave,indColSave,indFrames) = (xpeak-size(currentBlock,2));
+        
+        % Check to see if motion detected is out of bounds
+        % If it is, treat it as erroneous 
+%         if abs(rowMove(indRowSave,indColSave,indFrames)) == blockSize |...
+%                 abs(colMove(indRowSave,indColSave,indFrames)) == blockSize
+%             
+%                 
+%             
+%         end
         
 %         corr_offset = [(ypeak-size(currentBlock,1)),...
 %             (xpeak-size(currentBlock,2))];
@@ -68,23 +78,23 @@ for indRow = 1:blockSize:nBlockRows-blockSize
     end
 end
 
-prog = (indFrames)/(total);
-waitbar(prog,h,'Progress')
+% prog = (indFrames)/(total);
+% waitbar(prog,h,'Progress')
 end
 % figure, imagesc(ctotal)
-close(h)
+% close(h)
 
-%%
-frame = 200;
-indRow = 1:blockSize:nBlockRows-blockSize;
-indCol = 1:blockSize:nBlockRows-blockSize;
-[xx,yy] = meshgrid(indRow,indCol);
-figure,imshow(image_roiNORM(:,:,frame))
-hold on, quiver(xx,yy,rowMove(:,:,frame),colMove(:,:,frame),'Color','y')
-
-
-%%
-clear ctotal xx yy rowMove colMove indRow inCol
+% %%
+% frame = 200;
+% indRow = 1:blockSize:nBlockRows-blockSize;
+% indCol = 1:blockSize:nBlockRows-blockSize;
+% [xx,yy] = meshgrid(indRow,indCol);
+% figure,imshow(imageStack(:,:,frame))
+% hold on, quiver(xx,yy,rowMove(:,:,frame),colMove(:,:,frame),'Color','y')
+% 
+% 
+% %%
+% clear ctotal xx yy rowMove colMove indRow inCol
 
 
 
