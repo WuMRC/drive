@@ -10,7 +10,7 @@ function [ctotal] = microblockanalysis(imageStack,blockSize,frame2frame)
 
 
 % h = waitbar(0 ,'Progress');
-total = nFrames-1;
+total = nFrames-frame2frame;
 for indFrames = 1:total
     
 currentFrameData = imageStack(:,:,indFrames);
