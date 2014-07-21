@@ -80,41 +80,38 @@ for nMarkers = 1:length(acq.markers.lSample)
         x = str2num(datestr(timeStartBioimpedance/day+...
             (double(acq.markers.lSample(nMarkers)/200)/day),'HHMMSS'));
         timeMarkerBioimpedance(nMarkers-shift) = x;
+        clipName{1,nMarkers-shift} = acq.markers.szText{1,nMarkers}(12:end);
     end
 end
 clear x
 
 timeMarkerBioimpedance = unique(timeMarkerBioimpedance);
-
+clipName = unique(clipName);
 
 %%
 % Placeholding code for figuring out how the two sets of data correspond
-[lia, locb] = ismember(timeMarkerBioimpedance,timeMarkerUltrasound)
+[lia, locb] = ismember(timeMarkerBioimpedance,timeMarkerUltrasound);
 
-timeMarkerBioimpedance(lia)
+timeMarkerBioimpedance(lia);
 % timeMarkerBioimpedance(locb)
 
-% for nMarkers = 1:length(acq.markers.lSample)
-%     
-%     
-% end
-
-rowArray = [];
-% for nTrials = 1:size(ultrasoundFileArray,1)
+timeErr = 2;
+if size(timeMarkerUltrasound,2) > size(timeMarkerBioimpedance,2)
+    rowArray = [];
     for nMarkers = 1:length(timeMarkerBioimpedance)
-        row = find(timeMarkerBioimpedance(nMarkers) > (timeMarkerUltrasound-2) ...
-            & timeMarkerBioimpedance(nMarkers) < (timeMarkerUltrasound+2));        
-        rowArray = [rowArray, row(1)];
-        
+        row = find(timeMarkerBioimpedance(nMarkers) > (timeMarkerUltrasound-timeErr) ...
+            & timeMarkerBioimpedance(nMarkers) < (timeMarkerUltrasound+timeErr));        
+        rowArray = [rowArray, row(1)];      
     end
-% end
+    timeMarkerUltrasound = timeMarkerUltrasound(rowArray);
+end
 
-timeMarkerBioimpedance
 
 %%
-% load('imagedata.mat')
+% Should endeavor to change above code so that all you need is the
+% ultrasound filename to get the corresponding bioimpedance data
 
-% [image, map, alpha, overlays] = dicomread(filename);
+%%
 
 ultrasoundFile = ultrasoundFileArray(1).name;
 
@@ -160,69 +157,60 @@ h = waitbar(0 ,'Progress');
 frameIncrement = 1;
 
 for i = 1:nPoints
-posOriginal = [poiY(i), poiX(i)];
-posNew = posOriginal;
+    posOriginal = [poiY(i), poiX(i)];
+    posNew = posOriginal;
 
-total = nFrames-1;
-for ind = 1:frameIncrement:total
+    total = nFrames-1;
+    for ind = 1:frameIncrement:total
     
-%     level = graythresh(image_roiNORM(:,:,ind));
-%     imageTrackBW(:,:,ind) = im2bw(image_roiNORM(:,:,ind),level);
-%     imageTrackBW(:,:,ind+1) = im2bw(image_roiNORM(:,:,ind+1),level); 
-%     imageTrackFILT(:,:,ind) = image_roiNORM(:,:,ind).*imageTrackBW(:,:,ind);
-%     imageTrackFILT(:,:,ind+1) = image_roiNORM(:,:,ind+1).*imageTrackBW(:,:,ind+1);
-
-    currentFrameData = image_roiNORM(:,:,ind);
-    nextFrameData = image_roiNORM(:,:,ind+1);
+        % Get the frames of data
+        currentFrameData = image_roiNORM(:,:,ind);
+        nextFrameData = image_roiNORM(:,:,ind+1);
     
-    [rho_c(:,:,ind)] = corr2D(currentFrameData, nextFrameData, filt, ...
-        [rowKernel, colKernel], [rowSearch, colKernel], posNew);
-    rho_n(:,:,ind) = rho_c(:,:,ind)./max(max(rho_c(:,:,ind)));
+        % Calculate the correlation
+        [rho_c(:,:,ind)] = corr2D(currentFrameData, nextFrameData, filt, ...
+            [rowKernel, colKernel], [rowSearch, colKernel], posNew);
+        rho_n(:,:,ind) = rho_c(:,:,ind)./max(max(rho_c(:,:,ind)));
    
+        % Calculate movement based on max correlation
+        [rowMove(ind,nPoints), colMove(ind,nPoints)] = find(rho_n(:,:,ind) ... 
+            == max(max(rho_n(:,:,ind))));
+        
+        % Need to compenate for drift and net motion of the image
+        
+        
+        
     
-    % HOW MUCH TO MOVE
-    [rowMove(ind), colMove(ind)] = find(rho_n(:,:,ind) ... 
-        == max(max(rho_n(:,:,ind))));
+        rowMove(ind,nPoints) = rowMove(ind,nPoints) - (rowSearch + 1);
+        colMove(ind,nPoints) = colMove(ind,nPoints) - (colKernel + 1);
     
-    rowMove(ind) = rowMove(ind) - (rowSearch + 1);
-    colMove(ind) = colMove(ind) - (colKernel + 1);
+        rowMove_total = sum(rowMove(:,nPoints));
+        colMove_total = sum(colMove(:,nPoints));
     
-    rowMove_total = sum(rowMove);
-    colMove_total = sum(colMove);
+        poiRow(ind,nPoints) = posOriginal(1) + rowMove_total;
+        poiCol(ind,nPoints) = posOriginal(2) + colMove_total;
     
-    poiRow = posOriginal(1) + rowMove_total;
-    poiCol = posOriginal(2) + colMove_total;
+        posNew = [poiRow(ind,nPoints), poiCol(ind,nPoints)];
     
-    posNew = [poiRow, poiCol];
+        % Track single pixel in image
+        imageTrack(poiRow(ind,nPoints),poiCol(ind,nPoints),ind) = 400;
+     
+        
     
-    % TRACKING SINGLE PIXEL
-    imageTrack(poiRow,poiCol,ind) = 400;
-    
+        prog = (ind*i)/(total*nPoints);
+        waitbar(prog,h,'Progress')
+    end
 
-%     [motionVectES, computationsES] = motionEstES(currentFrameData,nextFrameData,...
-%         colKernel,colSearch);
-%     [motionVectARPS, computationsARPS] = motionEstARPS(currentFrameData,nextFrameData,...
-%         colKernel,colSearch);
-    
-    prog = (ind*i)/(total*nPoints);
-    waitbar(prog,h,'Progress')
-%     disp(horzcat('Frame ',num2str(ind),' of ', num2str(total)))
-end
-
-% close(h)
-clear rowMove colMove rowMove_total colMove_total posNew posOriginal
-
-% implay(rho_n)
-% implay(imageTrack./max(max(max(imageTrack))))
 end
 
 close(h)
 implay(imageTrack./max(max(max(imageTrack))))
 
-
+% clear rowMove colMove rowMove_total colMove_total posNew posOriginal
 
 
 %%
+% Using microblock analysis function
 total = nFrames-1;
 frame2frame = 2;
 ctotal = microblockanalysis(image_roiNORM,10,1);
