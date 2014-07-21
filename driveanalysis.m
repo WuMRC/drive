@@ -1,6 +1,6 @@
 
 
-%%
+%% INITIAL SELECTION OF DATA FOR ANALYSIS
 % SELECT PATIENT FOLDER
 WORKING_DIRECTORY = uigetdir('','Select the patient directory');
 ULTRASOUND_DIRECTORY = strcat(WORKING_DIRECTORY,'/ultrasound/');
@@ -21,7 +21,7 @@ bioimpedanceFileArray = bioimpedanceFileArrayInfo(arrayfun(@(x) x.name(1), ...
 bioimpedanceFileArray = bioimpedanceFileArray(arrayfun(@(x) x.isdir, ...
     bioimpedanceFileArray) ~= 1);
 
-%%
+%% SELECT ONLY THOSE ULTRASOUND TRIALS FOR ANALYSIS
 % Look for viable trials 
 for trial = 1:size(ultrasoundFileArray,1)
     ultrasoundFile = ultrasoundFileArray(trial).name;
@@ -52,12 +52,12 @@ for nTrials = 1:size(ultrasoundFileArray,1)
     x = str2num(ultrasoundFileArray(nTrials).name(9:14));
     timeMarkerUltrasound(nTrials) = x;
 end
-clear x;
+% clear x;
 
 %%
 % Bioimpedance
 
-bioimpedanceFile = bioimpedanceFileArray(1).name;
+bioimpedanceFile = bioimpedanceFileArray(2).name;
 acq = load_acq(bioimpedanceFile);
 
 bioimpedanceArm = acq.data(:,1);
@@ -71,15 +71,45 @@ timeStartBioimpedance = acq.hdr.graph.first_time_offset/1000;
 day = 60*60*24;
 timeStartBioimpedance6 = str2num(datestr(timeStartBioimpedance/day,'HHMMSS'));
 
-
-% Test marker script
+shift = 0;
+% Find markers in ACQKnowledge data
 for nMarkers = 1:length(acq.markers.lSample)
-    str2num(datestr(timeStartBioimpedance/day+...
-        (double(acq.markers.lSample(nMarkers)/200)/day),'HHMMSS'));
+    if acq.markers.lSample(nMarkers) == 0
+        shift = shift + 1;
+    else
+        x = str2num(datestr(timeStartBioimpedance/day+...
+            (double(acq.markers.lSample(nMarkers)/200)/day),'HHMMSS'));
+        timeMarkerBioimpedance(nMarkers-shift) = x;
+    end
 end
+clear x
+
+timeMarkerBioimpedance = unique(timeMarkerBioimpedance);
 
 
+%%
+% Placeholding code for figuring out how the two sets of data correspond
+[lia, locb] = ismember(timeMarkerBioimpedance,timeMarkerUltrasound)
 
+timeMarkerBioimpedance(lia)
+% timeMarkerBioimpedance(locb)
+
+% for nMarkers = 1:length(acq.markers.lSample)
+%     
+%     
+% end
+
+rowArray = [];
+% for nTrials = 1:size(ultrasoundFileArray,1)
+    for nMarkers = 1:length(timeMarkerBioimpedance)
+        row = find(timeMarkerBioimpedance(nMarkers) > (timeMarkerUltrasound-2) ...
+            & timeMarkerBioimpedance(nMarkers) < (timeMarkerUltrasound+2));        
+        rowArray = [rowArray, row(1)];
+        
+    end
+% end
+
+timeMarkerBioimpedance
 
 %%
 % load('imagedata.mat')
@@ -126,16 +156,15 @@ filt = ones(5,5);
 
 imageTrack = image_roi;
 
+h = waitbar(0 ,'Progress');
+frameIncrement = 1;
+
 for i = 1:nPoints
 posOriginal = [poiY(i), poiX(i)];
 posNew = posOriginal;
 
-
-h = waitbar(0 ,'Progress');
-frameIncrement = 1;
-
 total = nFrames-1;
-for ind = 1:total
+for ind = 1:frameIncrement:total
     
 %     level = graythresh(image_roiNORM(:,:,ind));
 %     imageTrackBW(:,:,ind) = im2bw(image_roiNORM(:,:,ind),level);
@@ -196,7 +225,7 @@ implay(imageTrack./max(max(max(imageTrack))))
 %%
 total = nFrames-1;
 frame2frame = 2;
-ctotal = microblockanalysis(image_roiNORM,20,2);
+ctotal = microblockanalysis(image_roiNORM,10,1);
 
 
 
