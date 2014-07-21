@@ -219,10 +219,58 @@ end
 close(h)
 implay(imageTrack./max(max(max(imageTrack))))
 
-% clear rowMove colMove rowMove_total colMove_total posNew posOriginal
 
+%%
+% Ultrasound analysis
 diameter = sqrt((poiRow(:,1)-poiRow(:,2)).^2 + (poiCol(:,1)-poiCol(:,2)).^2);
-diameterSMOOTH = smooth(diameter,ultrasoundFrameRate/2);
+diameterSMOOTH = smooth(diameter,35/2);
+
+PIXELS_PER_CM = 27;
+
+diameterSMOOTH = diameterSMOOTH/PIXELS_PER_CM;
+
+timeFrames = 0:(1/35):(size(diameterSMOOTH,1)-1)/35;
+
+plot(timeFrames(1:349),diameterSMOOTH(1:349))
+
+% Impedance analysis
+Fs = 200;
+dt = 1/Fs;
+timeBioimpedance = 0:dt:10;
+bioimpedanceLegSMOOTH = smooth(bioimpedanceLeg,Fs/2);
+bioimpedanceLegSMOOTH = smooth(bioimpedanceLegSMOOTH, 20);
+respLegSMOOTH = smooth(bioimpedanceLegSMOOTH, 200);
+
+figure, plot(timeBioimpedance, bioimpedanceLegSMOOTH(timeMarkerBioimpedance(1):...
+    (timeMarkerBioimpedance(1)+200*10)))
+
+figure, plot(timeBioimpedance, respLegSMOOTH(timeMarkerBioimpedance(1):...
+    (timeMarkerBioimpedance(1)+200*10)))
+
+% FFT
+NFFT = 2^nextpow2(length(timeBioimpedance));
+B = fft(bioimpedanceLegSMOOTH(timeMarkerBioimpedance(1):...
+    (timeMarkerBioimpedance(1)+200*10)), NFFT)/length(timeBioimpedance);
+f = Fs/2*linspace(0,1,NFFT/2+1);
+
+plot(f,abs(B(1:NFFT/2+1)))
+
+%%
+
+splineUltrasound = spline(timeFrames(1:349),diameterSMOOTH(1:349),timeBioimpedance);
+plot3(timeBioimpedance, splineUltrasound,...
+    bioimpedanceLegSMOOTH(timeMarkerBioimpedance(1):...
+    (timeMarkerBioimpedance(1)+200*10)))
+grid on
+
+[bioimpedanceMax,biMax,bioimpedanceMin,biMin] = extrema(...
+    bioimpedanceLegSMOOTH(timeMarkerBioimpedance(1):...
+    (timeMarkerBioimpedance(1)+200*10)));
+
+figure, plot(timeBioimpedance(biMax), bioimpedanceMax,'g*')
+
+%%
+clear rowMove colMove rowMove_total colMove_total posNew posOriginal
 
 
 %%
