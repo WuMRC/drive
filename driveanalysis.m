@@ -80,7 +80,7 @@ for nMarkers = 1:length(acq.markers.lSample)
         x = str2num(datestr(timeStartBioimpedance/day+...
             (double(acq.markers.lSample(nMarkers)/200)/day),'HHMMSS'));
         timeMarkerBioimpedance(nMarkers-shift) = x;
-        clipName{1,nMarkers-shift} = acq.markers.szText{1,nMarkers}(12:end);
+        clipName{1,nMarkers-shift} = acq.markers.szText{1,nMarkers}(11:end);
     end
 end
 clear x
@@ -106,14 +106,16 @@ if size(timeMarkerUltrasound,2) > size(timeMarkerBioimpedance,2)
     timeMarkerUltrasound = timeMarkerUltrasound(rowArray);
 end
 
-
 %%
 % Should endeavor to change above code so that all you need is the
 % ultrasound filename to get the corresponding bioimpedance data
 
 %%
 
-ultrasoundFile = ultrasoundFileArray(1).name;
+DATA_TO_ANALYZE = 3;
+
+%%
+ultrasoundFile = ultrasoundFileArray(DATA_TO_ANALYZE).name;
 ultrasoundFileInfo = dicominfo(ultrasoundFile);
 ultrasoundFrameRate = ultrasoundFileInfo.CineRate;
 
@@ -224,36 +226,57 @@ implay(imageTrack./max(max(max(imageTrack))))
 % Ultrasound analysis
 diameter = sqrt((poiRow(:,1)-poiRow(:,2)).^2 + (poiCol(:,1)-poiCol(:,2)).^2);
 diameterSMOOTH = smooth(diameter,35/2);
+diameterSMOOTHER = smooth(diameterSMOOTH,25);
+
 
 PIXELS_PER_CM = 27;
 
 diameterSMOOTH = diameterSMOOTH/PIXELS_PER_CM;
+diameterSMOOTHER = diameterSMOOTHER/PIXELS_PER_CM;
+
 
 timeFrames = 0:(1/35):(size(diameterSMOOTH,1)-1)/35;
 
-plot(timeFrames(1:349),diameterSMOOTH(1:349))
+plot(timeFrames(1:349),diameterSMOOTHER(1:349))
 
+[diameterMax, diMax, diameterMin, diMin] = extrema(diameterSMOOTHER(1:349));
+
+hold on, plot(timeFrames(diMax),diameterMax,'g.', timeFrames(diMin),diameterMin,'r*'), 
+
+for indExtrema = 1:(size(diMax)-2) % get rid of the two extrema values
+    peak2peak(indExtrema) = diameterMax(indExtrema) - diameterMin(indExtrema) 
+end
+
+clear rowMove colMove rowMove_total colMove_total posNew posOriginal
+
+%%
 % Impedance analysis
 Fs = 200;
 dt = 1/Fs;
 timeBioimpedance = 0:dt:10;
-bioimpedanceLegSMOOTH = smooth(bioimpedanceLeg,Fs/2);
+bioimpedanceLegSMOOTH = smooth(bioimpedanceLeg,Fs/2).*20;
 bioimpedanceLegSMOOTH = smooth(bioimpedanceLegSMOOTH, 20);
 respLegSMOOTH = smooth(bioimpedanceLegSMOOTH, 200);
 
-figure, plot(timeBioimpedance, bioimpedanceLegSMOOTH(timeMarkerBioimpedance(1):...
-    (timeMarkerBioimpedance(1)+200*10)))
+bioimpedanceArmSMOOTH = smooth(bioimpedanceArm,Fs/2).*20;
+bioimpedanceArmSMOOTH = smooth(bioimpedanceArmSMOOTH, 20);
 
-figure, plot(timeBioimpedance, respLegSMOOTH(timeMarkerBioimpedance(1):...
-    (timeMarkerBioimpedance(1)+200*10)))
+figure, plot(timeBioimpedance, bioimpedanceLegSMOOTH(timeMarkerBioimpedance(DATA_TO_ANALYZE):...
+    (timeMarkerBioimpedance(DATA_TO_ANALYZE)+200*10)))
 
-% FFT
-NFFT = 2^nextpow2(length(timeBioimpedance));
-B = fft(bioimpedanceLegSMOOTH(timeMarkerBioimpedance(1):...
-    (timeMarkerBioimpedance(1)+200*10)), NFFT)/length(timeBioimpedance);
-f = Fs/2*linspace(0,1,NFFT/2+1);
+figure, plot(timeBioimpedance, bioimpedanceArmSMOOTH(timeMarkerBioimpedance(DATA_TO_ANALYZE):...
+    (timeMarkerBioimpedance(DATA_TO_ANALYZE)+200*10)))
+% 
+% figure, plot(timeBioimpedance, respLegSMOOTH(timeMarkerBioimpedance(DATA_TO_ANALYZE):...
+%     (timeMarkerBioimpedance(DATA_TO_ANALYZE)+200*10)))
 
-plot(f,abs(B(1:NFFT/2+1)))
+% % FFT
+% NFFT = 2^nextpow2(length(timeBioimpedance));
+% B = fft(bioimpedanceLegSMOOTH(timeMarkerBioimpedance(1):...
+%     (timeMarkerBioimpedance(DATA_TO_ANALYZE)+200*10)), NFFT)/length(timeBioimpedance);
+% f = Fs/2*linspace(0,1,NFFT/2+1);
+% 
+% plot(f,abs(B(1:NFFT/2+1)))
 
 %%
 
@@ -263,14 +286,24 @@ plot3(timeBioimpedance, splineUltrasound,...
     (timeMarkerBioimpedance(1)+200*10)))
 grid on
 
-[bioimpedanceMax,biMax,bioimpedanceMin,biMin] = extrema(...
-    bioimpedanceLegSMOOTH(timeMarkerBioimpedance(1):...
-    (timeMarkerBioimpedance(1)+200*10)));
+title(strcat(clipName{DATA_TO_ANALYZE},' - Leg'))
+xlabel('Time [s]'),     ylabel('IVC Diameter [cm]'),    zlabel('Impedance [\Omega]')
 
-figure, plot(timeBioimpedance(biMax), bioimpedanceMax,'g*')
+figure, plot3(timeBioimpedance, splineUltrasound,...
+    bioimpedanceArmSMOOTH(timeMarkerBioimpedance(1):...
+    (timeMarkerBioimpedance(1)+200*10)))
+grid on
+
+title(strcat(clipName{DATA_TO_ANALYZE},' - Arm'))
+xlabel('Time [s]'),     ylabel('IVC Diameter [cm]'),    zlabel('Impedance [\Omega]')
+
+
+% [bioimpedanceMax,biMax,bioimpedanceMin,biMin] = extrema(...
+%     bioimpedanceLegSMOOTH(timeMarkerBioimpedance(1):...
+%     (timeMarkerBioimpedance(1)+200*10)));
+% figure, plot(timeBioimpedance(biMax), bioimpedanceMax,'g*')
 
 %%
-clear rowMove colMove rowMove_total colMove_total posNew posOriginal
 
 
 %%
