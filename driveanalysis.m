@@ -115,14 +115,14 @@ end
 %%
 
 DATA_TO_ANALYZE = 1;
-
+%%
 for DATA_TO_ANALYZE = 1:1%length(timeMarkerBioimpedance)
     clear rowMove colMove rowMove_total colMove_total posNew posOriginal
 
 %%
 ultrasoundFile = ultrasoundFileArray(DATA_TO_ANALYZE).name;
 ultrasoundFileInfo = dicominfo(ultrasoundFile);
-ultrasoundFrameRate = ultrasoundFileInfo.CineRate;
+% ultrasoundFrameRate = ultrasoundFileInfo.CineRate;
 
 image = dicomread(ultrasoundFile);
 image_new = imageperm(image);
@@ -172,7 +172,8 @@ frameIncrement = 1;
 
 for indPoints = 1:nPoints
     posOriginal = [poiY(indPoints), poiX(indPoints)];
-    posNew = posOriginal;
+%     posNew = posOriginal;
+    pos = posOriginal;
 
     total = nFrames-1;
     for ind = 1:frameIncrement:total
@@ -180,42 +181,10 @@ for indPoints = 1:nPoints
         % Get the frames of data
         currentFrameData = image_roiNORM(:,:,ind);
         nextFrameData = image_roiNORM(:,:,ind+1);
-    
-        % Calculate the correlation
-        [rho_c(:,:,ind)] = corr2D(currentFrameData, nextFrameData, filt, ...
-            [rowKernel, colKernel], [rowSearch, colKernel], posNew);
-        rho_n(:,:,ind) = rho_c(:,:,ind)./max(max(rho_c(:,:,ind)));
-   
-        % Calculate movement based on max correlation
-        [rowMove(ind,indPoints), colMove(ind,indPoints)] = find(rho_n(:,:,ind) ... 
-            == max(max(rho_n(:,:,ind))));
         
-        % Need to compenate for drift and net motion of the image
-%         cornerOffset = 20;
-%         
-%         
-%         
-%         [rho_c(:,:,ind)] = corr2D(currentFrameData, nextFrameData, filt, ...
-%             [rowKernel, colKernel], [rowSearch, colKernel], posNew);
-%         rho_n(:,:,ind) = rho_c(:,:,ind)./max(max(rho_c(:,:,ind)));
-        
-        
-    
-        rowMove(ind,indPoints) = rowMove(ind,indPoints) - (rowSearch + 1);
-        colMove(ind,indPoints) = colMove(ind,indPoints) - (colKernel + 1);
-    
-        rowMove_total = sum(rowMove(:,indPoints));
-        colMove_total = sum(colMove(:,indPoints));
-    
-        poiRow(ind,indPoints) = posOriginal(1) + rowMove_total;
-        poiCol(ind,indPoints) = posOriginal(2) + colMove_total;
-    
-        posNew = [poiRow(ind,indPoints), poiCol(ind,indPoints)];
-    
-        % Track single pixel in image
-        imageTrack(poiRow(ind,indPoints),poiCol(ind,indPoints),ind) = 400;
-     
-        
+        % Function to track frame-to-frame motion
+        pos(:,:,ind+1) = perPixelTrack(currentFrameData, nextFrameData, filt,...
+            [rowKernel, colKernel], [rowSearch, colKernel], pos(:,:,ind));
     
         prog = (ind*indPoints)/(total*nPoints);
         waitbar(prog,h,'Progress')
