@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!-- Generated with http://android-holo-colors.com -->
+<resources xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <style name="MimeTheme" parent="@style/_MimeTheme" />
+
+    <style name="_MimeTheme" parent="android:Theme.Holo">
+        <item name="android:actionBarStyle">@style/MimeActionBar</item>
+        <item name="android:textColorHighlight">#99ce5043</item>
+        <item name="android:textSelectHandleLeft">@drawable/mimetheme_text_select_handle_left</item>
+        <item name="android:textSelectHandleRight">@drawable/mimetheme_text_select_handle_right</item>
+        <item name="android:textSelectHandle">@drawable/mimetheme_text_select_handle_middle</item>
+        <item name="android:listChoiceIndicatorMultiple">@drawable/mimetheme_btn_check_holo_light</item>
+        <item name="android:listChoiceIndicatorSingle">@drawable/mimetheme_btn_radio_holo_light</item>
+        <item name="android:buttonStyle">@style/ButtonMimeTheme</item>
+        <item name="android:textViewStyle">@style/TextViewMimeTheme</item>
+        <item name="android:expandableListViewStyle">@style/ExpandableListViewMimeTheme</item>
+        <item name="android:imageButtonStyle">@style/ImageButtonMimeTheme</item>
+        <item name="android:dropDownSpinnerStyle">@style/SpinnerMimeTheme</item>
+        <item name="android:progressBarStyleHorizontal">@style/ProgressBarMimeTheme</item>
+        <item name="android:seekBarStyle">@style/SeekBarMimeTheme</item>
+        <item name="android:listChoiceBackgroundIndicator">@drawable/mimetheme_list_selector_holo_light</item>
+        <item name="android:activatedBackgroundIndicator">@drawable/mimetheme_activated_background_holo_light</item>
+        <item name="android:windowBackground">@color/mimeThemeBackgroundColor</item>
+    </style>
+
+    <!-- ActionBar styles -->
+    <style name="MimeActionBar" parent="@android:style/Widget.Holo.ActionBar">
+        <item name="android:background">#CE5043</item>
+    </style>
+
+</resources>
