@@ -1,5 +1,6 @@
 //Pin for I2C: Uno, Ethernet	A4 (SDA), A5 (SCL)
 //Acknowledgement: Some codes are inspried by https://github.com/open-ephys/autoimpedance
+// This file is for the step before making header file.
 
 #include <Wire.h>
 #include <math.h>
@@ -23,6 +24,7 @@ boolean setStartFreq(long);
 boolean setIncrement(long);
 boolean setIncrementinHex(long);
 boolean setNumofIncrement(int);
+boolean setSettlingCycles(int, byte);
 
 void setup()
 {
@@ -38,6 +40,8 @@ void loop()
   setStartFreq(50000);
   setIncrementHex(1);
   setNumofIncrement(2);
+  setSettlingCycles(0x1FF, 4);
+  
   
   
   Serial.println("Loop End!");
@@ -47,7 +51,7 @@ void loop()
 
 boolean setSettlingCycles(int cycles, byte mult)
 {
-  if(cycles > 0x1FF || !(mult == 0 || mult == 1 || mult == 3) )
+  if(cycles > 0x1FF || !(mult == 1 || mult == 2 || mult == 4) )
   {
 #if LOGGING1
     Serial.println("setSettlingCycles - Invalid Parameter");
@@ -55,7 +59,43 @@ boolean setSettlingCycles(int cycles, byte mult)
     return false;
   }
   int lowerHex = cycles % 256;
-  int upperHex =   
+  int upperHex = ((cycles - (long)lowerHex) >> 8) % 2;
+  byte t1;
+  switch(mult)
+  {
+    case 1:
+      t1 = 0;
+      break;
+    case 2:
+      t1 = 1;
+      break;
+    case 4:
+      t1 = 3;
+      break;
+    default:
+#if LOGGING1
+    Serial.println("setSettlingCycles - Invalid Mult Parameter");
+#endif
+    return false;
+    break;    
+  }
+  upperHex |= (t1 << 1);
+#if LOGGING2
+  Serial.print("setSettlingCycles - upper: ");
+  Serial.println(upperHex,BIN);
+#endif
+  boolean t2, t3;
+  t2=setByte(0x8A, upperHex);
+  t3=setByte(0x8B, lowerHex);
+  if( t2 && t3 )
+    return true;
+  else
+  {
+#if LOGGING1
+    Serial.println("setSettingCycles - Data Write Fail");
+#endif
+    return false;
+  }
 }
 
 boolean setNumofIncrement(int num)
@@ -247,6 +287,7 @@ int getByte(int address) {
   return rxByte;
 
 }
+
 boolean setByte(int address, int value) {
 #if LOGGING3   
   Serial.print("setByte - Initiating I2C Transmission. Address: ");
