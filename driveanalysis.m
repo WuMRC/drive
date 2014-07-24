@@ -23,7 +23,7 @@ bioimpedanceFileArray = bioimpedanceFileArray(arrayfun(@(x) x.isdir, ...
     bioimpedanceFileArray) ~= 1);
 
 %% SELECT ONLY THOSE ULTRASOUND TRIALS FOR ANALYSIS
-% Look for viable trials 
+% Look for viable trials
 for trial = 1:size(ultrasoundFileArray,1)
     ultrasoundFile = ultrasoundFileArray(trial).name;
     imshow(ultrasoundFile(:,:,1,1))
@@ -33,13 +33,13 @@ for trial = 1:size(ultrasoundFileArray,1)
         trialCheckArray(trial) = true;
     elseif str == 'N' | str == 'n'
         trialCheckArray(trial) = false;
-%     elseif str ~= 'Y' | str ~=  'y' | str ~= 'N' | str ~= 'n'
-%         disp('Please select either Y or N.')
-%         if str == 'Y' | str ==  'y'
-%             trialCheckArray(trial) = 1;
-%         elseif str == 'N' | str == 'n'
-%             trialCheckArray(trial) = 0;
-%         end
+        %     elseif str ~= 'Y' | str ~=  'y' | str ~= 'N' | str ~= 'n'
+        %         disp('Please select either Y or N.')
+        %         if str == 'Y' | str ==  'y'
+        %             trialCheckArray(trial) = 1;
+        %         elseif str == 'N' | str == 'n'
+        %             trialCheckArray(trial) = 0;
+        %         end
     end
 end
 close
@@ -92,18 +92,13 @@ clipName = unique(clipName);
 
 %%
 % Placeholding code for figuring out how the two sets of data correspond
-[lia, locb] = ismember(timeMarkerBioimpedance,timeMarkerUltrasound);
-
-timeMarkerBioimpedance(lia);
-% timeMarkerBioimpedance(locb)
-
 timeErr = 2;
 if size(timeMarkerUltrasound,2) > size(timeMarkerBioimpedance,2)
     rowArray = [];
     for nMarkers = 1:length(timeMarkerBioimpedance)
         row = find(timeMarkerBioimpedance(nMarkers) > (timeMarkerUltrasound-timeErr) ...
-            & timeMarkerBioimpedance(nMarkers) < (timeMarkerUltrasound+timeErr));        
-        rowArray = [rowArray, row(1)];      
+            & timeMarkerBioimpedance(nMarkers) < (timeMarkerUltrasound+timeErr));
+        rowArray = [rowArray, row(1)];
     end
     timeMarkerUltrasound = timeMarkerUltrasound(rowArray);
 end
@@ -118,179 +113,179 @@ DATA_TO_ANALYZE = 1;
 %%
 for DATA_TO_ANALYZE = 1:1%length(timeMarkerBioimpedance)
     clear rowMove colMove rowMove_total colMove_total posNew posOriginal
-
-%%
-ultrasoundFile = ultrasoundFileArray(DATA_TO_ANALYZE).name;
-ultrasoundFileInfo = dicominfo(ultrasoundFile);
-% ultrasoundFrameRate = ultrasoundFileInfo.CineRate;
-
-image = dicomread(ultrasoundFile);
-image_new = imageperm(image);
-image_roi = double(selectroi(image_new));
-% image_roi = image_new(:,:,:,1);
-
-image_roiNORM = image_roi./max(max(max(image_roi)));
-
-[nRows, nCols, nFrames] = size(image_roi);
-
-
-%%
-imshow(image_roiNORM(:,:,1,1))
-title('Select points along the edge of the vessel, then hit "Enter"')
-figHandle = gcf;
-[poiX, poiY] = getpts(figHandle);
-close
-
-poiX = round(poiX);     poiY = round(poiY);
-nPoints = size(poiX,1);
-
-
-%%
-% Eventually the vessel edge will be detected automatically and then
-% subsequently tracked
-
-
-level = graythresh(image_roiNORM(:,:,1));
-imageTrackBW = im2bw(image_roiNORM(:,:,1),level);
-% imageTrackEDGE = edge(currentFrameData.*imageTrackBW,'sobel');
-imageTrackFILT = image_roiNORM(:,:,1).*imageTrackBW;
-imagesc(imageTrackFILT)
-
-
-%%
-
-
-rowKernel   = 5; colKernel   = 5;   % KERNEL SIZE
-rowSearch   = 5; colSearch   = 5;   % SEARCH WINDOW
-
-filt = ones(5,5);
-
-imageTrack = image_roi;
-
-h = waitbar(0 ,'Progress');
-frameIncrement = 1;
-
-for indPoints = 1:nPoints
-    posOriginal = [poiY(indPoints), poiX(indPoints)];
-%     posNew = posOriginal;
-    pos = posOriginal;
-
-    total = nFrames-1;
-    for ind = 1:frameIncrement:total
     
-        % Get the frames of data
-        currentFrameData = image_roiNORM(:,:,ind);
-        nextFrameData = image_roiNORM(:,:,ind+1);
+    %%
+    ultrasoundFile = ultrasoundFileArray(DATA_TO_ANALYZE).name;
+    ultrasoundFileInfo = dicominfo(ultrasoundFile);
+    % ultrasoundFrameRate = ultrasoundFileInfo.CineRate;
+    
+    image = dicomread(ultrasoundFile);
+    image_new = imageperm(image);
+    image_roi = double(selectroi(image_new));
+    % image_roi = image_new(:,:,:,1);
+    
+    image_roiNORM = image_roi./max(max(max(image_roi)));
+    
+    [nRows, nCols, nFrames] = size(image_roi);
+    
+    
+    %%
+    imshow(image_roiNORM(:,:,1,1))
+    title('Select points along the edge of the vessel, then hit "Enter"')
+    figHandle = gcf;
+    [poiX, poiY] = getpts(figHandle);
+    close
+    
+    poiX = round(poiX);     poiY = round(poiY);
+    nPoints = size(poiX,1);
+    
+    
+    %%
+    % Eventually the vessel edge will be detected automatically and then
+    % subsequently tracked
+    
+    
+    level = graythresh(image_roiNORM(:,:,1));
+    imageTrackBW = im2bw(image_roiNORM(:,:,1),level);
+    % imageTrackEDGE = edge(currentFrameData.*imageTrackBW,'sobel');
+    imageTrackFILT = image_roiNORM(:,:,1).*imageTrackBW;
+    imagesc(imageTrackFILT)
+    
+    
+    %%
+    
+    
+    rowKernel   = 5; colKernel   = 5;   % KERNEL SIZE
+    rowSearch   = 5; colSearch   = 5;   % SEARCH WINDOW
+    
+    filt = ones(5,5);
+    
+    imageTrack = image_roi;
+    
+    h = waitbar(0 ,'Progress');
+    frameIncrement = 1;
+    
+    for indPoints = 1:nPoints
+        posOriginal = [poiY(indPoints), poiX(indPoints)];
+        %     posNew = posOriginal;
+        pos = posOriginal;
         
-        % Function to track frame-to-frame motion
-        pos(:,:,ind+1) = perPixelTrack(currentFrameData, nextFrameData, filt,...
-            [rowKernel, colKernel], [rowSearch, colKernel], pos(:,:,ind));
-    
-        prog = (ind*indPoints)/(total*nPoints);
-        waitbar(prog,h,'Progress')
+        total = nFrames-1;
+        for ind = 1:frameIncrement:total
+            
+            % Get the frames of data
+            currentFrameData = image_roiNORM(:,:,ind);
+            nextFrameData = image_roiNORM(:,:,ind+1);
+            
+            % Function to track frame-to-frame motion
+            pos(:,:,ind+1) = perPixelTrack(currentFrameData, nextFrameData, filt,...
+                [rowKernel, colKernel], [rowSearch, colKernel], pos(:,:,ind));
+            
+            prog = (ind*indPoints)/(total*nPoints);
+            waitbar(prog,h,'Progress')
+        end
+        
     end
-
-end
-
-close(h)
-% implay(imageTrack./max(max(max(imageTrack))))
-
-
-%%
-% Ultrasound analysis
-diameter = sqrt((poiRow(:,1)-poiRow(:,2)).^2 + (poiCol(:,1)-poiCol(:,2)).^2);
-diameterSMOOTH = smooth(diameter,35/2);
-diameterSMOOTHER = smooth(diameterSMOOTH,25);
-
-
-PIXELS_PER_CM = 27;
-
-diameterSMOOTH = diameterSMOOTH/PIXELS_PER_CM;
-diameterSMOOTHER = diameterSMOOTHER/PIXELS_PER_CM;
-
-
-timeFrames = 0:(1/35):(size(diameterSMOOTH,1)-1)/35;
-
-% plot(timeFrames(1:349),diameterSMOOTHER(1:349))
-
-[diameterMax, diMax, diameterMin, diMin] = extrema(diameterSMOOTHER(1:349));
-
-% hold on, plot(timeFrames(diMax),diameterMax,'g.', timeFrames(diMin),diameterMin,'r*'), 
-
-% for indExtrema = 1:(size(diMax)-2) % get rid of the two extrema values
-%     peak2peak(indExtrema) = diameterMax(indExtrema) - diameterMin(indExtrema) 
-% end
-
-peak2peakUS(DATA_TO_ANALYZE) = max(diameterSMOOTHER(1:349)) - min(diameterSMOOTHER(1:349));
-
-
-%%
-% Impedance analysis
-Fs = 200;
-dt = 1/Fs;
-timeBioimpedance = 0:dt:10;
-bioimpedanceLegSMOOTH = smooth(bioimpedanceLeg,Fs/2).*20;
-bioimpedanceLegSMOOTH = smooth(bioimpedanceLegSMOOTH, 20);
-respLegSMOOTH = smooth(bioimpedanceLegSMOOTH, 200);
-
-bioimpedanceArmSMOOTH = smooth(bioimpedanceArm,Fs/2).*20;
-bioimpedanceArmSMOOTH = smooth(bioimpedanceArmSMOOTH, 20);
-
-figure, plot(timeBioimpedance, bioimpedanceLegSMOOTH(timeMarkerBioimpedanceInd(DATA_TO_ANALYZE):...
-    (timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+200*10)))
-% 
-% figure, plot(timeBioimpedance, bioimpedanceArmSMOOTH(timeMarkerBioimpedanceInd(DATA_TO_ANALYZE):...
-%     (timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+200*10)))
-% 
-% figure, plot(timeBioimpedance, respLegSMOOTH(timeMarkerBioimpedance(DATA_TO_ANALYZE):...
-%     (timeMarkerBioimpedance(DATA_TO_ANALYZE)+200*10)))
-
-% % FFT
-% NFFT = 2^nextpow2(length(timeBioimpedance));
-% B = fft(bioimpedanceLegSMOOTH(timeMarkerBioimpedance(1):...
-%     (timeMarkerBioimpedance(DATA_TO_ANALYZE)+200*10)), NFFT)/length(timeBioimpedance);
-% f = Fs/2*linspace(0,1,NFFT/2+1);
-% 
-% plot(f,abs(B(1:NFFT/2+1)))
-
-peak2peakBI(DATA_TO_ANALYZE) = max(bioimpedanceArmSMOOTH(...
-    timeMarkerBioimpedanceInd(DATA_TO_ANALYZE):...
-    (timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+200*10))) - ...
-    min(bioimpedanceArmSMOOTH(...
-    timeMarkerBioimpedanceInd(DATA_TO_ANALYZE):...
-    (timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+200*10)));
-
-
-%%
-
-splineUltrasound = spline(timeFrames(1:349),diameterSMOOTH(1:349),timeBioimpedance);
-
-h(1) = figure;
-plot3(timeBioimpedance, splineUltrasound,...
-    bioimpedanceLegSMOOTH(timeMarkerBioimpedanceInd(DATA_TO_ANALYZE):...
-    (timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+200*10)))
-grid on
-
-title(strcat(clipName{DATA_TO_ANALYZE},' - Leg'))
-xlabel('Time [s]'),     ylabel('IVC Diameter [cm]'),    zlabel('Impedance [\Omega]')
-
-saveas(h,horzcat('z',patientID,clipName{DATA_TO_ANALYZE},' - Leg','.fig'))
-
-% figure, plot3(timeBioimpedance, splineUltrasound,...
-%     bioimpedanceArmSMOOTH(timeMarkerBioimpedanceInd(DATA_TO_ANALYZE):...
-%     (timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+200*10)))
-% grid on
-% 
-% title(strcat(clipName{DATA_TO_ANALYZE},' - Arm'))
-% xlabel('Time [s]'),     ylabel('IVC Diameter [cm]'),    zlabel('Impedance [\Omega]')
-
-
-% [bioimpedanceMax,biMax,bioimpedanceMin,biMin] = extrema(...
-%     bioimpedanceLegSMOOTH(timeMarkerBioimpedance(1):...
-%     (timeMarkerBioimpedance(1)+200*10)));
-% figure, plot(timeBioimpedance(biMax), bioimpedanceMax,'g*')
-
-%%
+    
+    close(h)
+    % implay(imageTrack./max(max(max(imageTrack))))
+    
+    
+    %%
+    % Ultrasound analysis
+    diameter = sqrt((poiRow(:,1)-poiRow(:,2)).^2 + (poiCol(:,1)-poiCol(:,2)).^2);
+    diameterSMOOTH = smooth(diameter,35/2);
+    diameterSMOOTHER = smooth(diameterSMOOTH,25);
+    
+    
+    PIXELS_PER_CM = 27;
+    
+    diameterSMOOTH = diameterSMOOTH/PIXELS_PER_CM;
+    diameterSMOOTHER = diameterSMOOTHER/PIXELS_PER_CM;
+    
+    
+    timeFrames = 0:(1/35):(size(diameterSMOOTH,1)-1)/35;
+    
+    % plot(timeFrames(1:349),diameterSMOOTHER(1:349))
+    
+    [diameterMax, diMax, diameterMin, diMin] = extrema(diameterSMOOTHER(1:349));
+    
+    % hold on, plot(timeFrames(diMax),diameterMax,'g.', timeFrames(diMin),diameterMin,'r*'),
+    
+    % for indExtrema = 1:(size(diMax)-2) % get rid of the two extrema values
+    %     peak2peak(indExtrema) = diameterMax(indExtrema) - diameterMin(indExtrema)
+    % end
+    
+    peak2peakUS(DATA_TO_ANALYZE) = max(diameterSMOOTHER(1:349)) - min(diameterSMOOTHER(1:349));
+    
+    
+    %%
+    % Impedance analysis
+    Fs = 200;
+    dt = 1/Fs;
+    timeBioimpedance = 0:dt:10;
+    bioimpedanceLegSMOOTH = smooth(bioimpedanceLeg,Fs/2).*20;
+    bioimpedanceLegSMOOTH = smooth(bioimpedanceLegSMOOTH, 20);
+    respLegSMOOTH = smooth(bioimpedanceLegSMOOTH, 200);
+    
+    bioimpedanceArmSMOOTH = smooth(bioimpedanceArm,Fs/2).*20;
+    bioimpedanceArmSMOOTH = smooth(bioimpedanceArmSMOOTH, 20);
+    
+    figure, plot(timeBioimpedance, bioimpedanceLegSMOOTH(timeMarkerBioimpedanceInd(DATA_TO_ANALYZE):...
+        (timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+200*10)))
+    %
+    % figure, plot(timeBioimpedance, bioimpedanceArmSMOOTH(timeMarkerBioimpedanceInd(DATA_TO_ANALYZE):...
+    %     (timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+200*10)))
+    %
+    % figure, plot(timeBioimpedance, respLegSMOOTH(timeMarkerBioimpedance(DATA_TO_ANALYZE):...
+    %     (timeMarkerBioimpedance(DATA_TO_ANALYZE)+200*10)))
+    
+    % % FFT
+    % NFFT = 2^nextpow2(length(timeBioimpedance));
+    % B = fft(bioimpedanceLegSMOOTH(timeMarkerBioimpedance(1):...
+    %     (timeMarkerBioimpedance(DATA_TO_ANALYZE)+200*10)), NFFT)/length(timeBioimpedance);
+    % f = Fs/2*linspace(0,1,NFFT/2+1);
+    %
+    % plot(f,abs(B(1:NFFT/2+1)))
+    
+    peak2peakBI(DATA_TO_ANALYZE) = max(bioimpedanceArmSMOOTH(...
+        timeMarkerBioimpedanceInd(DATA_TO_ANALYZE):...
+        (timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+200*10))) - ...
+        min(bioimpedanceArmSMOOTH(...
+        timeMarkerBioimpedanceInd(DATA_TO_ANALYZE):...
+        (timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+200*10)));
+    
+    
+    %%
+    
+    splineUltrasound = spline(timeFrames(1:349),diameterSMOOTH(1:349),timeBioimpedance);
+    
+    h(1) = figure;
+    plot3(timeBioimpedance, splineUltrasound,...
+        bioimpedanceLegSMOOTH(timeMarkerBioimpedanceInd(DATA_TO_ANALYZE):...
+        (timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+200*10)))
+    grid on
+    
+    title(strcat(clipName{DATA_TO_ANALYZE},' - Leg'))
+    xlabel('Time [s]'),     ylabel('IVC Diameter [cm]'),    zlabel('Impedance [\Omega]')
+    
+    saveas(h,horzcat('z',patientID,clipName{DATA_TO_ANALYZE},' - Leg','.fig'))
+    
+    % figure, plot3(timeBioimpedance, splineUltrasound,...
+    %     bioimpedanceArmSMOOTH(timeMarkerBioimpedanceInd(DATA_TO_ANALYZE):...
+    %     (timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+200*10)))
+    % grid on
+    %
+    % title(strcat(clipName{DATA_TO_ANALYZE},' - Arm'))
+    % xlabel('Time [s]'),     ylabel('IVC Diameter [cm]'),    zlabel('Impedance [\Omega]')
+    
+    
+    % [bioimpedanceMax,biMax,bioimpedanceMin,biMin] = extrema(...
+    %     bioimpedanceLegSMOOTH(timeMarkerBioimpedance(1):...
+    %     (timeMarkerBioimpedance(1)+200*10)));
+    % figure, plot(timeBioimpedance(biMax), bioimpedanceMax,'g*')
+    
+    %%
 end
 
 %%
@@ -298,12 +293,6 @@ end
 total = nFrames-1;
 frame2frame = 2;
 ctotal = microblockanalysis(image_roiNORM,10,1);
-
-
-%%
-plot(bioimpedanceLegSMOOTH(timeMarkerBioimpedanceInd(2):(timeMarkerBioimpedanceInd(2)+200*10)))
-hold on
-plot(bioimpedanceLegSMOOTH(timeMarkerBioimpedanceInd(3):(timeMarkerBioimpedanceInd(3)+200*10)))
 
 %%
 clear, close, clc
