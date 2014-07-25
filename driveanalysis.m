@@ -24,14 +24,15 @@ bioimpedanceFileArray = bioimpedanceFileArray(arrayfun(@(x) x.isdir, ...
 
 %% SELECT ONLY THOSE ULTRASOUND TRIALS FOR ANALYSIS
 % Look for viable trials
+trialCheckArray = zeros(1,size(ultrasoundFileArray,1));
 for trial = 1:size(ultrasoundFileArray,1)
     ultrasoundFile = ultrasoundFileArray(trial).name;
     imshow(ultrasoundFile(:,:,1,1))
     prompt = 'Is this a good trial? [Y/N] \n';
     str = input(prompt,'s');
-    if str == 'Y' | str ==  'y'
+    if str == 'Y' || str ==  'y'
         trialCheckArray(trial) = true;
-    elseif str == 'N' | str == 'n'
+    elseif str == 'N' || str == 'n'
         trialCheckArray(trial) = false;
         %     elseif str ~= 'Y' | str ~=  'y' | str ~= 'N' | str ~= 'n'
         %         disp('Please select either Y or N.')
@@ -49,8 +50,9 @@ trialCheckArray = logical(trialCheckArray);
 ultrasoundFileArray = ultrasoundFileArray(trialCheckArray);
 
 % Time of file
+timeMarkerUltrasound = zeros(1,size(ultrasoundFileArray,1));
 for nTrials = 1:size(ultrasoundFileArray,1)
-    x = str2num(ultrasoundFileArray(nTrials).name(9:14));
+    x = str2double(ultrasoundFileArray(nTrials).name(9:14));
     timeMarkerUltrasound(nTrials) = x;
 end
 % clear x;
@@ -70,15 +72,17 @@ dtBioimpedance = acq.hdr.graph.sample_time;
 timeStartBioimpedance = acq.hdr.graph.first_time_offset/1000;
 
 day = 60*60*24;
-timeStartBioimpedance6 = str2num(datestr(timeStartBioimpedance/day,'HHMMSS'));
+timeStartBioimpedance6 = str2double(datestr(timeStartBioimpedance/day,'HHMMSS'));
 
 shift = 0;
 % Find markers in ACQKnowledge data
+timeMarkerBioimpedance = zeros(1,length(acq.markers.lSample));
+timeMarkerBioimpedanceInd = zeros(1,length(acq.markers.lSample));
 for nMarkers = 1:length(acq.markers.lSample)
     if acq.markers.lSample(nMarkers) == 0
         shift = shift + 1;
     else
-        x = str2num(datestr(timeStartBioimpedance/day+...
+        x = str2double(datestr(timeStartBioimpedance/day+...
             (double(acq.markers.lSample(nMarkers)/200)/day),'HHMMSS'));
         timeMarkerBioimpedance(nMarkers-shift) = x;
         clipName{1,nMarkers-shift} = acq.markers.szText{1,nMarkers}(11:end);
@@ -130,6 +134,9 @@ for DATA_TO_ANALYZE = 1:1%length(timeMarkerBioimpedance)
     
     
     %%
+    
+    % This will eventually be replaced by automation and will be used next
+    % week exclusively for clinician training
     imshow(image_roiNORM(:,:,1,1))
     title('Select points along the edge of the vessel, then hit "Enter"')
     figHandle = gcf;
@@ -153,13 +160,15 @@ for DATA_TO_ANALYZE = 1:1%length(timeMarkerBioimpedance)
     
     
     %%
-    
-    
+    % Placeholder for function to optimize kernel and search window size
     rowKernel   = 5; colKernel   = 5;   % KERNEL SIZE
     rowSearch   = 5; colSearch   = 5;   % SEARCH WINDOW
     
     filt = ones(5,5);
+   
     
+    %%
+     
     imageTrack = image_roi;
     
     h = waitbar(0 ,'Progress');
