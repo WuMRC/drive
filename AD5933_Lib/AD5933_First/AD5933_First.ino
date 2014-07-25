@@ -12,7 +12,7 @@
 
 const byte Address_Ptr = 0xB0;
 #define AD5933_ADR 0x0D
-const double opClock = 16000000;
+double opClock = 16776000;
 const int numofIncrement = 2;
 const int delayTimeInit = 100;
 
@@ -43,6 +43,7 @@ boolean setCtrMode(byte, int);
 #define STAND_BY 11
 
 double getGainFactor(double);
+double getGainFactor(double, int);
 boolean performFreqSweep(double, double *);
 
 // (Voltage, PGA Gain)
@@ -54,7 +55,7 @@ void setup()
   Serial.begin(9600);  // start serial for output
   
   //setByte(0x81, 0x18); // Reset & Use Ext. Clock - 0001 1000
-  setExtClock(true);
+  setExtClock(false);
   resetAD5933();
 }
 
@@ -134,7 +135,7 @@ boolean performFreqSweep(double gainFactor, double *arrSave)
   return true;
 }
 
-double getGainFactor(double cResistance)
+double getGainFactor(double cResistance, int avgNum)
 {
   int ctrReg = getByte(0x80);
   setCtrMode(STAND_BY);
@@ -142,9 +143,17 @@ double getGainFactor(double cResistance)
   delay(delayTimeInit);
   setCtrMode(START_FREQ_SWEEP);
   
-  double mag = getMagOnce();
+  int t1 = 0;
+  long tSum = 0;
+  while(t1 < avgNum)
+  {
+    tSum += getMagOnce();
+    setCtrMode(REPEAT_FREQ);
+    t1++;  
+  }
+  double mag = tSum/(double)avgNum;
   resetAD5933();
-  // Gain Factor is different from one of the datasheet in this program. Reciprocal Value.
+    // Gain Factor is different from one of the datasheet in this program. Reciprocal Value.
 #if LOGGING2
   Serial.print("getGainFactor - Gain Factor: ");
   Serial.println(mag*cResistance);
@@ -152,6 +161,11 @@ double getGainFactor(double cResistance)
 #endif
   return mag * cResistance;
  
+}
+
+double getGainFactor(double cResistance)
+{
+  return getGainFactor(cResistance, 1);
 }
 
 boolean setCtrMode(byte modetoSet)
@@ -220,9 +234,15 @@ boolean setExtClock(boolean swt)
 {
   byte t1;
   if( swt )
+  {
     t1 = 0x04;
+    opClock = 16000000;
+  }
   else
+  {
     t1 = 0x00;
+    opClock = 16776000;
+  }  
   return setByte(0x81, t1);
 }
 
