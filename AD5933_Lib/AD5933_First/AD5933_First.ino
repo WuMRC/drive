@@ -1,13 +1,14 @@
 //Pin for I2C: Uno, Ethernet	A4 (SDA), A5 (SCL)
 //Acknowledgement: Some codes are inspried by https://github.com/open-ephys/autoimpedance
 // This file is for the step before making header file.
+// These codes will be a class.
 
 #include <Wire.h>
 #include <math.h>
 
-#define LOGGING1 1
-#define LOGGING2 1
-#define LOGGING3 1
+#define LOGGING1 1 // Basic, Error
+#define LOGGING2 1 // in Dev
+#define LOGGING3 0 // Detailed
 
 const byte Address_Ptr = 0xB0;
 #define AD5933_ADR 0x0D
@@ -25,13 +26,30 @@ boolean setIncrement(long);
 boolean setIncrementinHex(long);
 boolean setNumofIncrement(int);
 boolean setSettlingCycles(int, byte);
+boolean resetAD5933();
+boolean setExtClock(boolean);
+boolean setVolPGA(byte, byte);
+
+boolean setCtrMode(byte);
+boolean setCtrMode(byte, int);
+#define INIT_START_FREQ 1
+#define START_FREQ_SWEEP 2
+#define INCR_FREQ 3
+#define REPEAT_FREQ 4
+#define POWER_DOWN A
+#define STAND_BY B
+
+// (Voltage, PGA Gain)
+// Voltage: 0-2Vpp / 1-0.2Vpp / 2-0.4Vpp / 3-1Vpp
 
 void setup()
 {
   Wire.begin();        // join i2c bus (address optional for master)
   Serial.begin(9600);  // start serial for output
   
-  setByte(0x81, 0x18); // Reset & Use Ext. Clock - 0001 1000
+  //setByte(0x81, 0x18); // Reset & Use Ext. Clock - 0001 1000
+  setExtClock(true);
+  resetAD5933();
 }
 
 void loop()
@@ -41,12 +59,63 @@ void loop()
   setIncrementHex(1);
   setNumofIncrement(2);
   setSettlingCycles(0x1FF, 4);
+  getTemperature();
+  setVolPGA(0,1);
   
   
   
   Serial.println("Loop End!");
   Serial.println();
   delay(5000);
+}
+
+boolean setCtrMode(byte modetoSet)
+{
+  return setCtrMode(modetoSet, getByte(0x80));
+}
+
+boolean setCtrMode(byte modetoSet, int ctrReg)
+{
+   
+}
+
+boolean setVolPGA(byte voltageNum, byte pgaGain)
+{
+  if( (voltageNum < 0 || voltageNum > 3) || !(pgaGain == 1 || pgaGain == 5) )  
+  {
+#if LOGGING1
+    Serial.println("setVolPGA - invaild parameter");
+#endif
+    return false;
+  } 
+  int temp = getByte(0x80);
+  temp &= 0xF0;
+  temp |= voltageNum << 1;
+  if(pgaGain == 1)
+    temp |= 0x01;
+  else
+    temp &= 0xFE;
+#if LOGGING2
+  Serial.print("setVolPGA - Final Value to Set: ");
+  Serial.println(temp, BIN);
+#endif
+  return setByte(0x80,temp);
+}
+
+boolean setExtClock(boolean swt)
+{
+  byte t1;
+  if( swt )
+    t1 = 0x04;
+  else
+    t1 = 0x00;
+  return setByte(0x81, t1);
+}
+
+boolean resetAD5933()
+{
+  int temp = (getByte(0x81) & 0x04);
+  return setByte(0x81, (temp | 0x10));
 }
 
 boolean setSettlingCycles(int cycles, byte mult)
