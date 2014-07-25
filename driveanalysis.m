@@ -133,19 +133,10 @@ for DATA_TO_ANALYZE = 1:1%length(timeMarkerBioimpedance)
     [nRows, nCols, nFrames] = size(image_roi);
     
     
-    %%
-    
-    % This will eventually be replaced by automation and will be used next
-    % week exclusively for clinician training
-    imshow(image_roiNORM(:,:,1,1))
-    title('Select points along the edge of the vessel, then hit "Enter"')
-    figHandle = gcf;
-    [poiX, poiY] = getpts(figHandle);
-    close
-    
-    poiX = round(poiX);     poiY = round(poiY);
-    nPoints = size(poiX,1);
-    
+    %% Select points
+        
+    [poiX, poiY,nPoints] = selectPoints(image_roiNORM(:,:,1,1));
+
     
     %%
     % Eventually the vessel edge will be detected automatically and then
