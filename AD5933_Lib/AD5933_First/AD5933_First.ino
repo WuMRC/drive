@@ -19,12 +19,8 @@ boolean setByte(int, int);
 double getTemperature();
 int getRealComp();
 int getImagComp();
-<<<<<<< HEAD
 double getMagValue();
 double getMagOnce();
-=======
-double getMag();
->>>>>>> FETCH_HEAD
 byte getStatusReg();
 boolean setStartFreq(long);
 boolean setIncrement(long);
@@ -41,15 +37,10 @@ boolean setCtrMode(byte, int);
 #define START_FREQ_SWEEP 2
 #define INCR_FREQ 3
 #define REPEAT_FREQ 4
-<<<<<<< HEAD
 #define POWER_DOWN 10
 #define STAND_BY 11
 
 double getGainFactor(double);
-=======
-#define POWER_DOWN A
-#define STAND_BY B
->>>>>>> FETCH_HEAD
 
 // (Voltage, PGA Gain)
 // Voltage: 0-2Vpp / 1-0.2Vpp / 2-0.4Vpp / 3-1Vpp
@@ -73,7 +64,6 @@ void loop()
   setSettlingCycles(0x1FF, 4);
   getTemperature();
   setVolPGA(0,1);
-<<<<<<< HEAD
   Serial.println("Please setup for calibration. If completed, press p and Enter>");
   while( Serial.read() != 'p')
     ;
@@ -81,9 +71,6 @@ void loop()
   Serial.println("Change resistor to measure! If completed, press p and Enter>");
   while( Serial.read() != 'p')
     ;
-=======
-  
->>>>>>> FETCH_HEAD
   
   
   Serial.println("Loop End!");
@@ -91,7 +78,6 @@ void loop()
   delay(5000);
 }
 
-<<<<<<< HEAD
 double getGainFactor(double cResistance)
 {
   int ctrReg = getByte(0x80);
@@ -112,8 +98,6 @@ double getGainFactor(double cResistance)
  
 }
 
-=======
->>>>>>> FETCH_HEAD
 boolean setCtrMode(byte modetoSet)
 {
   return setCtrMode(modetoSet, getByte(0x80));
@@ -121,7 +105,6 @@ boolean setCtrMode(byte modetoSet)
 
 boolean setCtrMode(byte modetoSet, int ctrReg)
 {
-<<<<<<< HEAD
   ctrReg &= 0x0F;
   switch(modetoSet)
   {
@@ -152,9 +135,6 @@ boolean setCtrMode(byte modetoSet, int ctrReg)
   } 
   return setByte(0x80, ctrReg);
  
-=======
-   
->>>>>>> FETCH_HEAD
 }
 
 boolean setVolPGA(byte voltageNum, byte pgaGain)
@@ -464,11 +444,7 @@ boolean setByte(int address, int value) {
   }
 }
 
-<<<<<<< HEAD
 double getMagValue()
-=======
-double getMag()
->>>>>>> FETCH_HEAD
 {
   int rComp, iComp;
   rComp = getRealComp();
@@ -481,7 +457,6 @@ double getMag()
   return result;
 }
 
-<<<<<<< HEAD
 double getMagOnce()
 {
   while((getByte(0x8F) & 0x02) != 0x02)
@@ -491,8 +466,6 @@ double getMagOnce()
   return getMagValue();  
 }
 
-=======
->>>>>>> FETCH_HEAD
 int getRealComp()
 {
   int mReal, lReal;
