@@ -13,6 +13,8 @@
 const byte Address_Ptr = 0xB0;
 #define AD5933_ADR 0x0D
 const double opClock = 16000000;
+const int numofIncrement = 2;
+const int delayTimeInit = 100;
 
 int getByte(int);
 boolean setByte(int, int);
@@ -41,6 +43,7 @@ boolean setCtrMode(byte, int);
 #define STAND_BY 11
 
 double getGainFactor(double);
+boolean performFreqSweep(double, double *);
 
 // (Voltage, PGA Gain)
 // Voltage: 0-2Vpp / 1-0.2Vpp / 2-0.4Vpp / 3-1Vpp
@@ -60,7 +63,7 @@ void loop()
   Serial.println("Loop Begin!");
   setStartFreq(50000);
   setIncrementHex(1);
-  setNumofIncrement(2);
+  setNumofIncrement(numofIncrement);
   setSettlingCycles(0x1FF, 4);
   getTemperature();
   setVolPGA(0,1);
@@ -71,6 +74,8 @@ void loop()
   Serial.println("Change resistor to measure! If completed, press p and Enter>");
   while( Serial.read() != 'p')
     ;
+  double rValue[numofIncrement];
+  performFreqSweep(gainFactor, rValue);
   
   
   Serial.println("Loop End!");
@@ -78,12 +83,63 @@ void loop()
   delay(5000);
 }
 
+boolean performFreqSweep(double gainFactor, double *arrSave)
+{
+  int ctrReg = getByte(0x80);
+  if(setCtrMode(STAND_BY) == false)
+  {
+#if LOGGING1
+    Serial.println("performFreqSweep - Failed to setting control bit!");
+#endif
+    return false;
+  }
+  if(setCtrMode(INIT_START_FREQ) == false)
+  {
+#if LOGGING1
+    Serial.println("performFreqSweep - Failed to setting control bit!");
+#endif
+    return false;
+  }
+  delay(delayTimeInit);
+  if(setCtrMode(START_FREQ_SWEEP) == false)
+  {
+#if LOGGING1
+    Serial.println("performFreqSweep - Failed to setting control bit!");
+#endif
+    return false;
+  }
+  
+  int t1=0;
+  while( (getByte(0x8F) & 0x04) != 0x04 )
+  {
+    delay(delayTimeInit);
+    arrSave[t1]=gainFactor/getMagOnce();
+#if LOGGING1
+    Serial.print("performFreqSweep - arrSave[");
+    Serial.print(t1);
+    Serial.print("] = ");
+    Serial.println(arrSave[t1]);  
+#endif
+    if(setCtrMode(INCR_FREQ) == false)
+    {
+#if LOGGING1
+      Serial.println("performFreqSweep - Failed to setting control bit!");
+#endif
+      return false;
+    }
+    t1++;
+    //getByte(0x80);
+  }
+  
+  return true;
+}
+
 double getGainFactor(double cResistance)
 {
   int ctrReg = getByte(0x80);
   setCtrMode(STAND_BY);
   setCtrMode(INIT_START_FREQ);
-  delay(100);
+  delay(delayTimeInit);
   setCtrMode(START_FREQ_SWEEP);
   
   double mag = getMagOnce();
@@ -227,7 +283,7 @@ boolean setSettlingCycles(int cycles, byte mult)
 
 boolean setNumofIncrement(int num)
 {
-  if(num > 0x1FF)
+  if(num > 0x1FF + 1)
   {
 #if LOGGING1
     Serial.print("setNumofIncrement - Freqeuncy Overflow!");
@@ -235,6 +291,8 @@ boolean setNumofIncrement(int num)
     return false;
   }
   
+  num--; // Decerement due to the internal interpresentation.
+  // If the value is 2, it performs 3 times.
   int lowerHex = num % 256;
   int upperHex = (num >> 8) % 2;
   
@@ -461,7 +519,7 @@ double getMagOnce()
 {
   while((getByte(0x8F) & 0x02) != 0x02)
   {
-    delay(100);
+    delay(delayTimeInit);
   }
   return getMagValue();  
 }
