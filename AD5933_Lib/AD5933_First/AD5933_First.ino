@@ -131,7 +131,13 @@ boolean performFreqSweep(double gainFactor, double *arrSave)
     t1++;
     //getByte(0x80);
   }
-  
+  if(setCtrMode(POWER_DOWN) == false)
+  {
+#if LOGGING1
+    Serial.println("performFreqSweep - Completed sweep, but failed to power down");
+#endif
+    return false;
+  }
   return true;
 }
 
@@ -152,6 +158,7 @@ double getGainFactor(double cResistance, int avgNum)
     t1++;  
   }
   double mag = tSum/(double)avgNum;
+  setCtrMode(STAND_BY);
   resetAD5933();
     // Gain Factor is different from one of the datasheet in this program. Reciprocal Value.
 #if LOGGING2
