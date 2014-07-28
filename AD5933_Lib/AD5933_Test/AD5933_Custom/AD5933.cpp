@@ -7,6 +7,8 @@
 //#include "HardwareSerial.h"
 //#include "wiring.h"
 
+AD5933_Class AD5933;
+
 bool AD5933_Class::performFreqSweep(double gainFactor, double *arrSave)
 {
   int ctrReg = getByte(0x80);
@@ -458,8 +460,8 @@ double AD5933_Class::getMagValue()
   rComp = getRealComp();
   iComp = getImagComp();
   double result = sqrt( square((double)rComp) + square((double)iComp) );
-#if LOGGING1 
-  Serial.print("getMag - Resistance Magnitude is ");
+#if LOGGING3 
+  Serial.print("getMagValue - Resistance Magnitude is ");
   Serial.println(result);
 #endif
   return result;

@@ -1,7 +1,7 @@
 #include "AD5933.h"
 #include <Wire.h>
 
-AD5933_Class AD5933;
+//AD5933_Class AD5933;
 
 const int numofIncrement = 2;
 
