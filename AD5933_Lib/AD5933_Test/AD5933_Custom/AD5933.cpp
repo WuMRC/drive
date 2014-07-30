@@ -353,11 +353,16 @@ byte AD5933_Class::getStatusReg()
 double AD5933_Class::getTemperature()
 {
   setByte(0x80,0x90); // Read Temp.
-  delay(100);
+  delay(delayTimeInit);
   
   int tTemp[2];
   long tTempVal;
   double cTemp;
+  
+  while( getByte(0x8F) & 0x01 != 0x01)
+  {
+  	; // Wait Until Get Vaild Temp. Measurement.
+  }
   
   tTemp[0]=getByte(0x92);
   tTemp[1]=getByte(0x93);
