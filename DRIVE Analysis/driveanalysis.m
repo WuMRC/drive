@@ -165,7 +165,7 @@ DATA_TO_ANALYZE = 1;
     filterType = 'gaussian';            % Should I prompt the user to select 
                                         % at the time?
   
-    
+    filterType = 20
     if strcmp(filterType,'average')
         filt = fspecial(filterType,[rowKernel, colKernel]);
     elseif strcmp(filterType,'disc')
@@ -189,6 +189,8 @@ DATA_TO_ANALYZE = 1;
         filt = fspecial(filterType);
     elseif strcmp(filterType,'sobel')
         filt = fspecial(filterType);
+    else
+        filt = ones(rowKernel, colKernel)
 
     end
     
@@ -216,7 +218,10 @@ DATA_TO_ANALYZE = 1;
             pos(:,:,ind+1) = perPixelTrack(currentFrameData, nextFrameData, filt,...
                 [rowKernel, colKernel], [rowSearch, colKernel], pos(:,:,ind));
             
-            prog = (ind*indPoints)/(total*nPoints);
+            imageTrack(pos(1,1,ind),pos(1,2,ind),ind) = 400;
+
+            
+            prog = (ind*(1+indPoints))/(total*nPoints);
             waitbar(prog,h,'Progress')
         end
         

@@ -4,13 +4,12 @@ function posNew = perPixelTrack(currentFrameData, nextFrameData, filt,...
 
 
 % Calculate the correlation
-[rho_c(:,:,ind)] = corr2D(currentFrameData, nextFrameData, filt, ...
+rho_c = corr2D(currentFrameData, nextFrameData, filt, ...
     kernel, search, posOriginal);
-rho_n(:,:,ind) = rho_c(:,:,ind)./max(max(rho_c(:,:,ind)));
+rho_n = rho_c./max(max(rho_c));
 
 % Calculate movement based on max correlation
-[rowMove(ind,indPoints), colMove(ind,indPoints)] = find(rho_n(:,:,ind) ...
-    == max(max(rho_n(:,:,ind))));
+[rowMove, colMove] = find(rho_n == max(max(rho_n)));
 
 % Need to compenate for drift and net motion of the image
 %         cornerOffset = 20;
