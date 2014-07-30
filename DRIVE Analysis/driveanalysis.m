@@ -114,8 +114,8 @@ end
 %%
 
 DATA_TO_ANALYZE = 1;
-%%
-for DATA_TO_ANALYZE = 1:1%length(timeMarkerBioimpedance)
+% %%
+% for DATA_TO_ANALYZE = 1:1%length(timeMarkerBioimpedance)
     clear rowMove colMove rowMove_total colMove_total posNew posOriginal
     
     %%
@@ -155,8 +155,43 @@ for DATA_TO_ANALYZE = 1:1%length(timeMarkerBioimpedance)
     rowKernel   = 5; colKernel   = 5;   % KERNEL SIZE
     rowSearch   = 5; colSearch   = 5;   % SEARCH WINDOW
     
-    filt = ones(5,5);
-   
+    % Select filter
+    % There should be a function to do this work
+%     filt = ones(5,5);
+    
+% Eventually on the GUI this will be a menu to select which sort of
+% filtering the user wants to use.
+
+    filterType = 'gaussian';            % Should I prompt the user to select 
+                                        % at the time?
+  
+    
+    if strcmp(filterType,'average')
+        filt = fspecial(filterType,[rowKernel, colKernel]);
+    elseif strcmp(filterType,'disc')
+        filt = fspecial(filterType,[rowKernel]);
+    elseif strcmp(filterType,'gaussian')
+        sigma = 0.5;
+        filt = fspecial(filterType,[rowKernel, colKernel],sigma);
+    elseif strcmp(filterType,'laplacian')
+        alpha = 0.5;
+        filt = fspecial(filterType,[rowKernel, colKernel],alpha);
+    elseif strcmp(filterType,'log') % Laplacian Of Gaussian (LOG)
+        sigma = 0.2;
+        filt = fspecial(filterType,[rowKernel, colKernel],sigma);
+        
+    % It is this motion filter that might ultimately benefit us the most
+    elseif strcmp(filterType,'motion')
+        len = 9;
+        theta = 0;
+        filt = fspecial(filterType,len,theta);
+    elseif strcmp(filterType,'prewitt')
+        filt = fspecial(filterType);
+    elseif strcmp(filterType,'sobel')
+        filt = fspecial(filterType);
+
+    end
+    
     
     %%
      
@@ -285,8 +320,8 @@ for DATA_TO_ANALYZE = 1:1%length(timeMarkerBioimpedance)
     %     (timeMarkerBioimpedance(1)+200*10)));
     % figure, plot(timeBioimpedance(biMax), bioimpedanceMax,'g*')
     
-    %%
-end
+%     %%
+% end
 
 %%
 % Using microblock analysis function
