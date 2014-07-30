@@ -1,29 +1,29 @@
-// Header File for AD5933
-#ifndef AD5933_Head
+// Header File for AD5933 Library
+#ifndef AD5933_Head // Pre-Processing code to prevent from duplicate declaration.
 #define AD5933_Head
 
-#include<math.h>
-#include<Wire.h>
+#include<math.h> // for math functions
+#include<Wire.h> // for I2C communications
 
 #define LOGGING1 1 // Basic Log, Error
 #define LOGGING2 0 // Related to Development Phase
 #define LOGGING3 0 // Detailed Log for Debugging
 
-#define AD5933_ADR 0x0D
+#define AD5933_ADR 0x0D // Device Serial Bus Address
 
-#define INIT_START_FREQ 1
+#define INIT_START_FREQ 1	// defined values for Control Register
 #define START_FREQ_SWEEP 2
 #define INCR_FREQ 3
 #define REPEAT_FREQ 4
 #define POWER_DOWN 10
 #define STAND_BY 11
 
-typedef uint8_t byte;
+typedef uint8_t byte; // For the compatibility for Arduino Type Definitions
 
 class AD5933_Class
 {
-public:
-	int delayTimeInit;
+public: // The detailed instruction will be on Wiki or ".cpp" file
+	int delayTimeInit; // for setting delay time.
 	double getTemperature();
 	double getMagOnce();
 	bool setStartFreq(long);
@@ -44,7 +44,7 @@ public:
 		delayTimeInit=100;
 		opClock = 16776000;
 	}
-	AD5933_Class(int delayTime)
+	AD5933_Class(int delayTime) // Another option of constructor
 	{
 		delayTimeInit=delayTime;
 		opClock = 16776000;
@@ -54,7 +54,7 @@ private:
 	int getByte(int);
 	bool setByte(int, int);
 	
-	static const byte Address_Ptr = 0xB0;
+	static const byte Address_Ptr = 0xB0; // Address Pointer to read register values.
 	double opClock;
 	int getRealComp();
 	int getImagComp();

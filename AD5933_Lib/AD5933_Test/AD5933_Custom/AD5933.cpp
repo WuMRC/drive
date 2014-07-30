@@ -2,27 +2,30 @@
 
 #include "AD5933.h"
 //#include <WProgram.h>
-#include <Arduino.h>
+#include <Arduino.h> // For the compatibility with Arduino Conventions.
 #include <WConstants.h>
-//#include "HardwareSerial.h"
-//#include "wiring.h"
 
 AD5933_Class AD5933;
 
 bool AD5933_Class::performFreqSweep(double gainFactor, double *arrSave)
+// Function to perform frequency Sweep, Just call it once to do it. It automatically do all the step.
+// double gainFactor - You need to call getGainFactor(double,int)
+//
+// double *arrSave - Just put the name of the array to save it. It should have right number of entries to save it. 
+// If not, hidden error will be occur.
 {
-  int ctrReg = getByte(0x80);
+  int ctrReg = getByte(0x80); // Get the content of Control Register and put it into ctrReg
   if(setCtrMode(STAND_BY) == false)
   {
 #if LOGGING1
-    Serial.println("performFreqSweep - Failed to setting control bit!");
+    Serial.println("performFreqSweep - Failed to setting Stand By Status!");
 #endif
     return false;
   }
   if(setCtrMode(INIT_START_FREQ) == false)
   {
 #if LOGGING1
-    Serial.println("performFreqSweep - Failed to setting control bit!");
+    Serial.println("performFreqSweep - Failed to setting initialization with starting frequency!");
 #endif
     return false;
   }
@@ -30,16 +33,16 @@ bool AD5933_Class::performFreqSweep(double gainFactor, double *arrSave)
   if(setCtrMode(START_FREQ_SWEEP) == false)
   {
 #if LOGGING1
-    Serial.println("performFreqSweep - Failed to setting control bit!");
+    Serial.println("performFreqSweep - Failed to set to start frequency sweeping!");
 #endif
     return false;
   }
   
   int t1=0;
-  while( (getByte(0x8F) & 0x04) != 0x04 )
+  while( (getByte(0x8F) & 0x04) != 0x04 ) // Loop while if the entire sweep in not complete
   {
     delay(delayTimeInit);
-    arrSave[t1]=gainFactor/getMagOnce();
+    arrSave[t1]=gainFactor/getMagOnce(); // Calculated with Gain Factor
 #if LOGGING1
     Serial.print("performFreqSweep - arrSave[");
     Serial.print(t1);
@@ -49,7 +52,7 @@ bool AD5933_Class::performFreqSweep(double gainFactor, double *arrSave)
     if(setCtrMode(INCR_FREQ) == false)
     {
 #if LOGGING1
-      Serial.println("performFreqSweep - Failed to setting control bit!");
+      Serial.println("performFreqSweep - Failed to set for increasing frequency!");
 #endif
       return false;
     }
@@ -63,27 +66,61 @@ bool AD5933_Class::performFreqSweep(double gainFactor, double *arrSave)
 #endif
     return false;
   }
-  return true;
+  return true; // Succeed!
 }
 
 double AD5933_Class::getGainFactor(double cResistance, int avgNum)
+// A function to get Gain Factor. It performs one impedance measurement in start frequency.
+// double cResistance - Calibration Resistor Value
+// avgNum - number of measurement for averaging.
+// Returns -1 if error occurs.
 {
-  int ctrReg = getByte(0x80);
-  setCtrMode(STAND_BY);
-  setCtrMode(INIT_START_FREQ);
+  int ctrReg = getByte(0x80); // Get the content of Control Register and put it into ctrReg
+  if(setCtrMode(STAND_BY) == false)
+  {
+#if LOGGING1
+    Serial.println("getGainFactor - Failed to setting Stand By Status!");
+#endif
+    return -1;
+  }
+  if(setCtrMode(INIT_START_FREQ) == false)
+  {
+#if LOGGING1
+    Serial.println("getGainFactor  - Failed to setting initialization with starting frequency!");
+#endif
+    return -1;
+  }
   delay(delayTimeInit);
-  setCtrMode(START_FREQ_SWEEP);
+  if(setCtrMode(START_FREQ_SWEEP) == false)
+  {
+#if LOGGING1
+    Serial.println("getGainFactor - Failed to set to start frequency sweeping!");
+#endif
+    return -1;
+  }
   
   int t1 = 0;
   long tSum = 0;
-  while(t1 < avgNum)
+  while(t1 < avgNum) // Until reached pre-defined number for averaging.
   {
     tSum += getMagOnce();
-    setCtrMode(REPEAT_FREQ);
+    if(setCtrMode(REPEAT_FREQ) == false)
+    {
+#if LOGGING1
+    	Serial.println("getGainFactor - Failed to set to repeat this frequency!");
+#endif
+    	return -1;
+    }
     t1++;  
   }
   double mag = tSum/(double)avgNum;
-  setCtrMode(STAND_BY);
+  if( setCtrMode(STAND_BY) == false)
+  {
+#if LOGGING1
+	Serial.println("getGainFactor - Failed to set into Stand-By Status");
+#endif  	
+  	return -1;
+  }
   resetAD5933();
     // Gain Factor is different from one of the datasheet in this program. Reciprocal Value.
 #if LOGGING2
@@ -96,18 +133,22 @@ double AD5933_Class::getGainFactor(double cResistance, int avgNum)
 }
 
 double AD5933_Class::getGainFactor(double cResistance)
+// Calculate Gain Factor with measuring once.
 {
   return getGainFactor(cResistance, 1);
 }
 
 bool AD5933_Class::setCtrMode(byte modetoSet)
+// setting Control Register to change control mode without assuming control register. (0x80)
 {
   return setCtrMode(modetoSet, getByte(0x80));
 }
 
 bool AD5933_Class::setCtrMode(byte modetoSet, int ctrReg)
+// setting Control Register to change control mode.
+//
 {
-  ctrReg &= 0x0F;
+  ctrReg &= 0x0F; // Get the last 4 digits.
   switch(modetoSet)
   {
     case INIT_START_FREQ:
@@ -132,14 +173,20 @@ bool AD5933_Class::setCtrMode(byte modetoSet, int ctrReg)
 #if LOGGING1
       Serial.println("setCtrMode - Invalid Parameter!");
 #endif
-      return false;
+      return false; // return the signal of fail if there is not valid parameter.
       break;
   } 
-  return setByte(0x80, ctrReg);
+  return setByte(0x80, ctrReg); // return signal depends on the result of setting control register.
  
 }
 
 bool AD5933_Class::setVolPGA(byte voltageNum, byte pgaGain)
+// Function to set sweep voltage and PGA Gain
+// byte voltageNum - Refer to Table 10 in datasheet
+// 1 - 2.0Vpp 	2 - 200mVpp		3- 400mVpp		4- 1.0Vpp
+// (They are typical values with 3.3V power supply. See Figure 4-10 in datasheet)
+// byte pgaGain - determines the gain of ADC signal. (to convert the current into the value)
+//
 {
   if( (voltageNum < 0 || voltageNum > 3) || !(pgaGain == 1 || pgaGain == 5) )  
   {
@@ -148,9 +195,9 @@ bool AD5933_Class::setVolPGA(byte voltageNum, byte pgaGain)
 #endif
     return false;
   } 
-  int temp = getByte(0x80);
-  temp &= 0xF0;
-  temp |= voltageNum << 1;
+  int temp = getByte(0x80); // Get the content of Control Register and put it into temp
+  temp &= 0xF0; // discard the last 4 digits.
+  temp |= voltageNum << 1; // Shift one digits to fit in D9 and D10. (p 23-24/40 in datasheet)
   if(pgaGain == 1)
     temp |= 0x01;
   else
@@ -298,7 +345,7 @@ bool AD5933_Class::setIncrementinHex(long freqHex)
   
 }
 
-bool AD5933_Class::setStartFreq(long startFreq)
+bool AD5933_Class::setStartFreq(long startFreq) // long startFreq in Hz
 {
 #if LOGGING3
   //double t1 = opClock / pow(2,29);
