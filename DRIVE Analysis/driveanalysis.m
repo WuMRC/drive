@@ -117,6 +117,7 @@ DATA_TO_ANALYZE = 1;
 % %%
 % for DATA_TO_ANALYZE = 1:1%length(timeMarkerBioimpedance)
     clear rowMove colMove rowMove_total colMove_total posNew posOriginal
+    clear rowKernel colKernel rowSearch colSearch
     
     %%
     ultrasoundFile = ultrasoundFileArray(DATA_TO_ANALYZE).name;
@@ -146,8 +147,8 @@ DATA_TO_ANALYZE = 1;
     level = graythresh(image_roiNORM(:,:,1));
     imageTrackBW = im2bw(image_roiNORM(:,:,1),level);
     % imageTrackEDGE = edge(currentFrameData.*imageTrackBW,'sobel');
-    imageTrackFILT = image_roiNORM(:,:,1).*imageTrackBW;
-    imagesc(imageTrackFILT)
+%     imageTrackFILT = image_roiNORM(:,:,1).*imageTrackBW;
+%     imagesc(imageTrackFILT)
     
     
     %%
@@ -165,7 +166,7 @@ DATA_TO_ANALYZE = 1;
     filterType = 'gaussian';            % Should I prompt the user to select 
                                         % at the time?
   
-    filterType = 20
+%     filterType = 20
     if strcmp(filterType,'average')
         filt = fspecial(filterType,[rowKernel, colKernel]);
     elseif strcmp(filterType,'disc')
@@ -181,6 +182,8 @@ DATA_TO_ANALYZE = 1;
         filt = fspecial(filterType,[rowKernel, colKernel],sigma);
         
     % It is this motion filter that might ultimately benefit us the most
+    % Need to determine the angle of the vessel to implement wall motion
+    % filter design
     elseif strcmp(filterType,'motion')
         len = 9;
         theta = 0;
@@ -190,7 +193,7 @@ DATA_TO_ANALYZE = 1;
     elseif strcmp(filterType,'sobel')
         filt = fspecial(filterType);
     else
-        filt = ones(rowKernel, colKernel)
+        filt = ones(rowKernel, colKernel);
 
     end
     
@@ -221,7 +224,7 @@ DATA_TO_ANALYZE = 1;
             imageTrack(pos(1,1,ind),pos(1,2,ind),ind) = 400;
 
             
-            prog = (ind*(1+indPoints))/(total*nPoints);
+            prog = (ind+(indPoints-1)*ind)/(total*nPoints);
             waitbar(prog,h,'Progress')
         end
         
@@ -330,9 +333,12 @@ DATA_TO_ANALYZE = 1;
 
 %%
 % Using microblock analysis function
-total = nFrames-1;
-frame2frame = 2;
-ctotal = microblockanalysis(image_roiNORM,10,1);
+% total = nFrames-1;
+blockSize = 10;
+frame2frame = 1;
+ctotal = microblockanalysis(image_roiNORM,blockSize,frame2frame);
+
+
 
 %%
 clear, close, clc
