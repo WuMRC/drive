@@ -17,6 +17,7 @@
 #define REPEAT_FREQ 4
 #define POWER_DOWN 10
 #define STAND_BY 11
+#define TEMP_MEASURE 9
 
 typedef uint8_t byte; // For the compatibility for Arduino Type Definitions
 

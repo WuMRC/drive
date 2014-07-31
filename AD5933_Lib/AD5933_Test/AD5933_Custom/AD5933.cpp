@@ -169,6 +169,9 @@ bool AD5933_Class::setCtrMode(byte modetoSet, int ctrReg)
     case STAND_BY:
       ctrReg |= 0xB0;
       break;
+    case TEMP_MEASURE:
+      ctrReg |= 0x90;
+      break;
     default:
 #if LOGGING1
       Serial.println("setCtrMode - Invalid Parameter!");
@@ -199,36 +202,39 @@ bool AD5933_Class::setVolPGA(byte voltageNum, byte pgaGain)
   temp &= 0xF0; // discard the last 4 digits.
   temp |= voltageNum << 1; // Shift one digits to fit in D9 and D10. (p 23-24/40 in datasheet)
   if(pgaGain == 1)
-    temp |= 0x01;
+    temp |= 0x01; // if PGA Gain is x1, then write 1 at D8.
   else
-    temp &= 0xFE;
+    temp &= 0xFE; // if PGA Gain is x5, then write 0 at D8.
 #if LOGGING2
   Serial.print("setVolPGA - Final Value to Set: ");
   Serial.println(temp, BIN);
 #endif
-  return setByte(0x80,temp);
+  return setByte(0x80,temp); // Write value at 0x80 Register.
 }
 
 bool AD5933_Class::setExtClock(bool swt)
+// A function to enable/disable external clock.
+// This function also sets environmental variable. (double opClock)
 {
   byte t1;
   if( swt )
   {
-    t1 = 0x04;
+    t1 = 0x04; // Use Ext. Clock
     opClock = 16000000;
   }
   else
   {
-    t1 = 0x00;
+    t1 = 0x00; // Use Int. Clock
     opClock = 16776000;
   }  
-  return setByte(0x81, t1);
+  return setByte(0x81, t1); // Write register 0x81.
 }
 
 bool AD5933_Class::resetAD5933()
+// Set Reset Bit(D4) in control register 0x81.
 {
-  int temp = (getByte(0x81) & 0x04);
-  return setByte(0x81, (temp | 0x10));
+  int temp = (getByte(0x81) & 0x04); // Read 0x81 with retrieving D3
+  return setByte(0x81, (temp | 0x10)); // Set D4 as 1 (Reset Bit)
 }
 
 bool AD5933_Class::setSettlingCycles(int cycles, byte mult)
@@ -242,8 +248,8 @@ bool AD5933_Class::setSettlingCycles(int cycles, byte mult)
   }
   int lowerHex = cycles % 256;
   int upperHex = ((cycles - (long)lowerHex) >> 8) % 2;
-  byte t1;
-  switch(mult)
+  byte t1; // Parsing upper and lower bits.
+/*switch(mult)
   {
     case 1:
       t1 = 0;
@@ -260,8 +266,10 @@ bool AD5933_Class::setSettlingCycles(int cycles, byte mult)
 #endif
     return false;
     break;    
-  }
-  upperHex |= (t1 << 1);
+  }*/
+  t1--; // Enhanced Code for setting t1.
+  upperHex |= (t1 << 1); 	// t1 is for D9, D10. The upperHex just accounts for D8. Thus, the value after left-shifting t1 accounts for D9, D10.
+  							// Thus, this above writes bits for D9, D10.
 #if LOGGING2
   Serial.print("setSettlingCycles - upper: ");
   Serial.println(upperHex,BIN);
@@ -269,8 +277,8 @@ bool AD5933_Class::setSettlingCycles(int cycles, byte mult)
   bool t2, t3;
   t2=setByte(0x8A, upperHex);
   t3=setByte(0x8B, lowerHex);
-  if( t2 && t3 )
-    return true;
+  if( t2 && t3 ) // Checking if successful.
+    return true;  // Succeed! 
   else
   {
 #if LOGGING1
@@ -281,25 +289,27 @@ bool AD5933_Class::setSettlingCycles(int cycles, byte mult)
 }
 
 bool AD5933_Class::setNumofIncrement(int num)
+// Function to set the number of incrementing.
+// int num - the number of incrementing.
 {
   if(num > 0x1FF + 1)
   {
 #if LOGGING1
-    Serial.print("setNumofIncrement - Freqeuncy Overflow!");
+    Serial.print("setNumofIncrement - Frequency Overflow!");
 #endif
     return false;
   }
   
-  num--; // Decerement due to the internal interpresentation.
-  // If the value is 2, it performs 3 times.
+  num--; 	// Decrement due to the internal interpretation.
+	  		// Example: If the value is 2, it performs 3 times.
   int lowerHex = num % 256;
-  int upperHex = (num >> 8) % 2;
+  int upperHex = (num >> 8) % 2; // Parsing number for register input.
   
   bool t2, t4;
   t2 = setByte(0x88, upperHex);
   t4 = setByte(0x89, lowerHex);
   if(t2 && t4)
-    return true;
+    return true; // Succeed!
   else
   {
 #if LOGGING1
@@ -310,12 +320,17 @@ bool AD5933_Class::setNumofIncrement(int num)
 }
 
 bool AD5933_Class::setIncrement(long increment)
+// Function to set increment frequency.
+// Because the increment frequency should be converted into unique Hexadecimal number, it approximately calculates the Hex value.
+// long increment - increment frequency in Hz.
 {
-  long freqHex = increment / (opClock / pow(2, 29));
-  return setIncrementinHex(freqHex);
+  long freqHex = increment / (opClock / pow(2, 29)); // Based on the data sheet.
+  return setIncrementinHex(freqHex); // Call setIncrementinHex(long);
 }
 
 bool AD5933_Class::setIncrementinHex(long freqHex)
+// Function to set increment frequency in converted Hex value. (calculated based on the datasheet.)
+// long freqHex - converted hexadecimal value
 {
   if(freqHex > 0xFFFFFF)
   {
@@ -334,7 +349,7 @@ bool AD5933_Class::setIncrementinHex(long freqHex)
   t3 = setByte(0x86, midHex);
   t4 = setByte(0x87, lowerHex);
   if(t2 && t3 && t4)
-    return true;
+    return true; // Succeed!
   else
   {
 #if LOGGING1
@@ -351,7 +366,7 @@ bool AD5933_Class::setStartFreq(long startFreq) // long startFreq in Hz
   //double t1 = opClock / pow(2,29);
   //Serial.println(t1);
 #endif
-  long freqHex = startFreq / (opClock / pow(2, 29));
+  long freqHex = startFreq / (opClock / pow(2, 29)); // based on datasheet
   if(freqHex > 0xFFFFFF)
   {
 #if LOGGING1
@@ -382,7 +397,7 @@ bool AD5933_Class::setStartFreq(long startFreq) // long startFreq in Hz
   t3 = setByte(0x83, midHex);
   t4 = setByte(0x84, lowerHex);
   if(t2 && t3 && t4)
-    return true;
+    return true; // succeed!
   else
   {
 #if LOGGING1
@@ -392,14 +407,22 @@ bool AD5933_Class::setStartFreq(long startFreq) // long startFreq in Hz
   }
 }
 
-byte AD5933_Class::getStatusReg()
+byte AD5933_Class::getStatusReg() // TODO: I might try to change into inline function. / Make functions use this.
 {
   return getByte(0x8F) & 0x07;
 }
 
 double AD5933_Class::getTemperature()
+// Function to get temperature measurement.
 {
-  setByte(0x80,0x90); // Read Temp.
+  //setByte(0x80,0x90); // Read Temp. TODO: use function.
+  if(setCtrMode(TEMP_MEASURE) == false)
+  {
+#if LOGGING1
+	Serial.println("getTemperature - Failed to set the control bit");
+#endif
+  	return false;
+  }
   delay(delayTimeInit);
   
   int tTemp[2];
@@ -411,17 +434,17 @@ double AD5933_Class::getTemperature()
   	; // Wait Until Get Vaild Temp. Measurement.
   }
   
-  tTemp[0]=getByte(0x92);
-  tTemp[1]=getByte(0x93);
+  tTemp[0] = getByte(0x92);
+  tTemp[1] = getByte(0x93);
   tTempVal = (tTemp[0] % (12 * 16))*16*16 + tTemp[1];
   if(bitRead(tTemp[0],5) == 0)
   {
-    // Positive
+    // Positive Formula
     cTemp = (double)tTempVal/32;
   }
   else
   {
-    // Negative
+    // Negative Formula
     cTemp = (tTempVal-16384.0) / 32;
   }
  #if LOGGING1
@@ -435,6 +458,7 @@ double AD5933_Class::getTemperature()
 
 
 int AD5933_Class::getByte(int address) {
+// Hidden Function to get register value via I2C Transmission.
 
   int rxByte;
 #if LOGGING3  
@@ -443,10 +467,10 @@ int AD5933_Class::getByte(int address) {
   Serial.print('\n');
 #endif
   
-  Wire.beginTransmission(AD5933_ADR);
-  Wire.write(Address_Ptr);
-  Wire.write(address);
-  int i2cReturn = Wire.endTransmission();
+  Wire.beginTransmission(AD5933_ADR); // Begin I2C Transmission with AD5933 Chip.
+  Wire.write(Address_Ptr); // Send Address Pointer to write the target address
+  Wire.write(address); // Write address to read.
+  int i2cReturn = Wire.endTransmission(); // End Transmission.
 
 #if LOGGING3
   Serial.print("getByte - Transmission Complete. i2cReturn: ");
@@ -454,10 +478,10 @@ int AD5933_Class::getByte(int address) {
   Serial.print("\n");
 #endif  
   
-  Wire.requestFrom(AD5933_ADR, 1);
+  Wire.requestFrom(AD5933_ADR, 1); // Request the value of the written address.
 
-  if (1 <= Wire.available()) {
-    rxByte = Wire.read();
+  if (1 <= Wire.available()) { // If the MCU get the value,
+    rxByte = Wire.read(); // Read the value.
 #if LOGGING3   
     Serial.print("getByte - Message Received: ");
     Serial.print(rxByte,BIN);
@@ -467,7 +491,7 @@ int AD5933_Class::getByte(int address) {
 #endif
   } 
   else {
-    rxByte = -1;
+    rxByte = -1; // Returns -1 if fails.
 #if LOGGING1
     Serial.println("getByte - Failed to receive Message");
 #endif
@@ -478,6 +502,7 @@ int AD5933_Class::getByte(int address) {
 }
 
 bool AD5933_Class::setByte(int address, int value) {
+// Hidden Function to transmit the value to write.
 #if LOGGING3   
   Serial.print("setByte - Initiating I2C Transmission. Address: ");
   Serial.print(address, HEX);
@@ -485,10 +510,10 @@ bool AD5933_Class::setByte(int address, int value) {
   Serial.print(value, HEX);
   Serial.print('\n');
 #endif  
-  Wire.beginTransmission(AD5933_ADR);
-  Wire.write(address);
-  Wire.write(value);
-  int i2cReturn = Wire.endTransmission();
+  Wire.beginTransmission(AD5933_ADR); // Begin I2C Transmission.
+  Wire.write(address); // Write Address
+  Wire.write(value); // Write Value
+  int i2cReturn = Wire.endTransmission(); // Terminate the transmission.
 
   if (i2cReturn)
   {
@@ -507,11 +532,12 @@ bool AD5933_Class::setByte(int address, int value) {
 }
 
 double AD5933_Class::getMagValue()
+// Hidden Function to get magnitude value of impedance measurement. (It does not wait.)
 {
   int rComp, iComp;
-  rComp = getRealComp();
-  iComp = getImagComp();
-  double result = sqrt( square((double)rComp) + square((double)iComp) );
+  rComp = getRealComp(); // Getting Real Component
+  iComp = getImagComp(); // Getting Imaginary Component
+  double result = sqrt( square((double)rComp) + square((double)iComp) ); // Calculating magnitude.
 #if LOGGING3 
   Serial.print("getMagValue - Resistance Magnitude is ");
   Serial.println(result);
@@ -520,8 +546,9 @@ double AD5933_Class::getMagValue()
 }
 
 double AD5933_Class::getMagOnce()
+// Wrapper Function of getMagValue. It waits until the ADC completes the conversion.
 {
-  while((getByte(0x8F) & 0x02) != 0x02)
+  while((getByte(0x8F) & 0x02) != 0x02) // wait until ADC conversion is complete.
   {
     delay(delayTimeInit);
   }
@@ -529,6 +556,7 @@ double AD5933_Class::getMagOnce()
 }
 
 int AD5933_Class::getRealComp()
+// Function to get real component.
 {
   int mReal, lReal;
   int result;
@@ -550,6 +578,7 @@ int AD5933_Class::getRealComp()
 }
 
 int AD5933_Class::getImagComp()
+// Function to get imaginary component.
 {
   int mImag, lImag;
   int result;
