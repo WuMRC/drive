@@ -35,7 +35,7 @@ a text file, and repeat, at a sample rate of 200 times/sec.
 //---
 
 #include <Wire.h> //Library for I2C communications
-#include <AD5933.h> //Library for AD5933 functions (must be installed)
+#include "AD5933.h" //Library for AD5933 functions (must be installed)
 
 void setup()
 {
@@ -49,7 +49,7 @@ void setup()
   //--- A. Initialization and Calibration Meassurement ---
   
   //[A.1] Set the measurement frequency
-  if (setStartFreq(start_frequency) == true)
+  if (AD5933.setStartFreq(start_frequency) == true)
   {
     #if VERBOSE
     Serial.print("Start frequency set to: ");
@@ -66,11 +66,11 @@ void setup()
   //End [A.1]
   
   //[A.2] Set a number of settling time cycles
-  if (setSettlingCycles(cyces_base, cyles_multiplier) == true)
+  if (AD5933.setSettlingCycles(cycles_base, cycles_multiplier) == true)
   {
     #if VERBOSE
     Serial.print("Settling cycles set to: ");
-    Serial.print(cycles_base*cycles_multiple);
+    Serial.print(cycles_base*cycles_multiplier);
     Serial.println(" cycles.");
     #endif
   }
@@ -85,7 +85,7 @@ void setup()
   //[A.3] Calculate the gain factor (needs cal resistance, # of measurements)
   //Note: The gain factor finding function returns the INVERSE of the factor
   //as defined on the datasheet!
-  long gain_factor = getGainFactor(cal_resistance, cal_samples);
+  long gain_factor = AD5933.getGainFactor(cal_resistance, cal_samples);
   if (gain_factor != -1)
   {
     #if VERBOSE
@@ -115,7 +115,7 @@ void setup()
   //repeat single magnitude capture command.
   
   //[B.1] Issue a "repeat frequency" command.
-  if (setCtrMode(REPEAT_FREQ) == true)
+  if (AD5933.setCtrMode(REPEAT_FREQ) == true)
   {
     #if VERBOSE
     Serial.print("Repeat_Frequency command sent.");
@@ -151,7 +151,7 @@ void setup()
 
 void loop()
 {
-  Serial.println("Looping!")
+  Serial.println("Looping!");
   delay(1000);
 }
 
