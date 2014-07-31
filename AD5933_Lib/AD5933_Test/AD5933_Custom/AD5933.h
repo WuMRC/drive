@@ -60,7 +60,10 @@ private:
 	int getRealComp();
 	int getImagComp();
 	double getMagValue();
-	byte getStatusReg();
+	inline byte getStatusReg()
+	{
+		return getByte(0x8F) & 0x07;
+	}
 	
 };
 

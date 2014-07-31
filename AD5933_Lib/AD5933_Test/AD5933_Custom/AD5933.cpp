@@ -39,7 +39,7 @@ bool AD5933_Class::performFreqSweep(double gainFactor, double *arrSave)
   }
   
   int t1=0;
-  while( (getByte(0x8F) & 0x04) != 0x04 ) // Loop while if the entire sweep in not complete
+  while( (getStatusReg() & 0x04) != 0x04 ) // Loop while if the entire sweep in not complete
   {
     delay(delayTimeInit);
     arrSave[t1]=gainFactor/getMagOnce(); // Calculated with Gain Factor
@@ -407,15 +407,15 @@ bool AD5933_Class::setStartFreq(long startFreq) // long startFreq in Hz
   }
 }
 
-byte AD5933_Class::getStatusReg() // TODO: I might try to change into inline function. / Make functions use this.
-{
-  return getByte(0x8F) & 0x07;
-}
+//byte AD5933_Class::getStatusReg() // TODO: I might try to change into inline function. / Make functions use this.
+//{
+//  return getByte(0x8F) & 0x07;
+//}
 
 double AD5933_Class::getTemperature()
 // Function to get temperature measurement.
 {
-  //setByte(0x80,0x90); // Read Temp. TODO: use function.
+  //setByte(0x80,0x90); // Read Temp. 
   if(setCtrMode(TEMP_MEASURE) == false)
   {
 #if LOGGING1
@@ -429,7 +429,7 @@ double AD5933_Class::getTemperature()
   long tTempVal;
   double cTemp;
   
-  while( getByte(0x8F) & 0x01 != 0x01)
+  while( getStatusReg() & 0x01 != 0x01)
   {
   	; // Wait Until Get Vaild Temp. Measurement.
   }
@@ -548,7 +548,7 @@ double AD5933_Class::getMagValue()
 double AD5933_Class::getMagOnce()
 // Wrapper Function of getMagValue. It waits until the ADC completes the conversion.
 {
-  while((getByte(0x8F) & 0x02) != 0x02) // wait until ADC conversion is complete.
+  while((getStatusReg() & 0x02) != 0x02) // wait until ADC conversion is complete.
   {
     delay(delayTimeInit);
   }
