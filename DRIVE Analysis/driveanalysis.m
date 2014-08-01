@@ -163,10 +163,10 @@ DATA_TO_ANALYZE = 1;
 % Eventually on the GUI this will be a menu to select which sort of
 % filtering the user wants to use.
 
-    filterType = 'gaussian';            % Should I prompt the user to select 
+%     filterType = 'gaussian';            % Should I prompt the user to select 
                                         % at the time?
   
-%     filterType = 20
+    filterType = 20
     if strcmp(filterType,'average')
         filt = fspecial(filterType,[rowKernel, colKernel]);
     elseif strcmp(filterType,'disc')
@@ -236,6 +236,7 @@ DATA_TO_ANALYZE = 1;
     
     %%
     % Ultrasound analysis
+    % ERROR, POIROW NO LONGER EXISTS
     diameter = sqrt((poiRow(:,1)-poiRow(:,2)).^2 + (poiCol(:,1)-poiCol(:,2)).^2);
     diameterSMOOTH = smooth(diameter,35/2);
     diameterSMOOTHER = smooth(diameterSMOOTH,25);
