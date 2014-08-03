@@ -24,7 +24,7 @@ a text file, and repeat, at a sample rate of 200 times/sec.
 #define start_frequency 50000 //Set the start frequency, the only one of
                               //interest here(50 kHz).
 
-#define cal_resistance 5000 //Set a calibration resistance for the gain
+#define cal_resistance 4600 //Set a calibration resistance for the gain
                             //factor. This will have to be measured before any
                             //other measurements are performed.
                            
@@ -35,21 +35,42 @@ a text file, and repeat, at a sample rate of 200 times/sec.
 //---
 
 #include <Wire.h> //Library for I2C communications
-#include "AD5933.h" //Library for AD5933 functions (must be installed)
+#include <AD5933.h> //Library for AD5933 functions (must be installed)
 
 void setup()
 {
   #if VERBOSE
   Serial.begin(9600); //Initialize serial communication for debugging.
   Serial.println("Program start!");
+  delay(1000);
   #endif
-  delay(3000);
+  
   Wire.begin();
+  delay(1000);
+  
+  //[A.X] Send a reset command to the AD5933.
+  if(AD5933.resetAD5933() == true)
+  {
+    #if VERBOSE
+    Serial.println("Reset command sent.");
+    delay(1000);
+    #endif
+  }
+  else
+  {
+    #if VERBOSE
+    Serial.println("Error sending reset command!");
+    delay(1000);
+    #endif
+  }
+  //End [A.X]
+
   
   //--- A. Initialization and Calibration Meassurement ---
   
-  //[A.0] Set the operational clock to internal
-  AD5933.setExtClock(1);
+  //[A.0] Set the clock for internal/external frequency (needed?)
+  //Set the operational clock to internal
+  //AD5933.setExtClock(0);
   
   //[A.1] Set the measurement frequency
   if (AD5933.setStartFreq(start_frequency) == true)
@@ -69,7 +90,7 @@ void setup()
     #endif
   }
   //End [A.1]
-  
+
   //[A.2] Set a number of settling time cycles
   if (AD5933.setSettlingCycles(cycles_base, cycles_multiplier) == true)
   {
@@ -111,6 +132,8 @@ void setup()
     #endif
   } 
   //End [A.3]
+
+
   
   //--- End A ---
 
@@ -127,14 +150,14 @@ void setup()
   if (AD5933.setCtrMode(REPEAT_FREQ) == true)
   {
     #if VERBOSE
-    Serial.print("Repeat_Frequency command sent.");
+    Serial.println("Repeat_Frequency command sent.");
     delay(1000);
     #endif
   }
   else
   {
     #if VERBOSE
-    Serial.print("Error sending Repeat_Frequency command!");
+    Serial.println("Error sending Repeat_Frequency command!");
     delay(1000);
     #endif
   }
@@ -159,12 +182,13 @@ void setup()
   if (measurement_status = B00000010)
   {
     #if VERBOSE
-    Serial.print("Valid measurement data present.");
+    Serial.println("Valid measurement data present.");
     delay(1000);
     #endif
     
     //[B.2.1] Capture the magnitude from real & imaginary registers.
-    double Z_magnitude = AD5933.getMagOnce();
+    long Z_magnitude = AD5933.getMagValue();
+    delay(3000);
     #if VERBOSE
     Serial.print("Magnitude found to be: ");
     Serial.println(Z_magnitude);
@@ -172,6 +196,7 @@ void setup()
     #endif
     //End [B.2.1]
   
+    /*
     //[B.2.2] Calculate the impedance using the magnitude and gain factor.
     double Z_value = gain_factor/Z_magnitude;
     #if VERBOSE
@@ -186,7 +211,7 @@ void setup()
     Serial.print("Impedance = ");
     Serial.print(Z_value);
     Serial.println(" Ohms.");
-  
+    */
   }
   
   //... else, there is an error with the current measurement.
@@ -200,7 +225,10 @@ void setup()
   //End [B.3]
   
   // --- End B ---    
+
 }
+
+
 
 void loop()
 {
