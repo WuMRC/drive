@@ -48,6 +48,9 @@ void setup()
   
   //--- A. Initialization and Calibration Meassurement ---
   
+  //[A.0] Set the operational clock to internal
+  AD5933.setExtClock(1);
+  
   //[A.1] Set the measurement frequency
   if (AD5933.setStartFreq(start_frequency) == true)
   {
@@ -55,12 +58,14 @@ void setup()
     Serial.print("Start frequency set to: ");
     Serial.print(start_frequency);
     Serial.println (" Hz.");
+    delay(1000);
     #endif
   }
   else
   {
     #if VERBOSE
     Serial.print("Error setting start frequency!");
+    delay(1000);
     #endif
   }
   //End [A.1]
@@ -72,12 +77,14 @@ void setup()
     Serial.print("Settling cycles set to: ");
     Serial.print(cycles_base*cycles_multiplier);
     Serial.println(" cycles.");
+    delay(1000);
     #endif
   }
   else
   {
     #if VERBOSE
     Serial.print("Error setting settling cycles!");
+    delay(1000);
     #endif
   }
   //End [A.2]
@@ -93,12 +100,14 @@ void setup()
     Serial.print(cal_samples);
     Serial.print(" samples) is: ");
     Serial.println(gain_factor);
+    delay(1000);
     #endif
   }
   else
   {
     #if VERBOSE
     Serial.print("Error calculating gain factor!");
+    delay(1000);
     #endif
   } 
   //End [A.3]
@@ -119,31 +128,75 @@ void setup()
   {
     #if VERBOSE
     Serial.print("Repeat_Frequency command sent.");
+    delay(1000);
     #endif
   }
   else
   {
     #if VERBOSE
     Serial.print("Error sending Repeat_Frequency command!");
+    delay(1000);
     #endif
   }
   //End [B.1]
   
   //[B.2] Check the status register to ensure measurement is complete (i.e.
-  // the 7th bit is 1). If TRUE...
-    
-    //[B.2.1] Capture the magnitude from real & imaginary registers.
-  
-    //[B.2.2] Calculate the impedance using the magnitude and gain factor.
-    
-    //[B.2.3] Output the impedance value (serial, array, etc.)
-  
+  // the 7th bit is 1). This may not be necessary given wait built into library.
+  Wire.beginTransmission(0x0D); //Open communications to to AD5933.
+  Wire.write(B10110000); //Send the "pointer" commmand.
+  Wire.write(0x8F); //Send the address for the pointer (status register).
+  Wire.endTransmission(); //Close communications.
+  Wire.requestFrom(0x0D, 1); //Request the data byte stored in the register 
+                             //the pointer is at. 
+  byte register_0x8F =Wire.read(); //Store the data in a byte variable.
+  byte measurement_status = register_0x8F &= B00000010; //Isolate the register
+                                                        //bit showing status of
+                                                        //real and imaginary
+                                                        //registers.
   //End [B.2]
   
-  //[B.3] ELSE:
+  //[B.3] If a successful measurement was taken...
+  if (measurement_status = B00000010)
+  {
+    #if VERBOSE
+    Serial.print("Valid measurement data present.");
+    delay(1000);
+    #endif
     
-    //Wait (delay time? until complete?) or iterate loop.
-
+    //[B.2.1] Capture the magnitude from real & imaginary registers.
+    double Z_magnitude = AD5933.getMagOnce();
+    #if VERBOSE
+    Serial.print("Magnitude found to be: ");
+    Serial.println(Z_magnitude);
+    delay(1000);
+    #endif
+    //End [B.2.1]
+  
+    //[B.2.2] Calculate the impedance using the magnitude and gain factor.
+    double Z_value = gain_factor/Z_magnitude;
+    #if VERBOSE
+    Serial.print("Impedance found to be: ");
+    Serial.print(Z_value);
+    Serial.println(" Ohms.");
+    delay(1000);
+    #endif
+    //End [B.2.2]
+    
+    //[B.2.3] Output the impedance value (serial, array, etc.)
+    Serial.print("Impedance = ");
+    Serial.print(Z_value);
+    Serial.println(" Ohms.");
+  
+  }
+  
+  //... else, there is an error with the current measurement.
+  else
+  {
+    #if VERBOSE
+    Serial.print("Error acquiring measurement!");
+    delay(1000);
+    #endif
+  }
   //End [B.3]
   
   // --- End B ---    
@@ -152,6 +205,6 @@ void setup()
 void loop()
 {
   Serial.println("Looping!");
-  delay(1000);
+  delay(5000);
 }
 
