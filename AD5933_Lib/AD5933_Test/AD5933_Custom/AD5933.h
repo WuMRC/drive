@@ -62,8 +62,8 @@ private:
 	double getMagValue();
 	inline byte getStatusReg()
 	{
-		//return (getByte(0x8F) & 0x07);
-		return getByte(0x8F);
+		return (getByte(0x8F) & 0x07);
+		//return getByte(0x8F);
 	}
 	
 };
