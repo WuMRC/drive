@@ -68,7 +68,7 @@ void setup()
   
   //--- A. Initialization and Calibration Meassurement ---
   
-  //[A.0] Set the clock for internal/external frequency (needed?)
+  //[A.0] Set the clock for internal/external frequency
   //Set the operational clock to internal
   //AD5933.setExtClock(0);
   
@@ -133,13 +133,47 @@ void setup()
   } 
   //End [A.3]
 
-
+  //[A.4] //Start sending out the excitation frequency to the load, Z. This
+  //must be done before any measurements are taken.
+  if (AD5933.setCtrMode(INIT_START_FREQ) == true)
+  {
+    #if VERBOSE
+    Serial.println("Initialize_Start_Freq command sent.");
+    delay(1000);
+    #endif
+  }
+  else
+  {
+    #if VERBOSE
+    Serial.println("Error sending Initialize_Start_Freq command!");
+    delay(1000);
+    #endif
+  }
+  //End [A.4]
+  
+  //[A.5] //Initialize the frequency sweep (i.e. take the first measurement
+  //at the start frequency after the number of settling cycles has elapsed.
+  if (AD5933.setCtrMode(START_FREQ_SWEEP) == true)
+  {
+    #if VERBOSE
+    Serial.println("Start_Sweep command sent.");
+    delay(1000);
+    #endif
+  }
+  else
+  {
+    #if VERBOSE
+    Serial.println("Error sending Start_Sweep command!");
+    delay(1000);
+    #endif
+  }
+  //End [A.5]
   
   //--- End A ---
 
 //}
 
-//void loop() <-- uncomment once single run through sucessful.
+//void loop()
 //{
   
   //--- B. Repeated single measurement ---
@@ -187,8 +221,8 @@ void setup()
     #endif
     
     //[B.2.1] Capture the magnitude from real & imaginary registers.
-    long Z_magnitude = AD5933.getMagValue();
-    delay(3000);
+    double Z_magnitude = AD5933.getMagOnce();
+    delay(1000);
     #if VERBOSE
     Serial.print("Magnitude found to be: ");
     Serial.println(Z_magnitude);
@@ -225,7 +259,6 @@ void setup()
   //End [B.3]
   
   // --- End B ---    
-
 }
 
 
