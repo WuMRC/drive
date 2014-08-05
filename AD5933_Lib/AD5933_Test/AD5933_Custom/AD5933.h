@@ -52,6 +52,8 @@ public: // The detailed instruction will be on Wiki or ".cpp" file
 		delayTimeInit=delayTime;
 		opClock = 16776000;
 	}
+	int getByte(int);
+	bool setByte(int, int);
 
 private:
 	int getByte(int);
