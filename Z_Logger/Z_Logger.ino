@@ -3,8 +3,16 @@
 Z_Logger
 
 Goal for this version:
-Configure and execute single impedance measurement command, log the result to
-a text file, and repeat, at a sample rate of 200 times/sec.
+Configure and execute single impedance measurement command, report the result,
+and repeat, at a sample rate of 200 times/second.
+
+Current functionalty:
+1.) Initialize the AD5933.
+2.) Calculate a gain factor, using a calibration resistance.
+3.) Take an impedance measurement and report through the serial monitor.
+4.) Repeat #3
+5.) Optional verbose output for debugging.
+
 */
 
 //--- Hard-coded inputs for the sketch:
@@ -34,13 +42,15 @@ a text file, and repeat, at a sample rate of 200 times/sec.
                            
 //---
 
+double gain_factor = 0;
+
 #include <Wire.h> //Library for I2C communications
 #include <AD5933.h> //Library for AD5933 functions (must be installed)
 
 void setup()
 {
-  #if VERBOSE
   Serial.begin(9600); //Initialize serial communication for debugging.
+  #if VERBOSE
   Serial.println("Program start!");
   delay(1000);
   #endif
@@ -64,7 +74,6 @@ void setup()
     #endif
   }
   //End [A.X]
-
   
   //--- A. Initialization and Calibration Meassurement ---
   
@@ -91,6 +100,7 @@ void setup()
   }
   //End [A.1]
 
+
   //[A.2] Set a number of settling time cycles
   if (AD5933.setSettlingCycles(cycles_base, cycles_multiplier) == true)
   {
@@ -113,7 +123,7 @@ void setup()
   //[A.3] Calculate the gain factor (needs cal resistance, # of measurements)
   //Note: The gain factor finding function returns the INVERSE of the factor
   //as defined on the datasheet!
-  long gain_factor = AD5933.getGainFactor(cal_resistance, cal_samples);
+  gain_factor = AD5933.getGainFactor(cal_resistance, cal_samples);
   if (gain_factor != -1)
   {
     #if VERBOSE
@@ -132,6 +142,8 @@ void setup()
     #endif
   } 
   //End [A.3]
+
+
 
   //[A.4] //Start sending out the excitation frequency to the load, Z. This
   //must be done before any measurements are taken.
@@ -170,12 +182,10 @@ void setup()
   //End [A.5]
   
   //--- End A ---
+}
 
-//}
-
-//void loop()
-//{
-  
+void loop()
+{
   //--- B. Repeated single measurement ---
   //Gain factor calibration already sets the frequency, so just send 
   //repeat single magnitude capture command.
@@ -196,7 +206,9 @@ void setup()
     #endif
   }
   //End [B.1]
-  
+
+
+
   //[B.2] Check the status register to ensure measurement is complete (i.e.
   // the 7th bit is 1). This may not be necessary given wait built into library.
   Wire.beginTransmission(0x0D); //Open communications to to AD5933.
@@ -229,8 +241,7 @@ void setup()
     delay(1000);
     #endif
     //End [B.2.1]
-  
-    /*
+     
     //[B.2.2] Calculate the impedance using the magnitude and gain factor.
     double Z_value = gain_factor/Z_magnitude;
     #if VERBOSE
@@ -245,7 +256,7 @@ void setup()
     Serial.print("Impedance = ");
     Serial.print(Z_value);
     Serial.println(" Ohms.");
-    */
+    
   }
   
   //... else, there is an error with the current measurement.
@@ -258,14 +269,11 @@ void setup()
   }
   //End [B.3]
   
-  // --- End B ---    
-}
+  // --- End B ---
 
-
-
-void loop()
-{
-  Serial.println("Looping!");
+  #if VERBOSE
+  Serial.println("End Loop!");
   delay(5000);
+  #endif
 }
 
