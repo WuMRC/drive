@@ -1,4 +1,4 @@
-function posNew = perPixelTrack(currentFrameData, nextFrameData, filt,...
+function [posNew] = perPixelTrack(currentFrameData, nextFrameData, filt,...
     kernel, search, posOriginal)
 % Function to track frame-to-frame motion
 
@@ -29,6 +29,9 @@ poiRow = posOriginal(1) + rowMove;%_total;
 poiCol = posOriginal(2) + colMove;%_total;
 
 posNew = [poiRow, poiCol];
+
+end
+
 
 
 %         % Calculate the correlation

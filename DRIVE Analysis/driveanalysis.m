@@ -146,9 +146,8 @@ DATA_TO_ANALYZE = 1;
     
     level = graythresh(image_roiNORM(:,:,1));
     imageTrackBW = im2bw(image_roiNORM(:,:,1),level);
-    % imageTrackEDGE = edge(currentFrameData.*imageTrackBW,'sobel');
-%     imageTrackFILT = image_roiNORM(:,:,1).*imageTrackBW;
-%     imagesc(imageTrackFILT)
+    imageTrackFILT = image_roiNORM(:,:,1).*imageTrackBW;
+    imagesc(imageTrackFILT)
     
     
     %%
@@ -166,11 +165,11 @@ DATA_TO_ANALYZE = 1;
 %     filterType = 'gaussian';            % Should I prompt the user to select 
                                         % at the time?
   
-    filterType = 20
+    filterType = 20;
     if strcmp(filterType,'average')
         filt = fspecial(filterType,[rowKernel, colKernel]);
     elseif strcmp(filterType,'disc')
-        filt = fspecial(filterType,[rowKernel]);
+        filt = fspecial(filterType,rowKernel);
     elseif strcmp(filterType,'gaussian')
         sigma = 0.5;
         filt = fspecial(filterType,[rowKernel, colKernel],sigma);
@@ -220,6 +219,10 @@ DATA_TO_ANALYZE = 1;
             % Function to track frame-to-frame motion
             pos(:,:,ind+1) = perPixelTrack(currentFrameData, nextFrameData, filt,...
                 [rowKernel, colKernel], [rowSearch, colKernel], pos(:,:,ind));
+%             
+%             [poiRow(ind,indPoints), poiCol(ind,indPoints)] = ...
+%                 perPixelTrack(currentFrameData, nextFrameData, filt,...
+%                 [rowKernel, colKernel], [rowSearch, colKernel], pos(:,:,ind));
             
             imageTrack(pos(1,1,ind),pos(1,2,ind),ind) = 400;
 
