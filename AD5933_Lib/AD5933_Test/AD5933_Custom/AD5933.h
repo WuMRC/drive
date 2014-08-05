@@ -5,9 +5,10 @@
 #include<math.h> // for math functions
 #include<Wire.h> // for I2C communications
 
-#define LOGGING1 1 // Basic Log, Error
+#define LOGGING1 0 // Basic Log, Error
 #define LOGGING2 0 // Related to Development Phase
 #define LOGGING3 0 // Detailed Log for Debugging
+// Caution! Currently, verbose logging feature makes problem. Do not use them before proper debugging.
 
 #define AD5933_ADR 0x0D // Device Serial Bus Address
 
@@ -39,6 +40,7 @@ public: // The detailed instruction will be on Wiki or ".cpp" file
 	bool setCtrMode(byte, int);
 	double getGainFactor(double);
 	double getGainFactor(double, int);
+	double getGainFactor(double, int, bool);
 	bool performFreqSweep(double, double *);
 	AD5933_Class()
 	{

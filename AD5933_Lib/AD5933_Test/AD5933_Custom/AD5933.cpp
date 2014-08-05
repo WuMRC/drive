@@ -69,7 +69,7 @@ bool AD5933_Class::performFreqSweep(double gainFactor, double *arrSave)
   return true; // Succeed!
 }
 
-double AD5933_Class::getGainFactor(double cResistance, int avgNum)
+double AD5933_Class::getGainFactor(double cResistance, int avgNum, bool retStandBy)
 // A function to get Gain Factor. It performs one impedance measurement in start frequency.
 // double cResistance - Calibration Resistor Value
 // avgNum - number of measurement for averaging.
@@ -114,6 +114,20 @@ double AD5933_Class::getGainFactor(double cResistance, int avgNum)
     t1++;  
   }
   double mag = tSum/(double)avgNum;
+#if LOGGING2
+  Serial.print("getGainFactor - Gain Factor: ");
+  Serial.println(mag*cResistance);
+
+#endif
+
+  if(retStandBy == false)
+  {
+#if LOGGING3
+	Serial.println("getGainFactor - terminate the function without going into Stand By");
+#endif  	
+  	return mag*cResistance;  
+  }
+  
   if( setCtrMode(STAND_BY) == false)
   {
 #if LOGGING1
@@ -123,19 +137,20 @@ double AD5933_Class::getGainFactor(double cResistance, int avgNum)
   }
   resetAD5933();
     // Gain Factor is different from one of the datasheet in this program. Reciprocal Value.
-#if LOGGING2
-  Serial.print("getGainFactor - Gain Factor: ");
-  Serial.println(mag*cResistance);
-
-#endif
   return mag * cResistance;
  
+}
+
+double AD5933_Class::getGainFactor(double cResistance, int avgNum)
+// Calculate Gain Factor with measuring once.
+{
+  return getGainFactor(cResistance, avgNum, true);
 }
 
 double AD5933_Class::getGainFactor(double cResistance)
 // Calculate Gain Factor with measuring once.
 {
-  return getGainFactor(cResistance, 1);
+  return getGainFactor(cResistance, 1, true);
 }
 
 bool AD5933_Class::setCtrMode(byte modetoSet)
