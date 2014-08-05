@@ -56,8 +56,6 @@ public: // The detailed instruction will be on Wiki or ".cpp" file
 	bool setByte(int, int);
 
 private:
-	int getByte(int);
-	bool setByte(int, int);
 	
 	static const byte Address_Ptr = 0xB0; // Address Pointer to read register values.
 	double opClock;
