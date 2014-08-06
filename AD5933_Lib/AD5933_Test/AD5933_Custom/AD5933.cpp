@@ -3,8 +3,10 @@
 #include "AD5933.h"
 //#include <WProgram.h>
 #include <Arduino.h> // For the compatibility with Arduino Conventions.
-#include <WConstants.h>
+//#include <WConstants.h>
 
+//extern HardwareSerial Serial;
+//AD5933_Class AD5933(100, Serial);
 AD5933_Class AD5933;
 
 bool AD5933_Class::performFreqSweep(double gainFactor, double *arrSave)
@@ -18,14 +20,14 @@ bool AD5933_Class::performFreqSweep(double gainFactor, double *arrSave)
   if(setCtrMode(STAND_BY) == false)
   {
 #if LOGGING1
-    Serial.println("performFreqSweep - Failed to setting Stand By Status!");
+    printer->println("performFreqSweep - Failed to setting Stand By Status!");
 #endif
     return false;
   }
   if(setCtrMode(INIT_START_FREQ) == false)
   {
 #if LOGGING1
-    Serial.println("performFreqSweep - Failed to setting initialization with starting frequency!");
+    printer->println("performFreqSweep - Failed to setting initialization with starting frequency!");
 #endif
     return false;
   }
@@ -33,7 +35,7 @@ bool AD5933_Class::performFreqSweep(double gainFactor, double *arrSave)
   if(setCtrMode(START_FREQ_SWEEP) == false)
   {
 #if LOGGING1
-    Serial.println("performFreqSweep - Failed to set to start frequency sweeping!");
+    printer->println("performFreqSweep - Failed to set to start frequency sweeping!");
 #endif
     return false;
   }
@@ -44,15 +46,15 @@ bool AD5933_Class::performFreqSweep(double gainFactor, double *arrSave)
     delay(delayTimeInit);
     arrSave[t1]=gainFactor/getMagOnce(); // Calculated with Gain Factor
 #if LOGGING1
-    Serial.print("performFreqSweep - arrSave[");
-    Serial.print(t1);
-    Serial.print("] = ");
-    Serial.println(arrSave[t1]);  
+    printer->print("performFreqSweep - arrSave[");
+    printer->print(t1);
+    printer->print("] = ");
+    printer->println(arrSave[t1]);  
 #endif
     if(setCtrMode(INCR_FREQ) == false)
     {
 #if LOGGING1
-      Serial.println("performFreqSweep - Failed to set for increasing frequency!");
+      printer->println("performFreqSweep - Failed to set for increasing frequency!");
 #endif
       return false;
     }
@@ -62,7 +64,7 @@ bool AD5933_Class::performFreqSweep(double gainFactor, double *arrSave)
   if(setCtrMode(POWER_DOWN) == false)
   {
 #if LOGGING1
-    Serial.println("performFreqSweep - Completed sweep, but failed to power down");
+    printer->println("performFreqSweep - Completed sweep, but failed to power down");
 #endif
     return false;
   }
@@ -79,14 +81,14 @@ double AD5933_Class::getGainFactor(double cResistance, int avgNum, bool retStand
   if(setCtrMode(STAND_BY) == false)
   {
 #if LOGGING1
-    Serial.println("getGainFactor - Failed to setting Stand By Status!");
+    printer->println("getGainFactor - Failed to setting Stand By Status!");
 #endif
     return -1;
   }
   if(setCtrMode(INIT_START_FREQ) == false)
   {
 #if LOGGING1
-    Serial.println("getGainFactor  - Failed to setting initialization with starting frequency!");
+    printer->println("getGainFactor  - Failed to setting initialization with starting frequency!");
 #endif
     return -1;
   }
@@ -94,7 +96,7 @@ double AD5933_Class::getGainFactor(double cResistance, int avgNum, bool retStand
   if(setCtrMode(START_FREQ_SWEEP) == false)
   {
 #if LOGGING1
-    Serial.println("getGainFactor - Failed to set to start frequency sweeping!");
+    printer->println("getGainFactor - Failed to set to start frequency sweeping!");
 #endif
     return -1;
   }
@@ -107,7 +109,7 @@ double AD5933_Class::getGainFactor(double cResistance, int avgNum, bool retStand
     if(setCtrMode(REPEAT_FREQ) == false)
     {
 #if LOGGING1
-    	Serial.println("getGainFactor - Failed to set to repeat this frequency!");
+    	printer->println("getGainFactor - Failed to set to repeat this frequency!");
 #endif
     	return -1;
     }
@@ -115,15 +117,15 @@ double AD5933_Class::getGainFactor(double cResistance, int avgNum, bool retStand
   }
   double mag = tSum/(double)avgNum;
 #if LOGGING2
-  Serial.print("getGainFactor - Gain Factor: ");
-  Serial.println(mag*cResistance);
+  printer->print("getGainFactor - Gain Factor: ");
+  printer->println(mag*cResistance);
 
 #endif
 
   if(retStandBy == false)
   {
 #if LOGGING3
-	Serial.println("getGainFactor - terminate the function without going into Stand By");
+	printer->println("getGainFactor - terminate the function without going into Stand By");
 #endif  	
   	return mag*cResistance;  
   }
@@ -131,7 +133,7 @@ double AD5933_Class::getGainFactor(double cResistance, int avgNum, bool retStand
   if( setCtrMode(STAND_BY) == false)
   {
 #if LOGGING1
-	Serial.println("getGainFactor - Failed to set into Stand-By Status");
+	printer->println("getGainFactor - Failed to set into Stand-By Status");
 #endif  	
   	return -1;
   }
@@ -189,7 +191,7 @@ bool AD5933_Class::setCtrMode(byte modetoSet, int ctrReg)
       break;
     default:
 #if LOGGING1
-      Serial.println("setCtrMode - Invalid Parameter!");
+      printer->println("setCtrMode - Invalid Parameter!");
 #endif
       return false; // return the signal of fail if there is not valid parameter.
       break;
@@ -209,7 +211,7 @@ bool AD5933_Class::setVolPGA(byte voltageNum, byte pgaGain)
   if( (voltageNum < 0 || voltageNum > 3) || !(pgaGain == 1 || pgaGain == 5) )  
   {
 #if LOGGING1
-    Serial.println("setVolPGA - invaild parameter");
+    printer->println("setVolPGA - invaild parameter");
 #endif
     return false;
   } 
@@ -221,8 +223,8 @@ bool AD5933_Class::setVolPGA(byte voltageNum, byte pgaGain)
   else
     temp &= 0xFE; // if PGA Gain is x5, then write 0 at D8.
 #if LOGGING2
-  Serial.print("setVolPGA - Final Value to Set: ");
-  Serial.println(temp, BIN);
+  printer->print("setVolPGA - Final Value to Set: ");
+  printer->println(temp, BIN);
 #endif
   return setByte(0x80,temp); // Write value at 0x80 Register.
 }
@@ -257,7 +259,7 @@ bool AD5933_Class::setSettlingCycles(int cycles, byte mult)
   if(cycles > 0x1FF || !(mult == 1 || mult == 2 || mult == 4) )
   {
 #if LOGGING1
-    Serial.println("setSettlingCycles - Invalid Parameter");
+    printer->println("setSettlingCycles - Invalid Parameter");
 #endif
     return false;
   }
@@ -277,7 +279,7 @@ bool AD5933_Class::setSettlingCycles(int cycles, byte mult)
       break;
     default:
 #if LOGGING1
-    Serial.println("setSettlingCycles - Invalid Mult Parameter");
+    printer->println("setSettlingCycles - Invalid Mult Parameter");
 #endif
     return false;
     break;    
@@ -286,8 +288,8 @@ bool AD5933_Class::setSettlingCycles(int cycles, byte mult)
   upperHex |= (t1 << 1); 	// t1 is for D9, D10. The upperHex just accounts for D8. Thus, the value after left-shifting t1 accounts for D9, D10.
   							// Thus, this above writes bits for D9, D10.
 #if LOGGING2
-  Serial.print("setSettlingCycles - upper: ");
-  Serial.println(upperHex,BIN);
+  printer->print("setSettlingCycles - upper: ");
+  printer->println(upperHex,BIN);
 #endif
   bool t2, t3;
   t2=setByte(0x8A, upperHex);
@@ -297,7 +299,7 @@ bool AD5933_Class::setSettlingCycles(int cycles, byte mult)
   else
   {
 #if LOGGING1
-    Serial.println("setSettingCycles - Data Write Fail");
+    printer->println("setSettingCycles - Data Write Fail");
 #endif
     return false;
   }
@@ -310,7 +312,7 @@ bool AD5933_Class::setNumofIncrement(int num)
   if(num > 0x1FF + 1)
   {
 #if LOGGING1
-    Serial.print("setNumofIncrement - Frequency Overflow!");
+    printer->print("setNumofIncrement - Frequency Overflow!");
 #endif
     return false;
   }
@@ -328,7 +330,7 @@ bool AD5933_Class::setNumofIncrement(int num)
   else
   {
 #if LOGGING1
-    Serial.println("setNumofIncrement - Data Transmission Failed!");
+    printer->println("setNumofIncrement - Data Transmission Failed!");
 #endif
     return false;
   }
@@ -350,7 +352,7 @@ bool AD5933_Class::setIncrementinHex(long freqHex)
   if(freqHex > 0xFFFFFF)
   {
 #if LOGGING1
-    Serial.print("setIncrementHex - Freqeuncy Overflow!");
+    printer->print("setIncrementHex - Freqeuncy Overflow!");
 #endif
     return false;
   }
@@ -368,7 +370,7 @@ bool AD5933_Class::setIncrementinHex(long freqHex)
   else
   {
 #if LOGGING1
-    Serial.println("setIncrementHex - Data Transmission Failed!");
+    printer->println("setIncrementHex - Data Transmission Failed!");
 #endif
     return false;
   }
@@ -379,13 +381,13 @@ bool AD5933_Class::setStartFreq(long startFreq) // long startFreq in Hz
 {
 #if LOGGING3
   //double t1 = opClock / pow(2,29);
-  //Serial.println(t1);
+  //printer->println(t1);
 #endif
   long freqHex = startFreq / (opClock / pow(2, 29)); // based on datasheet
   if(freqHex > 0xFFFFFF)
   {
 #if LOGGING1
-    Serial.print("setStartFreq - Freqeuncy Overflow!");
+    printer->print("setStartFreq - Freqeuncy Overflow!");
 #endif
     return false;
   }
@@ -394,18 +396,18 @@ bool AD5933_Class::setStartFreq(long startFreq) // long startFreq in Hz
   int midHex = ((freqHex - (long)lowerHex) >> 8) % 256;
   int upperHex = freqHex >> 16;
 #if LOGGING3  
-  Serial.print("setStartFreq - freqHex: ");
-  Serial.print(freqHex, HEX);
-  Serial.print("\t");
-  Serial.print("lower: ");
-  Serial.print(lowerHex, HEX);
-  Serial.print("\t");
-  Serial.print("mid: ");
-  Serial.print(midHex, HEX);
-  Serial.print("\t");
-  Serial.print("upper: ");
-  Serial.print(upperHex, HEX);
-  Serial.println();
+  printer->print("setStartFreq - freqHex: ");
+  printer->print(freqHex, HEX);
+  printer->print("\t");
+  printer->print("lower: ");
+  printer->print(lowerHex, HEX);
+  printer->print("\t");
+  printer->print("mid: ");
+  printer->print(midHex, HEX);
+  printer->print("\t");
+  printer->print("upper: ");
+  printer->print(upperHex, HEX);
+  printer->println();
 #endif
   bool t2, t3, t4;
   t2 = setByte(0x82, upperHex);
@@ -416,7 +418,7 @@ bool AD5933_Class::setStartFreq(long startFreq) // long startFreq in Hz
   else
   {
 #if LOGGING1
-    Serial.println("setStartFreq - Data Transmission Failed!");
+    printer->println("setStartFreq - Data Transmission Failed!");
 #endif
     return false;
   }
@@ -434,7 +436,7 @@ double AD5933_Class::getTemperature()
   if(setCtrMode(TEMP_MEASURE) == false)
   {
 #if LOGGING1
-	Serial.println("getTemperature - Failed to set the control bit");
+	printer->println("getTemperature - Failed to set the control bit");
 #endif
   	return false;
   }
@@ -463,9 +465,9 @@ double AD5933_Class::getTemperature()
     cTemp = (tTempVal-16384.0) / 32;
   }
  #if LOGGING1
-  Serial.print("getTemperature - Current Temp. is ");
-  Serial.print(cTemp);
-  Serial.print("\n");
+  printer->print("getTemperature - Current Temp. is ");
+  printer->print(cTemp);
+  printer->print("\n");
  #endif
   
   return cTemp;
@@ -477,9 +479,9 @@ int AD5933_Class::getByte(int address) {
 
   int rxByte;
 #if LOGGING3  
-  Serial.print("getByte - Initiating I2C Transmission. Address: ");
-  Serial.print(address, HEX);
-  Serial.print('\n');
+  printer->print("getByte - Initiating I2C Transmission. Address: ");
+  printer->print(address, HEX);
+  printer->print('\n');
 #endif
   
   Wire.beginTransmission(AD5933_ADR); // Begin I2C Transmission with AD5933 Chip.
@@ -488,9 +490,9 @@ int AD5933_Class::getByte(int address) {
   int i2cReturn = Wire.endTransmission(); // End Transmission.
 
 #if LOGGING3
-  Serial.print("getByte - Transmission Complete. i2cReturn: ");
-  Serial.print(i2cReturn);
-  Serial.print("\n");
+  printer->print("getByte - Transmission Complete. i2cReturn: ");
+  printer->print(i2cReturn);
+  printer->print("\n");
 #endif  
   
   Wire.requestFrom(AD5933_ADR, 1); // Request the value of the written address.
@@ -498,17 +500,17 @@ int AD5933_Class::getByte(int address) {
   if (1 <= Wire.available()) { // If the MCU get the value,
     rxByte = Wire.read(); // Read the value.
 #if LOGGING3   
-    Serial.print("getByte - Message Received: ");
-    Serial.print(rxByte,BIN);
-    Serial.print(" or ");
-    Serial.print(rxByte,HEX);    
-    Serial.print("\n");
+    printer->print("getByte - Message Received: ");
+    printer->print(rxByte,BIN);
+    printer->print(" or ");
+    printer->print(rxByte,HEX);    
+    printer->print("\n");
 #endif
   } 
   else {
     rxByte = -1; // Returns -1 if fails.
 #if LOGGING1
-    Serial.println("getByte - Failed to receive Message");
+    printer->println("getByte - Failed to receive Message");
 #endif
   }
 
@@ -519,11 +521,11 @@ int AD5933_Class::getByte(int address) {
 bool AD5933_Class::setByte(int address, int value) {
 // Hidden Function to transmit the value to write.
 #if LOGGING3   
-  Serial.print("setByte - Initiating I2C Transmission. Address: ");
-  Serial.print(address, HEX);
-  Serial.print(" , Value: ");
-  Serial.print(value, HEX);
-  Serial.print('\n');
+  printer->print("setByte - Initiating I2C Transmission. Address: ");
+  printer->print(address, HEX);
+  printer->print(" , Value: ");
+  printer->print(value, HEX);
+  printer->print('\n');
 #endif  
   Wire.beginTransmission(AD5933_ADR); // Begin I2C Transmission.
   Wire.write(address); // Write Address
@@ -533,14 +535,14 @@ bool AD5933_Class::setByte(int address, int value) {
   if (i2cReturn)
   {
 #if LOGGING1    
-    Serial.println("setByte - Failed");
+    printer->println("setByte - Failed");
 #endif
     return false;
   }
   else
   {
 #if LOGGING3 
-    Serial.println("setByte - Success");
+    printer->println("setByte - Success");
 #endif
     return true; 
   }
@@ -554,8 +556,8 @@ double AD5933_Class::getMagValue()
   iComp = getImagComp(); // Getting Imaginary Component
   double result = sqrt( square((double)rComp) + square((double)iComp) ); // Calculating magnitude.
 #if LOGGING3 
-  Serial.print("getMagValue - Resistance Magnitude is ");
-  Serial.println(result);
+  printer->print("getMagValue - Resistance Magnitude is ");
+  printer->println(result);
 #endif
   return result;
 }
@@ -578,16 +580,16 @@ int AD5933_Class::getRealComp()
   mReal=getByte(0x94);
   lReal=getByte(0x95);
 #if LOGGING3
-  Serial.print("getRealComp - mReal: ");
-  Serial.print(mReal, BIN);
-  Serial.print('\t');
-  Serial.print("lReal: ");
-  Serial.println(lReal, BIN);
-  Serial.print("getRealComp - Value: ");
+  printer->print("getRealComp - mReal: ");
+  printer->print(mReal, BIN);
+  printer->print('\t');
+  printer->print("lReal: ");
+  printer->println(lReal, BIN);
+  printer->print("getRealComp - Value: ");
 #endif
   result = mReal*16*16+lReal;
 #if LOGGING3
-  Serial.println(result);
+  printer->println(result);
 #endif
   return result;
 }
@@ -600,16 +602,16 @@ int AD5933_Class::getImagComp()
   mImag=getByte(0x96);
   lImag=getByte(0x97);
 #if LOGGING3
-  Serial.print("getImagComp - mImag: ");
-  Serial.print(mImag, BIN);
-  Serial.print('\t');
-  Serial.print("lImag: ");
-  Serial.println(lImag, BIN);
-  Serial.print("getImagComp - Value: ");
+  printer->print("getImagComp - mImag: ");
+  printer->print(mImag, BIN);
+  printer->print('\t');
+  printer->print("lImag: ");
+  printer->println(lImag, BIN);
+  printer->print("getImagComp - Value: ");
 #endif
   result = mImag*16*16+lImag;
 #if LOGGING3
-  Serial.println(result);
+  printer->println(result);
 #endif
   return result;
 }

@@ -4,6 +4,7 @@
 
 #include<math.h> // for math functions
 #include<Wire.h> // for I2C communications
+#include<HardwareSerial.h> // for Serial Logging
 
 #define LOGGING1 0 // Basic Log, Error
 #define LOGGING2 0 // Related to Development Phase
@@ -52,6 +53,12 @@ public: // The detailed instruction will be on Wiki or ".cpp" file
 		delayTimeInit=delayTime;
 		opClock = 16776000;
 	}
+	AD5933_Class(int delayTime, HardwareSerial &print)
+	{
+		delayTimeInit=delayTime;
+		opClock = 16776000;
+		printer = &print;
+	}
 	int getByte(int);
 	bool setByte(int, int);
 
@@ -67,6 +74,7 @@ private:
 		return (getByte(0x8F) & 0x07);
 		//return getByte(0x8F);
 	}
+	HardwareSerial *printer;
 	
 };
 
