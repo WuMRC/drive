@@ -25,25 +25,19 @@ bioimpedanceFileArray = bioimpedanceFileArray(arrayfun(@(x) x.isdir, ...
 %% SELECT ONLY THOSE ULTRASOUND TRIALS FOR ANALYSIS
 % Look for viable trials
 trialCheckArray = zeros(1,size(ultrasoundFileArray,1));
+
+% Select only those files large enough to contain good trials
+minFileSize = 50*1024*1024; % 50MB
+
 for trial = 1:size(ultrasoundFileArray,1)
-    ultrasoundFile = ultrasoundFileArray(trial).name;
-    imshow(ultrasoundFile(:,:,1,1))
-    prompt = 'Is this a good trial? [Y/N] \n';
-    str = input(prompt,'s');
-    if str == 'Y' || str ==  'y'
+    ultrasoundFileInfo = dir(strcat(ULTRASOUND_DIRECTORY,...
+        ultrasoundFileArray(trial).name));
+    if ultrasoundFileInfo.bytes > minFileSize
         trialCheckArray(trial) = true;
-    elseif str == 'N' || str == 'n'
+    else 
         trialCheckArray(trial) = false;
-        %     elseif str ~= 'Y' | str ~=  'y' | str ~= 'N' | str ~= 'n'
-        %         disp('Please select either Y or N.')
-        %         if str == 'Y' | str ==  'y'
-        %             trialCheckArray(trial) = 1;
-        %         elseif str == 'N' | str == 'n'
-        %             trialCheckArray(trial) = 0;
-        %         end
     end
 end
-close
 
 % Remove all nonrelavent ultrasound images
 trialCheckArray = logical(trialCheckArray);
@@ -54,13 +48,17 @@ timeMarkerUltrasound = zeros(1,size(ultrasoundFileArray,1));
 for nTrials = 1:size(ultrasoundFileArray,1)
     x = str2double(ultrasoundFileArray(nTrials).name(9:14));
     timeMarkerUltrasound(nTrials) = x;
+    timeMarkerUltrasoundSec(nTrials) = ...
+        str2double(ultrasoundFileArray(nTrials).name(9:10))*60*60 ...
+        + str2double(ultrasoundFileArray(nTrials).name(11:12))*60 ...
+        + str2double(ultrasoundFileArray(nTrials).name(13:14));
 end
 % clear x;
 
 %%
 % Bioimpedance
 
-bioimpedanceFile = bioimpedanceFileArray(2).name;
+bioimpedanceFile = bioimpedanceFileArray(2).name; % Select second file
 acq = load_acq(bioimpedanceFile);
 
 bioimpedanceArm = acq.data(:,1);
@@ -110,6 +108,7 @@ end
 %%
 % Should endeavor to change above code so that all you need is the
 % ultrasound filename to get the corresponding bioimpedance data
+
 
 %%
 
