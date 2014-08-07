@@ -43,7 +43,7 @@ bool AD5933_Class::performFreqSweep(double gainFactor, double *arrSave)
   int t1=0;
   while( (getStatusReg() & 0x04) != 0x04 ) // Loop while if the entire sweep in not complete
   {
-    delay(delayTimeInit);
+    //delay(delayTimeInit);
     arrSave[t1]=gainFactor/getMagOnce(); // Calculated with Gain Factor
 #if LOGGING1
     printer->print("performFreqSweep - arrSave[");
@@ -440,7 +440,7 @@ double AD5933_Class::getTemperature()
 #endif
   	return false;
   }
-  delay(delayTimeInit);
+  //delay(delayTimeInit);
   
   int tTemp[2];
   long tTempVal;
@@ -567,7 +567,8 @@ double AD5933_Class::getMagOnce()
 {
   while((getStatusReg() & 0x02) != 0x02) // wait until ADC conversion is complete.
   {
-    delay(delayTimeInit);
+    //delay(delayTimeInit);
+    ;
   }
   return getMagValue();  
 }

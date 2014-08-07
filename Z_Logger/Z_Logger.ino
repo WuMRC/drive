@@ -24,7 +24,7 @@ Current functionalty:
                              //to dissipate transients before a measurement is
                              //taken. The max value for this is 511.
 
-#define cycles_multiplier 2  //Set a multiple for the cycles_base which
+#define cycles_multiplier 1  //Set a multiple for the cycles_base which
                              //is used to calculate the desired number
                              //of settling cycles. Values can be 1, 2, or 4.
                              
@@ -154,60 +154,73 @@ void setup()
 
 void loop()
 {
+  unsigned long timerMicro1 = micros();
   //--- B. Repeated single measurement ---
   //Gain factor calibration already sets the frequency, so just send 
   //repeat single magnitude capture command.
-  
-  //[B.1] Issue a "repeat frequency" command.
-  double temp = AD5933.getTemperature();
+ 
   #if VERBOSE
+  double temp = AD5933.getTemperature();
   Serial.print("Temperature is ");
   Serial.print(temp);
   Serial.println(" degree celcius.");
+  #else
+  AD5933.getTemperature();
   #endif
   
+  //[B.1] Issue a "repeat frequency" command.
+  #if VERBOSE
   if (AD5933.setCtrMode(REPEAT_FREQ) == true)
   {
-    #if VERBOSE
     Serial.println("Repeat_Frequency command sent.");
     delay(100);
-    #endif
   }
   else
   {
-    #if VERBOSE
     Serial.println("Error sending Repeat_Frequency command!");
     delay(1000);
-    #endif
   }
+  #else
+  AD5933.setCtrMode(REPEAT_FREQ);
+  #endif
   //End [B.1]
    
-    //[B.2.1] Capture the magnitude from real & imaginary registers.
-    double Z_magnitude = AD5933.getMagOnce();
-    delay(100);
-    #if VERBOSE
-    Serial.print("Magnitude found to be: ");
-    Serial.println(Z_magnitude);
-    delay(100);
-    #endif
-    //End [B.2.1]
-     
-    //[B.2.2] Calculate the impedance using the magnitude and gain factor.
-    double Z_value = gain_factor/Z_magnitude;
-    #if VERBOSE
-    Serial.print("Impedance found to be: ");
-    Serial.print(Z_value);
-    Serial.println(" Ohms.");
-    delay(100);
-    #endif
-    //End [B.2.2]
-    
-    //[B.2.3] Output the impedance value (serial, array, etc.)
-    Serial.print("Impedance = ");
-    Serial.print(Z_value);
-    Serial.println(" Ohms.");
-    
+
+  //delay(100);
+  #if VERBOSE
+  //[B.2.1] Capture the magnitude from real & imaginary registers.
+  double Z_magnitude = AD5933.getMagOnce();
+  Serial.print("Magnitude found to be: ");
+  Serial.println(Z_magnitude);
+  delay(100);
+  //End [B.2.1]
   
+  //[B.2.2] Calculate the impedance using the magnitude and gain factor.
+  double Z_value = gain_factor/Z_magnitude;
+  Serial.print("Impedance found to be: ");
+  Serial.print(Z_value);
+  Serial.println(" Ohms.");
+  delay(100);
+  //End [B.2.2]
+  
+  #else
+  double Z_value = gain_factor/AD5933.getMagOnce();
+  
+  
+  #endif
+  
+    
+  Serial.print("Time: ");
+  Serial.print(timerMicro1 / 1000000);  
+    
+  //[B.2.3] Output the impedance value (serial, array, etc.)
+  
+  Serial.print(" Impedance = ");
+  Serial.print(Z_value);
+  Serial.println(" Ohms.");
+  
+  //unsigned long timerMicro2 = micros();
+  //delayMicroseconds(16666 - (timerMicro2-timerMicro1));
   
   //End [B.3]
   
@@ -215,7 +228,7 @@ void loop()
 
   #if VERBOSE
   Serial.println("End Loop!");
-  delay(1000);
+  //delay(1000);
   #endif
 }
 
