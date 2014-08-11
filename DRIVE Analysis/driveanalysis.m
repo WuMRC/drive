@@ -236,7 +236,7 @@ close(h)
 
 %%
 % Ultrasound analysis
-% ERROR, POIROW NO LONGER EXISTS
+% ERROR, POIROW NO LONGER EXISTS 
 diameter = sqrt((poiRow(:,1)-poiRow(:,2)).^2 + (poiCol(:,1)-poiCol(:,2)).^2);
 diameterSMOOTH = smooth(diameter,35/2);
 diameterSMOOTHER = smooth(diameterSMOOTH,25);
