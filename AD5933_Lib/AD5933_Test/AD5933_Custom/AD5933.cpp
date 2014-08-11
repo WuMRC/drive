@@ -424,32 +424,17 @@ bool AD5933_Class::setStartFreq(long startFreq) // long startFreq in Hz
   }
 }
 
-//byte AD5933_Class::getStatusReg() // TODO: I might try to change into inline function. / Make functions use this.
-//{
-//  return getByte(0x8F) & 0x07;
-//}
 
 double AD5933_Class::getTemperature()
 // Function to get temperature measurement.
 {
-  //setByte(0x80,0x90); // Read Temp. 
-  if(setCtrMode(TEMP_MEASURE) == false)
-  {
-#if LOGGING1
-	printer->println("getTemperature - Failed to set the control bit");
-#endif
-  	return false;
-  }
-  //delay(delayTimeInit);
   
+  if( tempUpdate() == false )
+  	return -1;
+  	
   int tTemp[2];
   long tTempVal;
   double cTemp;
-  
-  while( getStatusReg() & 0x01 != 0x01)
-  {
-  	; // Wait Until Get Vaild Temp. Measurement.
-  }
   
   tTemp[0] = getByte(0x92);
   tTemp[1] = getByte(0x93);
@@ -473,6 +458,25 @@ double AD5933_Class::getTemperature()
   return cTemp;
 }
 
+bool AD5933_Class::tempUpdate()
+// Function to update temperature information without reading.
+{
+  if(setCtrMode(TEMP_MEASURE) == false)
+  {
+#if LOGGING1
+	printer->println("getTemperature - Failed to set the control bit");
+#endif
+  	return false;
+  }
+  
+  while( getStatusReg() & 0x01 != 0x01)
+  {
+  	; // Wait Until Get Vaild Temp. Measurement.
+  }
+  
+  return true;
+}
+
 
 int AD5933_Class::getByte(int address) {
 // Hidden Function to get register value via I2C Transmission.
@@ -484,16 +488,19 @@ int AD5933_Class::getByte(int address) {
   printer->print('\n');
 #endif
   
-  Wire.beginTransmission(AD5933_ADR); // Begin I2C Transmission with AD5933 Chip.
-  Wire.write(Address_Ptr); // Send Address Pointer to write the target address
-  Wire.write(address); // Write address to read.
-  int i2cReturn = Wire.endTransmission(); // End Transmission.
-
-#if LOGGING3
-  printer->print("getByte - Transmission Complete. i2cReturn: ");
-  printer->print(i2cReturn);
-  printer->print("\n");
-#endif  
+  //Wire.beginTransmission(AD5933_ADR); // Begin I2C Transmission with AD5933 Chip.
+  //Wire.write(Address_Ptr); // Send Address Pointer to write the target address
+  //Wire.write(address); // Write address to read.
+  //int i2cReturn = Wire.endTransmission(); // End Transmission.
+  
+  if( !setByte(Address_Ptr,address))
+  	return false;
+	
+//#if LOGGING3
+//  printer->print("getByte - Transmission Complete. i2cReturn: ");
+//  printer->print(i2cReturn);
+//  printer->print("\n");
+//#endif  
   
   Wire.requestFrom(AD5933_ADR, 1); // Request the value of the written address.
 
@@ -550,10 +557,17 @@ bool AD5933_Class::setByte(int address, int value) {
 
 double AD5933_Class::getMagValue()
 // Hidden Function to get magnitude value of impedance measurement. (It does not wait.)
+// TODO: Rewrite this function with using block read function.
 {
   int rComp, iComp;
-  rComp = getRealComp(); // Getting Real Component
-  iComp = getImagComp(); // Getting Imaginary Component
+  //rComp = getRealComp(); // Getting Real Component
+  //iComp = getImagComp(); // Getting Imaginary Component
+  
+  byte impData[4];
+  blockRead(0x94, 4, impData);
+  rComp = impData[0]*16*16+impData[1];
+  iComp = impData[2]*16*16+impData[3];
+  
   double result = sqrt( square((double)rComp) + square((double)iComp) ); // Calculating magnitude.
 #if LOGGING3 
   printer->print("getMagValue - Resistance Magnitude is ");
@@ -573,6 +587,40 @@ double AD5933_Class::getMagOnce()
   return getMagValue();  
 }
 
+bool AD5933_Class::blockRead(int address, int num2Read, byte *toSave)
+{
+	if( !AD5933.setByte(Address_Ptr, address) )
+		return false;
+	if( !AD5933.setByte(BLOCK_READ_CODE, num2Read) )
+		return false;
+	
+	for(byte t1 = 0; t1 < num2Read; t1++)
+	{
+		Wire.requestFrom(AD5933_ADR, 1); // Request the value of the written address.
+  		
+        if (1 <= Wire.available()) { // If the MCU get the value,
+    		toSave[t1] = Wire.read(); // Read the value.
+#if LOGGING3
+		printer->print(address+t1,HEX);
+		printer->print(" ");
+		printer->println(toSave[t1],HEX);      
+#endif		
+    	}
+    	else {
+    		toSave[t1] = -1; // Returns -1 if fails.
+#if LOGGING1
+    		printer->println("blockRead - Failed to receive Message");
+#endif
+    		return false;
+	
+		}	
+    }
+  	
+	return true;
+}
+
+
+/*
 int AD5933_Class::getRealComp()
 // Function to get real component.
 {
@@ -616,3 +664,4 @@ int AD5933_Class::getImagComp()
 #endif
   return result;
 }
+*/

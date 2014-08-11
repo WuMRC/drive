@@ -17,10 +17,11 @@ Current functionalty:
 
 //--- Hard-coded inputs for the sketch:
 
+#define TWI_FREQ 400000L // Setting TWI/I2C Frequency to 400MHz to speed up.
 #define VERBOSE 0 //Toggles verbose debugging output via the serial monitor.
                   //1 = On, 0 = Off.
 
-#define cycles_base 500      //First term to set a number of cycles to ignore
+#define cycles_base 511      //First term to set a number of cycles to ignore
                              //to dissipate transients before a measurement is
                              //taken. The max value for this is 511.
 
@@ -44,12 +45,12 @@ Current functionalty:
 
 double gain_factor = 0;
 
+#include "AD5933.h" //Library for AD5933 functions (must be installed)
 #include <Wire.h> //Library for I2C communications
-#include <AD5933.h> //Library for AD5933 functions (must be installed)
 
 void setup()
 {
-  Serial.begin(9600); //Initialize serial communication for debugging.
+  Serial.begin(115200); //Initialize serial communication for debugging.
   #if VERBOSE
   Serial.println("Program start!");
   delay(100);
@@ -58,6 +59,7 @@ void setup()
   Wire.begin();
   delay(1000);
   
+  AD5933.setExtClock(true);
   //[A.X] Send a reset command to the AD5933.
   if(AD5933.resetAD5933() == true)
   {
@@ -165,7 +167,7 @@ void loop()
   Serial.print(temp);
   Serial.println(" degree celcius.");
   #else
-  AD5933.getTemperature();
+  AD5933.tempUpdate();
   #endif
   
   //[B.1] Issue a "repeat frequency" command.

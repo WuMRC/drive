@@ -12,6 +12,7 @@
 // Caution! Currently, verbose logging feature makes problem. Do not use them before proper debugging.
 
 #define AD5933_ADR 0x0D // Device Serial Bus Address
+#define BLOCK_READ_CODE 0xA1 // Command Code for block read.
 
 #define INIT_START_FREQ 1	// defined values for Control Register
 #define START_FREQ_SWEEP 2
@@ -28,6 +29,7 @@ class AD5933_Class
 public: // The detailed instruction will be on Wiki or ".cpp" file
 	int delayTimeInit; // for setting delay time.
 	double getTemperature();
+	bool tempUpdate();
 	double getMagOnce();
 	bool setStartFreq(long);
 	bool setIncrement(long);
@@ -61,20 +63,21 @@ public: // The detailed instruction will be on Wiki or ".cpp" file
 	}
 	int getByte(int);
 	bool setByte(int, int);
+	
 
 private:
 	
 	static const byte Address_Ptr = 0xB0; // Address Pointer to read register values.
 	double opClock;
-	int getRealComp();
-	int getImagComp();
+	//int getRealComp();
+	//int getImagComp();
 	double getMagValue();
 	inline byte getStatusReg()
 	{
 		return (getByte(0x8F) & 0x07);
-		//return getByte(0x8F);
 	}
 	HardwareSerial *printer;
+	bool blockRead(int, int, byte *);
 	
 };
 
