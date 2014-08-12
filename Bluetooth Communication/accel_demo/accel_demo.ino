@@ -59,7 +59,7 @@ THE SOFTWARE.
 //#include <SimpleTimer.h> // I experienced increased overhead using the timer library, decided to ditch it. You may fare better.
 
 // uncomment the following line for debug serial output
-#define DEBUG
+//#define DEBUG
 
 // For Accelerometer
 #define BMA250_I2CADDR      0x18
@@ -69,7 +69,7 @@ THE SOFTWARE.
 int AccelX = 100;
 int AccelY = 100;
 int AccelZ = 100;
-int notifier = 0; // variable to manage notification settings
+boolean notifier = false; // variable to manage notification settings
 uint8_t AccelerometerArray[4] = {50, 50, 50, 50}; // integer array to carry accelerometer values
 float AccelTemperature = 100;
 int count = 0;
@@ -171,14 +171,11 @@ void setup() {
 // ================================================================
 // MAIN APPLICATION LOOP 
 // ================================================================
-
-void loop() {
-  
+void loop() {  
     // keep polling for new data from BLE
-    count++;
-    
+    count++;   
     ble112.checkActivity();
-       
+    
     // check for input from the user
     if (Serial.available()) {
         uint8_t ch = Serial.read();
@@ -192,11 +189,10 @@ void loop() {
             // implementation allows the system_boot event specially to
             // set the "busy" flag to false for this particular case
         }
-    }
-    
+    }   
     // Check if GATT Client (Smartphone) is subscribed to notifications.
-    if (notifier == 1) {  
-          //Simple way of changinging frequency of notifications. see tunji.com/blog for more details on this.
+    if (notifier == true) {  
+          //Simple way of changinging frequency of notifications. see documentation on WuMRC Github or tunji.com/blog for more details on this.
           if (count > 50) {
             BMA250ReadAccel();
             AccelerometerArray[0] = (AccelX);
@@ -211,39 +207,33 @@ void loop() {
             count = 0;
             //Serial.println(millis());
           }       
-    }
-   
+    }   
    else {
      // Do zilch, zip, nada, nothing if notifications are not enabled.
      } 
-    
-    // blink Arduino LED based on state:
-    //  - solid = STANDBY
-    //  - 1 pulse per second = ADVERTISING
-    //  - 2 pulses per second = CONNECTED_SLAVE
-    //  - 3 pulses per second = CONNECTED_SLAVE with encryption
-    
-    uint16_t slice = millis() % 1000;
-    
-    if (ble_state == BLE_STATE_STANDBY) {
-        digitalWrite(LED_PIN, HIGH);
-    }
-    
-    if (ble_state == BLE_STATE_ADVERTISING) {
-        digitalWrite(LED_PIN, slice < 100);
-    }
-    
-    if (ble_state == BLE_STATE_CONNECTED_SLAVE) {
-      
-        if (!ble_encrypted) {
-            digitalWrite(LED_PIN, slice < 100 || (slice > 200 && slice < 300));
-     
-        } 
-        
-        else {
-            digitalWrite(LED_PIN, slice < 100 || (slice > 200 && slice < 300) || (slice > 400 && slice < 500));
-        }
-    }
+  
+  // blink Arduino LED based on state:
+  //  - solid = STANDBY
+  //  - 1 pulse per second = ADVERTISING
+  //  - 2 pulses per second = CONNECTED_SLAVE
+  //  - 3 pulses per second = CONNECTED_SLAVE with encryption
+  
+  uint16_t slice = millis() % 1000;
+  
+  if (ble_state == BLE_STATE_STANDBY) {
+      digitalWrite(LED_PIN, HIGH);
+  } 
+  if (ble_state == BLE_STATE_ADVERTISING) {
+      digitalWrite(LED_PIN, slice < 100);
+  } 
+  if (ble_state == BLE_STATE_CONNECTED_SLAVE) {    
+      if (!ble_encrypted) {
+          digitalWrite(LED_PIN, slice < 100 || (slice > 200 && slice < 300));   
+      }       
+      else {
+          digitalWrite(LED_PIN, slice < 100 || (slice > 200 && slice < 300) || (slice > 400 && slice < 500));
+      }
+  }
 }
 
 // ================================================================
@@ -470,10 +460,10 @@ void my_ble_evt_attributes_status (const struct ble_msg_attributes_status_evt_t 
     #endif
     
         if (msg -> flags == 1) {
-          notifier = 1;
+          notifier = true;
     }        
         else {
-          notifier = 0;
+          notifier = false;
     }  
 }  
 
