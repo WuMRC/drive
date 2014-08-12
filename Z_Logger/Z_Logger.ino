@@ -4,7 +4,7 @@ Z_Logger
 
 Goal for this version:
 Configure and execute single impedance measurement command, report the result,
-and repeat, at a sample rate of 200 times/second.
+and repeat, at a sample rate of 20 times/second. (Future TODO: 200Hz)
 
 Current functionalty:
 1.) Initialize the AD5933.
@@ -18,6 +18,7 @@ Current functionalty:
 //--- Hard-coded inputs for the sketch:
 
 #define TWI_FREQ 400000L // Setting TWI/I2C Frequency to 400MHz to speed up.
+
 #define VERBOSE 0 //Toggles verbose debugging output via the serial monitor.
                   //1 = On, 0 = Off.
 
@@ -33,7 +34,7 @@ Current functionalty:
 #define start_frequency 50000 //Set the start frequency, the only one of
                               //interest here(50 kHz).
 
-#define cal_resistance 4700 //Set a calibration resistance for the gain
+#define cal_resistance 4648 //Set a calibration resistance for the gain
                             //factor. This will have to be measured before any
                             //other measurements are performed.
                            
@@ -56,10 +57,12 @@ void setup()
   delay(100);
   #endif
   
+  TWBR=1;
   Wire.begin();
+  TWBR=1;
   delay(1000);
   
-  AD5933.setExtClock(true);
+  AD5933.setExtClock(false);
   //[A.X] Send a reset command to the AD5933.
   if(AD5933.resetAD5933() == true)
   {
