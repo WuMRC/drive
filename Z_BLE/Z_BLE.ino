@@ -153,13 +153,20 @@ BGLib ble112((HardwareSerial *)&bleSerialPort, 0, 1);
 
 // initialization sequence
 void setup() {
+  
+    //===========================================================  
     // For Accelerometer
+    //===========================================================
+    
     //Initialize accelerometer
     Wire.begin();
     Serial.begin(38400);
     BMA250Init();
-    
+
+    //===========================================================    
     // For BLE
+    //===========================================================
+    
     // initialize status LED
     pinMode(LED_PIN, OUTPUT);
     digitalWrite(LED_PIN, LOW);
@@ -191,8 +198,11 @@ void setup() {
     bleSerialPort.begin(38400);
 
     my_ble_evt_system_boot( NULL);
-    
+
+    //===========================================================    
     // FOR Z_Logger
+    //===========================================================
+    
     TWBR=1;
     AD5933.setExtClock(false);
     //[A.X] Send a reset command to the AD5933.
@@ -294,8 +304,9 @@ void setup() {
 // ================================================================
 
 void loop() {
-  
+  //===========================================================  
   // For Z_Logger
+  //===========================================================  
   
   unsigned long timerMicro1 = micros();
   //--- B. Repeated single measurement ---
@@ -374,9 +385,9 @@ void loop() {
   //delay(1000);
   #endif  
   
-  //=====================================================
-  
+  //===========================================================  
   // For BLE
+  //===========================================================  
   
   // keep polling for new data from BLE
   count++;   
@@ -399,7 +410,7 @@ void loop() {
   // Check if GATT Client (Smartphone) is subscribed to notifications.
   if (notifier == true) {  
         //Simple way of changinging frequency of notifications. see documentation on WuMRC Github or tunji.com/blog for more details on this.
-        if (count > 50) {
+        if (count > 300) {
           BMA250ReadAccel();
           AccelerometerArray[0] = (AccelX);
           AccelerometerArray[1] = (AccelY);

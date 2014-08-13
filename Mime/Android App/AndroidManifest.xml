@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.shemanigans.mime"
+    android:versionCode="1"
+    android:versionName="1.0" >
+
+    <uses-sdk
+        android:minSdkVersion="18"
+        android:targetSdkVersion="19" />
+
+    <uses-permission android:name="android.permission.BLUETOOTH" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+
+    <uses-feature
+        android:name="android.hardware.bluetooth_le"
+        android:required="true" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@drawable/ic_launcher"
+        android:label="@string/app_name"
+        android:logo="@drawable/ic_action_name"
+        android:theme="@style/MimeTheme" >
+        <activity
+            android:name="com.shemanigans.mime.MainActivity"
+            android:label="@string/app_name" >
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.shemanigans.mime.DisplayMessageActivity"
+            android:label="@string/title_activity_display_message"
+            android:parentActivityName="com.shemanigans.mime.MainActivity" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.shemanigans.mime.MainActivity" />
+        </activity>
+        <activity
+            android:name="com.shemanigans.mime.ActAndPair"
+            android:label="@string/title_activity_act_and_pair"
+            android:parentActivityName="com.shemanigans.mime.MainActivity" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.shemanigans.mime.MainActivity" />
+        </activity>
+        <activity
+            android:name="com.shemanigans.mime.Pair"
+            android:label="@string/title_activity_pair"
+            android:parentActivityName="com.shemanigans.mime.MainActivity" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.shemanigans.mime.MainActivity" />
+        </activity>
+        <activity
+            android:name="com.shemanigans.mime.Scan"
+            android:label="@string/title_activity_scan"
+            android:parentActivityName="com.shemanigans.mime.MainActivity" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.shemanigans.mime.MainActivity" />
+        </activity>
+        <activity
+            android:name="com.shemanigans.mime.DeviceScanActivity"
+            android:label="@string/title_activity_device_scan" >
+        </activity>
+        <activity
+            android:name="com.shemanigans.mime.DeviceControlActivity"
+            android:label="@string/title_activity_device_control"
+            android:parentActivityName="com.shemanigans.mime.Scan" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.shemanigans.mime.Scan" />
+        </activity>
+        <activity
+            android:name="com.shemanigans.mime.ButtonNo"
+            android:label="@string/title_activity_button_no"
+            android:parentActivityName="com.shemanigans.mime.MainActivity" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.shemanigans.mime.MainActivity" />
+        </activity>
+
+        <service
+            android:name="com.shemanigans.mime.BluetoothLeService"
+            android:enabled="true"
+            android:label="@string/service_name_BluetoothLeService" />
+
+        <activity
+            android:name="com.shemanigans.mime.AccelerometerDataParser"
+            android:label="@string/title_activity_accelerometer_data_parser" >
+        </activity>
+    </application>
+
+</manifest>
