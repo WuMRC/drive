@@ -50,17 +50,21 @@ clipName = unique(clipName);
 % Impedance analysis
 Fs = 200;
 dt = 1/Fs;
-totalTime = 12; % second
+totalTime = 10; % second
 offset = 0.75;
 
 timeBioimpedance = offset:dt:totalTime;
 
-bioimpedanceLegSMOOTH = smooth(bioimpedanceLeg,Fs/2).*20;
+
+
+
+
+bioimpedanceLegSMOOTH = smooth(bioimpedanceLeg,Fs/2);
 bioimpedanceLegSMOOTH = smooth(bioimpedanceLegSMOOTH, 20);
 respLegSMOOTH = smooth(bioimpedanceLegSMOOTH, 200);
 cardLegSMOOTH = smooth(bioimpedanceLegSMOOTH - respLegSMOOTH);
 
-bioimpedanceArmSMOOTH = smooth(bioimpedanceArm,Fs/2).*20;
+bioimpedanceArmSMOOTH = smooth(bioimpedanceArm,Fs/2);
 bioimpedanceArmSMOOTH = smooth(bioimpedanceArmSMOOTH, 20);
 
 
@@ -92,4 +96,67 @@ subplot(3,1,3), plot(timeBioimpedance', ...
 title('Cardiac Signal')
 
 
+%%
+plot(bioimpedanceLeg(timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+Fs*offset:...
+    (timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+Fs*totalTime))...
+    - mean(bioimpedanceLegSMOOTH(timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+Fs*offset:...
+    (timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+Fs*totalTime))))
 
+hold on, plot(bioimpedanceLegSMOOTH(timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+Fs*offset:...
+    (timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+Fs*totalTime)) ...
+    - mean(bioimpedanceLegSMOOTH(timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+Fs*offset:...
+    (timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+Fs*totalTime))),'y')
+
+%%
+plot(timeBioimpedance,bioimpedanceLeg(1:length(timeBioimpedance)))
+hold on, plot(timeBioimpedance,bioimpedanceLegSMOOTH(1:length(timeBioimpedance)),...
+    'g','LineWidth',2)
+
+[ymax,imax,ymin,imin] = extrema(bioimpedanceLegSMOOTH(1:length(timeBioimpedance)));
+hold on, plot(timeBioimpedance(imax),ymax,'r*',timeBioimpedance(imin),ymin,'ro')
+
+% 
+% cardStuff = bioimpedanceLeg(1:length(timeBioimpedance)) ...
+%     - bioimpedanceLegSMOOTH(1:length(timeBioimpedance));
+% 
+% figure, plot(timeBioimpedance,cardStuff)
+
+
+
+
+%% Extra filter stuff that isn't/can't work
+% Filters
+% Remove 60 Hz
+[b, a] = butter(9,60/(Fs/2),'low'); % Remove 50Hz and above
+bioimpedanceLegFILT = filter(b,a,bioimpedanceLeg);
+plot(bioimpedanceLegFILT)
+
+
+respCutoff = 1; % Hz
+[zResp, pResp, kResp] = ...
+    butter(8,respCutoff./Fs,'low');
+sosResp = zp2sos(zResp,pResp,kResp);
+
+cardCutoff = [1 3]; % Hz
+[zCard, pCard, kCard] = ...
+    butter(8,cardCutoff./Fs,'bandpass');
+
+
+
+% FFT
+NFFT = 2^nextpow2(length(timeBioimpedance));
+B = fft(bioimpedanceLeg(timeMarkerBioimpedanceInd(DATA_TO_ANALYZE):...
+    (timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+Fs*totalTime)), NFFT)...
+    /length(timeBioimpedance);
+f = Fs/2*linspace(0,1,NFFT/2+1);
+
+% 
+% 
+plot(f,abs(B(1:NFFT/2+1)))
+
+figure, subplot(2,1,1), plot(timeBioimpedance', ...
+    bioimpedanceLegFILT(timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+Fs*offset:...
+    (timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+Fs*totalTime)) ...
+    - mean(bioimpedanceLegFILT(timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+Fs*offset:...
+    (timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+Fs*totalTime))))
+title(clipName(DATA_TO_ANALYZE))
