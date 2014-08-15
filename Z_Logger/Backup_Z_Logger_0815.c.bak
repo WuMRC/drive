@@ -59,7 +59,7 @@ void setup()
   
   TWBR=1;
   Wire.begin();
-  //TWBR=1;
+  TWBR=1;
   delay(1000);
   
   AD5933.setExtClock(false);
@@ -238,4 +238,3 @@ void loop()
   //delay(1000);
   #endif
 }
-
