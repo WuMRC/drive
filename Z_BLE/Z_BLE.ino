@@ -159,7 +159,9 @@ void setup() {
     //===========================================================
     
     //Initialize accelerometer
+    TWBR=1;
     Wire.begin();
+    TWBR=1;
     Serial.begin(38400);
     BMA250Init();
 
@@ -191,7 +193,6 @@ void setup() {
 
     // open Arduino USB serial (and wait, if we're using Leonardo)
     // use 38400 since it works at 8MHz as well as 16MHz
-    Serial.begin(38400);
     while (!Serial);
 
     // open BLE software serial port
@@ -410,12 +411,12 @@ void loop() {
   // Check if GATT Client (Smartphone) is subscribed to notifications.
   if (notifier == true) {  
         //Simple way of changinging frequency of notifications. see documentation on WuMRC Github or tunji.com/blog for more details on this.
-        if (count > 300) {
+        if (count > 0) {
           BMA250ReadAccel();
           AccelerometerArray[0] = (AccelX);
           AccelerometerArray[1] = (AccelY);
           AccelerometerArray[2] = (AccelZ);
-          AccelerometerArray[3] = (Z_value); //(AccelTemperature);
+          AccelerometerArray[3] = (Z_value - 4648)*10; //(AccelTemperature);
           
           //Write notification to characteristic on ble112. Causes notification to be sent.
           ble112.ble_cmd_attributes_write(GATT_HANDLE_C_TX_DATA, 0, 4 , AccelerometerArray);
