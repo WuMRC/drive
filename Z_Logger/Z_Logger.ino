@@ -34,7 +34,7 @@ Current functionalty:
 #define start_frequency 50000 //Set the start frequency, the only one of
                               //interest here(50 kHz).
 
-#define cal_resistance 1960.6 //Set a calibration resistance for the gain
+#define cal_resistance 553.91 //Set a calibration resistance for the gain
                             //factor. This will have to be measured before any
                             //other measurements are performed.
                            
