@@ -8,7 +8,7 @@ dicomImage = dicomread(dicomImageFile.filename);
 dicomImage = permute(dicomImage, [1 2 4 3]);
 
 % Display
-imtool3D(dicomImage)
+dicomViewer(dicomImage)
 
 %%
 bioimpedanceFile = uigetfile('*.*','Pick an ACQ file');
