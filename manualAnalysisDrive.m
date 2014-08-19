@@ -11,8 +11,8 @@ dicomImage = permute(dicomImage, [1 2 4 3]);
 dicomViewer(dicomImage)
 
 %%
-bioimpedanceFile = uigetfile('*.*','Pick an ACQ file');
-acq = load_acq(bioimpedanceFile);
+[bioimpedanceFile, bioimpedancePath] = uigetfile('*.*','Pick an ACQ file');
+acq = load_acq(strcat(bioimpedancePath,bioimpedanceFile));
 
 ohmsPerVolt = 20;
 
@@ -38,7 +38,7 @@ for nMarkers = 1:length(acq.markers.lSample)
         x = str2double(datestr(timeStartBioimpedance/day+...
             (double(acq.markers.lSample(nMarkers)/200)/day),'HHMMSS'));
         timeMarkerBioimpedance(nMarkers-shift) = x;
-        clipName{1,nMarkers-shift} = acq.markers.szText{1,nMarkers}(11:end);
+%         clipName{1,nMarkers-shift} = acq.markers.szText{1,nMarkers}(11:end);
         timeMarkerBioimpedanceInd(nMarkers-shift) = acq.markers.lSample(nMarkers);
     end
 end
@@ -46,14 +46,6 @@ clear x
 
 timeMarkerBioimpedance = unique(timeMarkerBioimpedance);
 clipName = unique(clipName);
-
-% Impedance analysis
-Fs = 200;
-dt = 1/Fs;
-totalTime = 10; % second
-offset = 0.75;
-
-timeBioimpedance = offset:dt:totalTime;
 
 
 
@@ -66,34 +58,85 @@ cardLegSMOOTH = smooth(bioimpedanceLegSMOOTH - respLegSMOOTH);
 
 bioimpedanceArmSMOOTH = smooth(bioimpedanceArm,Fs/2);
 bioimpedanceArmSMOOTH = smooth(bioimpedanceArmSMOOTH, 20);
+respArmSMOOTH = smooth(bioimpedanceArmSMOOTH, 200);
+cardArmSMOOTH = smooth(bioimpedanceArmSMOOTH - respArmSMOOTH);
 
 
 
+%%
+Fs = 200;
+dt = 1/Fs;
+totalTime = 10; % second
+offset = 0.75;
+
+timeBioimpedance = offset:dt:totalTime;
 
 
 
-DATA_TO_ANALYZE = 1;
+for DATA_TO_ANALYZE = 1:size(timeMarkerBioimpedance,2)-1;
 % LEG DATA
-figure, subplot(3,1,1), plot(timeBioimpedance', ...
+
+h=figure; subplot(3,2,1), plot(timeBioimpedance', ...
     bioimpedanceLegSMOOTH(timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+Fs*offset:...
     (timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+Fs*totalTime)) ...
     - mean(bioimpedanceLegSMOOTH(timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+Fs*offset:...
     (timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+Fs*totalTime))))
-title(clipName(DATA_TO_ANALYZE))
+title(horzcat('Leg ',acq.markers.szText{1,DATA_TO_ANALYZE+1}(12:end)))%clipName(DATA_TO_ANALYZE)))
+xlabel('Time [s]')
+ylabel('Impedance [\Omega]')
 
-subplot(3,1,2), plot(timeBioimpedance', ...
+subplot(3,2,3), plot(timeBioimpedance', ...
     respLegSMOOTH(timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+Fs*offset:...
     (timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+Fs*totalTime)) ...
     - mean(respLegSMOOTH(timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+Fs*offset:...
     (timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+Fs*totalTime))))
 title('Respiratory Signal')
+xlabel('Time [s]')
+ylabel('Impedance [\Omega]')
 
-subplot(3,1,3), plot(timeBioimpedance', ...
+subplot(3,2,5), plot(timeBioimpedance', ...
     cardLegSMOOTH(timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+Fs*offset:...
     (timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+Fs*totalTime)) ...
     - mean(cardLegSMOOTH(timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+Fs*offset:...
     (timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+Fs*totalTime))))
 title('Cardiac Signal')
+xlabel('Time [s]')
+ylabel('Impedance [\Omega]')
+
+subplot(3,2,2), plot(timeBioimpedance', ...
+    bioimpedanceArmSMOOTH(timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+Fs*offset:...
+    (timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+Fs*totalTime)) ...
+    - mean(bioimpedanceArmSMOOTH(timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+Fs*offset:...
+    (timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+Fs*totalTime))))
+title(horzcat('Arm ',acq.markers.szText{1,DATA_TO_ANALYZE+1}(12:end)))%clipName(DATA_TO_ANALYZE)))
+xlabel('Time [s]')
+ylabel('Impedance [\Omega]')
+
+subplot(3,2,4), plot(timeBioimpedance', ...
+    respArmSMOOTH(timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+Fs*offset:...
+    (timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+Fs*totalTime)) ...
+    - mean(respArmSMOOTH(timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+Fs*offset:...
+    (timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+Fs*totalTime))))
+title('Respiratory Signal')
+xlabel('Time [s]')
+ylabel('Impedance [\Omega]')
+
+subplot(3,2,6), plot(timeBioimpedance', ...
+    cardArmSMOOTH(timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+Fs*offset:...
+    (timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+Fs*totalTime)) ...
+    - mean(cardArmSMOOTH(timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+Fs*offset:...
+    (timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+Fs*totalTime))))
+title('Cardiac Signal')
+xlabel('Time [s]')
+ylabel('Impedance [\Omega]')
+set(gcf,'units','normalized','outerposition',[0 0 1 1])
+
+figureFormat = 'png';
+figureName = strcat(...%num2str(DATA_TO_ANALYZE),
+    acq.markers.szText{1,DATA_TO_ANALYZE+1}(12:end),'.',figureFormat);
+saveas(h,figureName,figureFormat)
+% close
+end
 
 
 %%
@@ -160,3 +203,7 @@ figure, subplot(2,1,1), plot(timeBioimpedance', ...
     - mean(bioimpedanceLegFILT(timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+Fs*offset:...
     (timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+Fs*totalTime))))
 title(clipName(DATA_TO_ANALYZE))
+
+%%
+
+clear all
