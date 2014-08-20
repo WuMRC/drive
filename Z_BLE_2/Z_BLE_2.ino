@@ -52,6 +52,7 @@
 
 #include <SoftwareSerial.h> // software serial library for input and output to the serial mnitor.
 #include <Wire.h>
+#include <Math.h>
 #include "BGLib.h" // BGLib C library for BGAPI communication.
 #include "AD5933.h" //Library for AD5933 functions (must be installed)
 #include "MemoryFree.h";
@@ -80,11 +81,10 @@ double gain_factor = 0;
 int Ax = 100;
 int Ay = 100;
 int Az = 100;
-double s;
+long s;
 int t;
 boolean notifier = false; // variable to manage notification settings
-uint8_t A[5] = {
-  50, 50, 50, 50, 50}; // integer array to carry accelerometer values
+uint8_t A[6] = {1, 2, 3, 4, 5, 6  }; // integer array to carry accelerometer values
 float Atemp = 100;
 int i = 0;
 //SimpleTimer timer;
@@ -211,6 +211,9 @@ void loop() {
   AD5933.setCtrMode(REPEAT_FREQ);
 
   double Z_value = gain_factor/AD5933.getMagOnce();
+  
+  s = (long)((Z_value * 100000) + 0.5);
+
 
   // For BLE
   // =================================================== 
@@ -218,6 +221,19 @@ void loop() {
   // keep polling for new data from BLE
   i++;   
   ble112.checkActivity();
+  s = (long)((Z_value * 1000) + 0.5);
+  changeVal(s, A);
+  
+  Serial.print(freeMemory());
+  Serial.print("\t");
+  Serial.print(Z_value); 
+  Serial.print("\t");
+  Serial.print((long)floor(s));
+  Serial.print("\t");
+  Serial.print(A[3]);  
+  Serial.print(A[4]);      
+  Serial.print(A[5]);            
+  Serial.println();
 
   // check for input from the user
   if (Serial.available()) {
@@ -249,10 +265,10 @@ void loop() {
         A[3] = 0;  
       }
       else {
-        s = (100 * (Z_value));
-        t = (int) s;
-        A[3] = ((int) Z_value) - 400;        
-        A[4] = (int)(t % 100);
+        //s = (100 * (Z_value));
+        //t = (int) s;
+        //A[3] = ((int) Z_value) - 400;        
+        //A[4] = (int)(t % 100);
       }
 
 
@@ -557,7 +573,24 @@ void my_ble_evt_attributes_status (const struct ble_msg_attributes_status_evt_t 
   else {
     notifier = false;          
   }  
-}  
+}
+
+
+void changeVal(long val, uint8_t *values) {
+  values[3] = ((getNthDigit(val, 10, 6) * 10) + getNthDigit(val, 10, 5));
+  values[4] = ((getNthDigit(val, 10, 4) * 10) + getNthDigit(val, 10, 3));
+  values[5] = ((getNthDigit(val, 10, 2) * 10) + getNthDigit(val, 10, 1));
+}
+
+long getNthDigit(long number, int base, int n) {
+  long answer = 0;
+  answer = (long) (number / pow(base, n - 1));
+  answer = answer % base;
+  return answer;
+  //return (int) ((number / pow(base, n - 1)) % base); 
+}
+
+
 
 // From Accelerometer
 
