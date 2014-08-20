@@ -70,7 +70,7 @@ int AccelX = 100;
 int AccelY = 100;
 int AccelZ = 100;
 boolean notifier = false; // variable to manage notification settings
-uint8_t AccelerometerArray[4] = {50, 50, 50, 50}; // integer array to carry accelerometer values
+uint8_t AccelerometerArray[5] = {50, 50, 50, 50, 50}; // integer array to carry accelerometer values
 float AccelTemperature = 100;
 int count = 0;
 //SimpleTimer timer;
@@ -199,9 +199,10 @@ void loop() {
             AccelerometerArray[1] = (AccelY);
             AccelerometerArray[2] = (AccelZ);
             AccelerometerArray[3] = (AccelTemperature);
+            AccelerometerArray[4] = (50);            
             
             //Write notification to characteristic on ble112. Causes notification to be sent.
-            ble112.ble_cmd_attributes_write(GATT_HANDLE_C_TX_DATA, 0, 4 , AccelerometerArray);
+            ble112.ble_cmd_attributes_write(GATT_HANDLE_C_TX_DATA, 0, 5 , AccelerometerArray);
             
             // Reset count to zero
             count = 0;
@@ -256,6 +257,7 @@ void onIdle() {
 // called when the parser does not read the expected response in the specified time limit
 void onTimeout() {
     // reset module (might be a bit drastic for a timeout condition though)
+    Serial.println("Timed out.");    
 }
 
 // ================================================================
