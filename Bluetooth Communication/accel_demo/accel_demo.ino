@@ -59,7 +59,7 @@ THE SOFTWARE.
 //#include <SimpleTimer.h> // I experienced increased overhead using the timer library, decided to ditch it. You may fare better.
 
 // uncomment the following line for debug serial output
-//#define DEBUG
+#define DEBUG
 
 // For Accelerometer
 #define BMA250_I2CADDR      0x18
