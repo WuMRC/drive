@@ -51,28 +51,41 @@ bArmSMOOTH = smooth(bArmSMOOTH, Fs/10);
 respArmSMOOTH = smooth(bArmSMOOTH, Fs);
 cardArmSMOOTH = smooth(bArmSMOOTH - respArmSMOOTH);
 
+legData = [bLegSMOOTH, respLegSMOOTH, cardLegSMOOTH];
 
-for indMarker = 2:2%size(timeMarkerBioimpedance,2)-1;    
+for indMarker = 1:size(timeMarkerBioimpedance,2)-1;    
     % The time of the region of interest
     tBegin = timeMarkerBioimpedanceInd(indMarker)+Fs*offset;
     tEnd = timeMarkerBioimpedanceInd(indMarker)+Fs*totalTime;
     
+    % Signal during the time of interest (manuever)
     legROI = bLegSMOOTH(tBegin:tEnd) - mean(bLegSMOOTH(tBegin:tEnd));
+    respLegROI = respLegSMOOTH(tBegin:tEnd) - mean(respLegSMOOTH(tBegin:tEnd));
+    cardLegROI = cardLegSMOOTH(tBegin:tEnd) - mean(cardLegSMOOTH(tBegin:tEnd));
+    armROI = bArmSMOOTH(tBegin:tEnd) - mean(bArmSMOOTH(tBegin:tEnd));
+    respArmROI = respArmSMOOTH(tBegin:tEnd) - mean(respArmSMOOTH(tBegin:tEnd));
+    cardArmROI = cardArmSMOOTH(tBegin:tEnd) - mean(cardArmSMOOTH(tBegin:tEnd));
     
-%     [bmax, imax, bmin, imin] = extrema(legROI);
-    [maxima, indMax] = findpeaks(legROI,'MINPEAKDISTANCE',Fs/2);
+    % Overall signal changes
+    [legMax, indLegMax] = findpeaks(legROI,'MINPEAKDISTANCE',Fs/2);
+    [armMax, indArmMax] = findpeaks(armROI,'MINPEAKDISTANCE',Fs/2);
     legROIinv = 1.01*max(legROI) - legROI;
-    [minima, indMin] = findpeaks(legROIinv,'MINPEAKDISTANCE',Fs/2);
+    armROIinv = 1.01*max(armROI) - armROI;
+    [legMin, indLegMin] = findpeaks(legROIinv,'MINPEAKDISTANCE',Fs/2);
+    [armMin, indArmMin] = findpeaks(armROIinv,'MINPEAKDISTANCE',Fs/2);
     
-    maxOverall = max(legROI);
-    minOverall = min(legROI);
+    maxOverallLeg = max(legROI); maxOverallArm = max(armROI);
+    minOverallLeg = min(legROI); minOverallArm = min(armROI);
     
-    dZ(indMarker) = maxOverall - minOverall;
+    dZOverallLeg(indMarker) = maxOverallLeg - minOverallLeg;
+    dZOverallArm(indMarker) = maxOverallArm - minOverallArm;
     
-    figure, plot(time', legROI,time(indMax),maxima,'g*',time(indMin),legROI(indMin),'ro')
-    title(horzcat('Leg ',acq.markers.szText{1,indMarker+1}(12:end)));
-    xlabel('Time [s]');
-    ylabel('Impedance [\Omega]');
+    
+    
+%     figure, plot(time', legROI,time(indMaxLeg),maximaLeg,'g*',time(indMinL),legROI(indMinL),'ro')
+%     title(horzcat('Leg ',acq.markers.szText{1,indMarker+1}(12:end)));
+%     xlabel('Time [s]');
+%     ylabel('Impedance [\Omega]');
     
 end
 
