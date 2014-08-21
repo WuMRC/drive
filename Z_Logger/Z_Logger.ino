@@ -22,7 +22,7 @@ Current functionalty:
 #define VERBOSE 0 //Toggles verbose debugging output via the serial monitor.
                   //1 = On, 0 = Off.
 
-#define cycles_base 511      //First term to set a number of cycles to ignore
+#define cycles_base 200      //First term to set a number of cycles to ignore
                              //to dissipate transients before a measurement is
                              //taken. The max value for this is 511.
 
@@ -41,25 +41,39 @@ Current functionalty:
 #define cal_samples 10 //Set a number of measurements to take of the calibration
                        //resistance. These are used to get an average gain
                        //factor.
-                           
+#ifndef cbi
+#define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
+#endif
+#ifndef sbi
+#define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
+#endif                            
 //---
 
 double gain_factor = 0;
 
-#include "AD5933.h" //Library for AD5933 functions (must be installed)
+
+
 #include <Wire.h> //Library for I2C communications
+#include "AD5933.h" //Library for AD5933 functions (must be installed)
+//#include <AltSoftSerial.h>
+//AltSoftSerial altSerial;
 
 void setup()
 {
-  Serial.begin(9600); //Initialize serial communication for debugging.
+  Serial.begin(115200); //Initialize serial communication for debugging.
+  //altSerial.begin(38400);
   #if VERBOSE
   Serial.println("Program start!");
   delay(100);
   #endif
   
-  TWBR=1;
+  //TWBR=1;
+  //cbi(TWSR, TWPS0);
+  //cbi(TWSR, TWPS1);
   Wire.begin();
   //TWBR=1;
+  cbi(TWSR, TWPS0);
+  cbi(TWSR, TWPS1);
   delay(1000);
   
   AD5933.setExtClock(false);
@@ -159,7 +173,7 @@ void setup()
 
 void loop()
 {
-  unsigned long timerMicro1 = micros();
+  //unsigned long timerMicro1 = micros();
   //--- B. Repeated single measurement ---
   //Gain factor calibration already sets the frequency, so just send 
   //repeat single magnitude capture command.
@@ -216,7 +230,7 @@ void loop()
   
     
   //Serial.print("Time: ");
-  Serial.print(timerMicro1 / 1000000.0);  
+  Serial.print(millis() / 1000.0);  
     
   //[B.2.3] Output the impedance value (serial, array, etc.)
   

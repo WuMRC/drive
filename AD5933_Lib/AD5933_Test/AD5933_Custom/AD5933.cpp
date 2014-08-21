@@ -31,7 +31,7 @@ bool AD5933_Class::performFreqSweep(double gainFactor, double *arrSave)
 #endif
     return false;
   }
-  delay(delayTimeInit);
+  //delay(delayTimeInit);
   if(setCtrMode(START_FREQ_SWEEP) == false)
   {
 #if LOGGING1
@@ -92,7 +92,7 @@ double AD5933_Class::getGainFactor(double cResistance, int avgNum, bool retStand
 #endif
     return -1;
   }
-  delay(delayTimeInit);
+  //delay(delayTimeInit);
   if(setCtrMode(START_FREQ_SWEEP) == false)
   {
 #if LOGGING1
