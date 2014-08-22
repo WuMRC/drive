@@ -50,13 +50,11 @@ THE SOFTWARE.
 ===============================================
 */
 
-#include <SoftwareSerial.h> // software serial library for input and output to the serial mnitor.
-
+//#include <SoftwareSerial.h> // software serial library for input and output to the serial mnitor.
 #include <Wire.h>
-
 #include <Math.h>
-
 #include "BGLib.h" // BGLib C library for BGAPI communication.
+#include <AltSoftSerial.h> // software serial library for input and output to the serial mnitor.
 
 //#include <SimpleTimer.h> // I experienced increased overhead using the timer library, decided to ditch it. You may fare better.
 
@@ -105,7 +103,7 @@ uint8_t ble_bonding = 0xFF; // 0xFF = no bonding, otherwise = bonding handle
 //#define BLE_WAKEUP_PIN 5 // BLE Wake up pin
 
 // use SoftwareSerial on pins D3/D4 for RX/TX (Arduino side)
-SoftwareSerial bleSerialPort(3, 4);
+AltSoftSerial bleSerialPort(8, 9);
 
 // create BGLib object:
 //  - use SoftwareSerial por for module comms
@@ -254,7 +252,7 @@ void onIdle() {
 // called when the parser does not read the expected response in the specified time limit
 void onTimeout() {
     // reset module (might be a bit drastic for a timeout condition though)
-    Serial.print("Timed out.");
+    Serial.println("Timed out.");
     
 }
 

@@ -50,12 +50,14 @@
  ===============================================
  */
 
-#include <SoftwareSerial.h> // software serial library for input and output to the serial mnitor.
+//#include <SoftwareSerial.h> // software serial library for input and output to the serial monitor.
 #include <Wire.h>
 #include <Math.h>
 #include "BGLib.h" // BGLib C library for BGAPI communication.
 #include "AD5933.h" //Library for AD5933 functions (must be installed)
 #include "MemoryFree.h";
+#include <AltSoftSerial.h>
+
 
 // uncomment the following line for debug serial output
 #define DEBUG
@@ -65,7 +67,7 @@
 double gain_factor = 0;
 #define TWI_FREQ 400000L
 #define VERBOSE 0 
-#define cycles_base 511      
+#define cycles_base 200      
 #define cycles_multiplier 1                              
 #define start_frequency 50000 
 #define cal_resistance 554.72                            
@@ -84,9 +86,11 @@ int Az = 100;
 long s;
 int t;
 boolean notifier = false; // variable to manage notification settings
-uint8_t A[6] = {1, 2, 3, 4, 5, 6  }; // integer array to carry accelerometer values
+uint8_t A[6] = {1, 2, 3, 4, 5, 6}; // integer array to carry accelerometer values
 float Atemp = 100;
 int i = 0;
+AltSoftSerial altSerial;
+
 //SimpleTimer timer;
 
 // ================================================================
@@ -125,7 +129,10 @@ uint8_t ble_bonding = 0xFF; // 0xFF = no bonding, otherwise = bonding handle
 //#define BLE_WAKEUP_PIN 5 // BLE Wake up pin
 
 // use SoftwareSerial on pins D3/D4 for RX/TX (Arduino side)
-SoftwareSerial bleSerialPort(3, 4);
+//SoftwareSerial bleSerialPort(10, 11);
+AltSoftSerial bleSerialPort(8, 9); // change this to 3, 4 when using TinyDuino as pins cannot be changed to use
+                                   // AltSoftSerial
+
 
 // create BGLib object:
 //  - use SoftwareSerial por for module comms
@@ -152,6 +159,7 @@ void setup() {
   // ===================================================
 
   AD5933.setExtClock(false);
+  AD5933.setSettlingCycles(cycles_base,cycles_multiplier);
 
   double temp = AD5933.getTemperature();
 
@@ -222,8 +230,8 @@ void loop() {
   i++;   
   ble112.checkActivity();
   s = (long)((Z_value * 1000) + 0.5);
-  changeVal(s, A);
   
+  /*changeVal(s, A);
   Serial.print(freeMemory());
   Serial.print("\t");
   Serial.print(Z_value); 
@@ -234,6 +242,8 @@ void loop() {
   Serial.print(A[4]);      
   Serial.print(A[5]);            
   Serial.println();
+  */
+  
 
   // check for input from the user
   if (Serial.available()) {
@@ -252,7 +262,7 @@ void loop() {
   // Check if GATT Client (Smartphone) is subscribed to notifications.
   if (notifier == true) {  
     //Simple way of changinging frequency of notifications. see documentation on WuMRC Github or tunji.com/blog for more details on this.
-    if (i > 12) {
+    if (i > 0) {
       //BMA250ReadAccel();
       A[0] = (-40);
       A[1] = (0);
@@ -260,30 +270,33 @@ void loop() {
 
       if((Z_value - 554.72) > -1.5 && (Z_value - 554.72) < 1.5) {
         A[3] = 0;
+        A[4] = 0;
+        A[5] = 0;
       }
       else if((Z_value - 554.72) > 1000) {
-        A[3] = 0;  
+        A[3] = 0;
+        A[4] = 0;
+        A[5] = 0; 
       }
       else {
-        //s = (100 * (Z_value));
-        //t = (int) s;
-        //A[3] = ((int) Z_value) - 400;        
-        //A[4] = (int)(t % 100);
+        changeVal(s, A);
       }
 
 
       //Write notification to characteristic on ble112. Causes notification to be sent.
-      ble112.ble_cmd_attributes_write(GATT_HANDLE_C_TX_DATA, 0, 5 , A);
+      ble112.ble_cmd_attributes_write(GATT_HANDLE_C_TX_DATA, 0, 6 , A);
 
       // Reset count to zero
       i = 0;
-      Serial.print(freeMemory());
-      Serial.print("\t");
+      //Serial.print(freeMemory());
+      //Serial.print("\t");
       Serial.print(A[3]);
       Serial.print("\t");      
       Serial.print(A[4]);
       Serial.print("\t");      
-      Serial.print(Z_value);            
+      Serial.print(Z_value);
+      Serial.print("\t");      
+      Serial.print(millis());       
       Serial.println();
 
     }       
@@ -567,8 +580,8 @@ void my_ble_evt_attributes_status (const struct ble_msg_attributes_status_evt_t 
   if (msg -> flags == 1) {
     notifier = true;
   }        
-  else if (msg -> flags == 2){
-    notifier = true;
+  else if (msg -> flags == 0){
+    notifier = false;
   }
   else {
     notifier = false;          
