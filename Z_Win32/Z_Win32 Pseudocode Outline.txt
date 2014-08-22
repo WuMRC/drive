@@ -1,0 +1,117 @@
+Draft Pseudocode Outline of Z_Win32.cpp
+
+Written for use with Windows 8 and above and Visual Studio 2013
+---------------------------------------------------------------
+
+Include the follwing libraries:
+windows.h
+stdlib.h
+string.h
+tchar.h
+bluetoothleapis.h
+
+Declare a function ZW32_window_proc() to handle messages for the window that will be created within the OS.
+
+Declare an inititialization function to connect to the BLE112 using a default GATT profile.
+
+Declare the WinMain() function.
+{
+  Declare a class for the window.
+
+  Define the attributes of the window within the class.
+
+  If registering of the class fails:
+  {
+    Display an error message.
+    Return error code (1) & quit.
+  }
+
+  Create the window, with the following arguements:
+  - Name of the application.
+  - Text for the title bar of the window.
+  - Style (default to WS_OVERLAPPED).
+  - X and Y position (can use CW_DEFAULT).
+  - Width and height.
+  - Handle of the current instance of the program.
+
+  If creating the window fails:
+  {
+    Display an error message.
+    
+    Return an error code (1) & quit.
+  }
+
+  Display the window.
+
+  Update the window.
+
+  Create the main message loop.
+
+  While there are messages from the OS:
+  {
+   Translate the message.
+   
+   Dispatch the message.
+  }
+
+  Return a success code (0).
+}
+
+Declare ZW32_window_proc()
+{
+  Create a paint structure (PAINTSTRUCT).
+
+  Create a graphics object (HDC).
+
+  Create a case structure:
+  {
+   Case: the function receives a paint message from the OS (WM_PAINT):
+   {
+     Begin the painting of the graphics object.
+
+     Read most recent notification from the BLE112.
+
+     Parse notification data into current_point array.
+
+     Append current_point array to displayed_points array (a running collection of # received points).
+
+     Graph displayed_points array.
+
+     Break.
+   }
+
+   Case: the function receives a destroy window message from the OS (WM_DESTROY):
+   {
+    Unregister the window with the OS.
+    
+    Break.    
+   }
+
+   Default Case:
+   {
+    Return the "catch-all" DefWindowProc() function result.
+
+    Break.
+   }
+
+   Return a success code (0).
+}
+
+
+----------
+References
+----------
+1)Win32 applications in C++.
+http://msdn.microsoft.com/en-us/library/bb384843.aspx
+
+2)WinMain application entry point.
+http://msdn.microsoft.com/en-us/library/ms633559.aspx
+
+3) BLE master/slave sending/receiving data basics.
+https://bluegiga.zendesk.com/entries/25053373--REFERENCE-BLE-master-slave-GATT-client-server-and-data-RX-TX-basics
+
+4) BT programming and Windows sockets.
+http://msdn.microsoft.com/en-us/library/windows/desktop/aa362928%28v=vs.85%29.aspx
+
+5) BLE library functions
+http://msdn.microsoft.com/en-us/library/windows/hardware/hh450825%28v=vs.85%29.aspx
