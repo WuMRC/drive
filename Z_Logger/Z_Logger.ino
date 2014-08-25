@@ -139,6 +139,10 @@ void setup()
   }
   //End [A.2]
   
+  AD5933.setIncrementinHex(1);
+  AD5933.setNumofIncrement(2);
+  AD5933.setVolPGA(0,1);
+  
   double temp = AD5933.getTemperature();
   #if VERBOSE
   Serial.print("Temperature is ");
