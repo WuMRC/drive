@@ -58,7 +58,7 @@ end
 %%
 % Bioimpedance
 
-bioimpedanceFile = bioimpedanceFileArray(2).name; % Select second file
+bioimpedanceFile = bioimpedanceFileArray(1).name; % Select  file
 acq = load_acq(bioimpedanceFile);
 
 bioimpedanceArm = acq.data(:,1);
@@ -112,7 +112,7 @@ end
 
 %%
 
-DATA_TO_ANALYZE = 1;
+for DATA_TO_ANALYZE = 1;
 % %%
 % for DATA_TO_ANALYZE = 1:1%length(timeMarkerBioimpedance)
 clear rowMove colMove rowMove_total colMove_total posNew posOriginal
@@ -162,7 +162,7 @@ rowSearch   = 5; colSearch   = 5;   % SEARCH WINDOW
 %     filterType = 'gaussian';            % Should I prompt the user to select
 % at the time?
 
-filterType = 20;
+filterType = 'average';
 if strcmp(filterType,'average')
     filt = fspecial(filterType,[rowKernel, colKernel]);
 elseif strcmp(filterType,'disc')
@@ -204,7 +204,7 @@ frameIncrement = 1;
 for indPoints = 1:nPoints
     posOriginal = [poiY(indPoints), poiX(indPoints)];
     %     posNew = posOriginal;
-    pos = posOriginal;
+    posNew = posOriginal;
     
     total = nFrames-1;
     for ind = 1:frameIncrement:total
@@ -213,15 +213,48 @@ for indPoints = 1:nPoints
         currentFrameData = image_roiNORM(:,:,ind);
         nextFrameData = image_roiNORM(:,:,ind+1);
         
-        % Function to track frame-to-frame motion
-        pos(:,:,ind+1) = perPixelTrack(currentFrameData, nextFrameData, filt,...
-            [rowKernel, colKernel], [rowSearch, colKernel], pos(:,:,ind));
-        %
-        %             [poiRow(ind,indPoints), poiCol(ind,indPoints)] = ...
-        %                 perPixelTrack(currentFrameData, nextFrameData, filt,...
-        %                 [rowKernel, colKernel], [rowSearch, colKernel], pos(:,:,ind));
+%         % Function to track frame-to-frame motion
+%         pos(:,:,ind+1) = perPixelTrack(currentFrameData, nextFrameData, filt,...
+%             [rowKernel, colKernel], [rowSearch, colKernel], pos(:,:,ind));
+%         %
+%         %             [poiRow(ind,indPoints), poiCol(ind,indPoints)] = ...
+%         %                 perPixelTrack(currentFrameData, nextFrameData, filt,...
+%         %                 [rowKernel, colKernel], [rowSearch, colKernel], pos(:,:,ind));
+%         
+                % Calculate the correlation
+        [rho_c(:,:,ind)] = corr2D(currentFrameData, nextFrameData, filt, ...
+            [rowKernel, colKernel], [rowSearch, colKernel], posNew);
+        rho_n(:,:,ind) = rho_c(:,:,ind)./max(max(rho_c(:,:,ind)));
+   
+        % Calculate movement based on max correlation
+        [rowMove(ind,indPoints), colMove(ind,indPoints)] = find(rho_n(:,:,ind) ... 
+            == max(max(rho_n(:,:,ind))));
         
-        imageTrack(pos(1,1,ind),pos(1,2,ind),ind) = 400;
+        % Need to compenate for drift and net motion of the image
+%         cornerOffset = 20;
+ 
+%         
+%         [rho_c(:,:,ind)] = corr2D(currentFrameData, nextFrameData, filt, ...
+%             [rowKernel, colKernel], [rowSearch, colKernel], posNew);
+%         rho_n(:,:,ind) = rho_c(:,:,ind)./max(max(rho_c(:,:,ind)));
+        
+        
+    
+        rowMove(ind,indPoints) = rowMove(ind,indPoints) - (rowSearch + 1);
+        colMove(ind,indPoints) = colMove(ind,indPoints) - (colKernel + 1);
+    
+        rowMove_total = sum(rowMove(:,indPoints));
+        colMove_total = sum(colMove(:,indPoints));
+    
+        poiRow(ind,indPoints) = posOriginal(1) + rowMove_total;
+        poiCol(ind,indPoints) = posOriginal(2) + colMove_total;
+    
+        posNew = [poiRow(ind,indPoints), poiCol(ind,indPoints)];
+    
+        % Track single pixel in image
+        imageTrack(poiRow(ind,indPoints),poiCol(ind,indPoints),ind) = 400;
+        
+%         imageTrack(pos(1,1,ind),pos(1,2,ind),ind) = 400;
         
         
         prog = (ind+(indPoints-1)*ind)/(total*nPoints);
@@ -250,7 +283,7 @@ diameterSMOOTHER = diameterSMOOTHER/PIXELS_PER_CM;
 
 timeFrames = 0:(1/35):(size(diameterSMOOTH,1)-1)/35;
 
-% plot(timeFrames(1:349),diameterSMOOTHER(1:349))
+plot(timeFrames(1:349),diameterSMOOTHER(1:349))
 
 [diameterMax, diMax, diameterMin, diMin] = extrema(diameterSMOOTHER(1:349));
 
@@ -262,7 +295,7 @@ timeFrames = 0:(1/35):(size(diameterSMOOTH,1)-1)/35;
 
 peak2peakUS(DATA_TO_ANALYZE) = max(diameterSMOOTHER(1:349)) - min(diameterSMOOTHER(1:349));
 
-
+end
 %%
 % Impedance analysis
 Fs = 200;
@@ -275,7 +308,7 @@ respLegSMOOTH = smooth(bioimpedanceLegSMOOTH, 200);
 bioimpedanceArmSMOOTH = smooth(bioimpedanceArm,Fs/2).*20;
 bioimpedanceArmSMOOTH = smooth(bioimpedanceArmSMOOTH, 20);
 
-figure, plot(timeBioimpedance, bioimpedanceLegSMOOTH(timeMarkerBioimpedanceInd(DATA_TO_ANALYZE):...
+figure, plot(timeBioimpedance, bioimpedanceArmSMOOTH(timeMarkerBioimpedanceInd(DATA_TO_ANALYZE):...
     (timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+200*10)))
 %
 % figure, plot(timeBioimpedance, bioimpedanceArmSMOOTH(timeMarkerBioimpedanceInd(DATA_TO_ANALYZE):...

@@ -41,8 +41,8 @@ timeMarkerBioimpedance = unique(timeMarkerBioimpedance);
 
 Fs = 200;
 dt = 1/Fs;
-totalTime = 6.5; % seconds
-offset = 0.75;
+totalTime = 10; % seconds
+offset = 0;
 time = offset:dt:totalTime;
 
 
@@ -56,20 +56,20 @@ bArmSMOOTH = smooth(bArmSMOOTH, Fs/10);
 respArmSMOOTH = smooth(bArmSMOOTH, Fs);
 cardArmSMOOTH = smooth(bArmSMOOTH - respArmSMOOTH);
 
-legData = [bLegSMOOTH, respLegSMOOTH, cardLegSMOOTH, ...
+totalData = [bLegSMOOTH, respLegSMOOTH, cardLegSMOOTH, ...
     bArmSMOOTH, respArmSMOOTH, cardArmSMOOTH];
 
-for indMarker = 1:size(timeMarkerBioimpedance,2)-1;    
+for indMarker = 1%:size(timeMarkerBioimpedance,2)-1;    
     % The time of the region of interest
     tBegin = timeMarkerBioimpedanceInd(indMarker)+Fs*offset;
     tEnd = timeMarkerBioimpedanceInd(indMarker)+Fs*totalTime;
     
     % Signal during the time of interest (maneuver)
-    for indDataType = 1:size(legData,2)
+    for indDataType = 1:size(totalData,2)
         maxOverall(indMarker,indDataType) = ...
-            max(legData(tBegin:tEnd,indDataType));
+            max(totalData(tBegin:tEnd,indDataType));
         minOverall(indMarker,indDataType) = ...
-            min(legData(tBegin:tEnd,indDataType));
+            min(totalData(tBegin:tEnd,indDataType));
         dZOverall(indMarker,indDataType) = ...
             maxOverall(indMarker,indDataType) - minOverall(indMarker,indDataType);
         
@@ -78,6 +78,14 @@ for indMarker = 1:size(timeMarkerBioimpedance,2)-1;
 %     open NAMES
 %     open dZOverall
     
+
+subplot(3,1,1), plot(time, totalData(tBegin:tEnd,4))
+subplot(3,1,2), plot(time, totalData(tBegin:tEnd,5))
+subplot(3,1,3), plot(time, totalData(tBegin:tEnd,6))
+
+
+
+
 %     acq.markers.szText{1,indMarker+1}(12:end)
     
 %     plot(legData(tBegin:tEnd,3))
