@@ -63,7 +63,7 @@ THE SOFTWARE.
 
 int x = 0;
 boolean notifier = false; // variable to manage notification settings
-uint8_t A[4] = {50, 50, 50, 50}; // integer array to carry accelerometer values
+uint8_t A[6] = {1, 2, 3, 4, 5, 6}; // integer array to carry accelerometer values
 int count = 0;
 //SimpleTimer timer;
 
@@ -184,7 +184,7 @@ void loop() {
     // Check if GATT Client (Smartphone) is subscribed to notifications.
     if (notifier == true) {  
           //Simple way of changinging frequency of notifications. see documentation on WuMRC Github or tunji.com/blog for more details on this.
-          if (count > 300) {
+          if (count > 150) {
             x = x + 1;
             if(x < 180) {
             A[0] = (100 * sin((x*3.14)/180));
@@ -197,11 +197,11 @@ void loop() {
             }
             
             //Write notification to characteristic on ble112. Causes notification to be sent.
-            ble112.ble_cmd_attributes_write(GATT_HANDLE_C_TX_DATA, 0, 4 , A);
+            ble112.ble_cmd_attributes_write(GATT_HANDLE_C_TX_DATA, 0, 6 , A);
             
             // Reset count to zero
             count = 0;
-            //Serial.println(x);
+            Serial.println(millis());
           }       
     }   
    else {
