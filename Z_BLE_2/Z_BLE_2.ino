@@ -160,7 +160,7 @@ void setup() {
 
   AD5933.setExtClock(false);
   AD5933.setSettlingCycles(cycles_base,cycles_multiplier);
-  AD5933.setVolPGA(0, 1);
+  //AD5933.setVolPGA(0, 1);
 
   double temp = AD5933.getTemperature();
 

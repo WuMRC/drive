@@ -56,7 +56,7 @@ public class Scan extends ListActivity {
 
 		// Checks if Bluetooth is supported on the device.
 		if (mBluetoothAdapter == null) {
-			Toast.makeText(this, "B nt supported", Toast.LENGTH_SHORT).show();
+			Toast.makeText(this, "Bluetooth not supported", Toast.LENGTH_SHORT).show();
 			finish();
 			return;
 		}

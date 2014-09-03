@@ -1,131 +1,174 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_margin="10dp"
-    android:orientation="vertical" >
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin" >
 
-    <LinearLayout
+    <TextView
+        android:id="@+id/device_address_tag"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:text="@string/label_device_address"
+        android:textIsSelectable="true"
+        android:textSize="20sp" />
+
+    <Space
+        android:id="@+id/device_address_space_tag"
+        android:layout_width="5dp"
+        android:layout_height="wrap_content"
+        android:layout_toRightOf="@+id/device_address_tag" />
+
+    <TextView
+        android:id="@+id/device_address"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toRightOf="@+id/device_address_space_tag"
+        android:textIsSelectable="true"
+        android:textSize="20sp" />
+
+    <TextView
+        android:id="@+id/state_tag"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@id/device_address_tag"
+        android:text="@string/label_state"
+        android:textIsSelectable="true"
+        android:textSize="20sp" />
+
+    <Space
+        android:id="@+id/state_tag_space"
+        android:layout_width="5dp"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/device_address_tag"
+        android:layout_toRightOf="@+id/state_tag" />
+
+    <TextView
+        android:id="@+id/connection_state"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="10dp"
-        android:orientation="horizontal" >
+        android:layout_below="@id/device_address_tag"
+        android:layout_toRightOf="@+id/state_tag_space"
+        android:text="@string/disconnected"
+        android:textIsSelectable="true"
+        android:textSize="20sp" />
 
-        <TextView
+    <Switch
+        android:id="@+id/enable_notifications"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@id/connection_state"
+        android:onClick="enableNotifications"
+        android:text="@string/enableNotifications"
+        android:textSize="20sp"
+        android:thumb="@drawable/mimetheme_switch_inner_holo_dark"
+        android:track="@drawable/mimetheme_switch_track_holo_dark"
+        android:visibility="gone" />
+
+    <HorizontalScrollView
+        android:id="@+id/hscrollview"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/enable_notifications" >
+
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/label_device_address"
-            android:textIsSelectable="true"
-            android:textSize="18sp" />
+            android:orientation="horizontal" >
 
-        <Space
-            android:layout_width="5dp"
-            android:layout_height="wrap_content" />
+            <com.androidplot.xy.XYPlot
+                android:id="@+id/bioimpedancePlot"
+                android:layout_width="300dp"
+                android:layout_height="185dp"
+                android:layout_marginLeft="10dp"
+                android:layout_marginRight="10dp"
+                title="Bioimpedance Data"
+                android:visibility="gone" />
 
-        <TextView
-            android:id="@+id/device_address"
+            <TextView
+                android:id="@+id/data_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/label_data"
+                android:textIsSelectable="true"
+                android:textSize="20sp" />
+
+            <Space
+                android:layout_width="5dp"
+                android:layout_height="wrap_content" />
+
+            <TextView
+                android:id="@+id/data_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/no_data"
+                android:textIsSelectable="true"
+                android:textSize="20sp" />
+        </LinearLayout>
+    </HorizontalScrollView>
+
+    <ExpandableListView
+        android:id="@+id/gatt_services_list"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/buttons"
+        android:layout_below="@id/hscrollview" />
+
+    <RelativeLayout
+        android:id="@+id/buttons"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_alignParentBottom="true"
+        android:visibility="gone" >
+
+        <View
             android:layout_width="match_parent"
+            android:layout_height="1dip"
+            android:layout_alignParentTop="true"
+            android:layout_marginLeft="4dip"
+            android:layout_marginRight="4dip"
+            android:background="?android:attr/dividerVertical" />
+
+        <View
+            android:id="@+id/ViewColorPickerHelper"
+            android:layout_width="1dip"
             android:layout_height="wrap_content"
-            android:textIsSelectable="true"
-            android:textSize="18sp" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="10dp"
-        android:orientation="horizontal" >
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/label_state"
-            android:textIsSelectable="true"
-            android:textSize="18sp" />
-
-        <Space
-            android:layout_width="5dp"
-            android:layout_height="wrap_content" />
-
-        <TextView
-            android:id="@+id/connection_state"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/disconnected"
-            android:textIsSelectable="true"
-            android:textSize="18sp" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="10dp"
-        android:orientation="horizontal" >
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/label_data"
-            android:textIsSelectable="true"
-            android:textSize="18sp" />
-
-        <Space
-            android:layout_width="5dp"
-            android:layout_height="wrap_content" />
-
-        <TextView
-            android:id="@+id/data_value"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/no_data"
-            android:textIsSelectable="true"
-            android:textSize="15sp" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical" >
-
-        <Switch
-            android:id="@+id/enable_notifications"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_margin="10dp"
-            android:onClick="enableNotifications"
-            android:text="@string/enableNotifications"
-            android:thumb="@drawable/mimetheme_switch_inner_holo_dark"
-            android:track="@drawable/mimetheme_switch_track_holo_dark"
-            android:visibility="gone" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal" >
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentTop="true"
+            android:layout_centerHorizontal="true"
+            android:layout_marginBottom="4dip"
+            android:layout_marginTop="4dip"
+            android:background="?android:attr/dividerVertical" />
 
         <Button
             android:id="@+id/export_to_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentTop="true"
+            android:layout_toLeftOf="@id/ViewColorPickerHelper"
+            android:background="?android:attr/selectableItemBackground"
             android:onClick="exportToText"
-            android:text="@string/exportToText"
-            android:visibility="gone" />
+            android:text="@string/exportToText" />
 
         <Button
             android:id="@+id/clear_text_file"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentTop="true"
+            android:layout_toRightOf="@id/ViewColorPickerHelper"
+            android:background="?android:attr/selectableItemBackground"
             android:onClick="clearTextFile"
-            android:text="@string/clearTextFile"
-            android:visibility="gone" />
-    </LinearLayout>
+            android:text="@string/clearTextFile" />
+    </RelativeLayout>
 
-    <ExpandableListView
-        android:id="@+id/gatt_services_list"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
-
-</LinearLayout>
+</RelativeLayout>

@@ -16,7 +16,6 @@ import android.bluetooth.BluetoothProfile;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Binder;
-import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
 
@@ -30,18 +29,11 @@ public class BluetoothLeService extends Service {
 	private BluetoothManager mBluetoothManager;
 	private BluetoothAdapter mBluetoothAdapter;
 	private String mBluetoothDeviceAddress;
+	private String mDeviceAddressRestore;
+	private String mDeviceNameRestore;
 	private BluetoothGatt mBluetoothGatt;
 	private int mConnectionState = STATE_DISCONNECTED;
-	
-	public int[] accelX = new int[500];
-	public int[] accelY = new int[500];
-	public int[] accelZ = new int[500];
-	public int[] impedance = new int[500];
-
-
-
-	// Long term data cache
-	//public ArrayList<String> dataCache = new ArrayList<String>();
+	private static int sNumBoundClients = 0;
 
 	public int getmConnectionState() { 
 		return mConnectionState; 
@@ -53,6 +45,8 @@ public class BluetoothLeService extends Service {
 
 	public final static String ACTION_GATT_CONNECTED =
 			"com.example.bluetooth.le.ACTION_GATT_CONNECTED";
+	public final static String ACTION_GATT_CONNECTING =
+			"com.example.bluetooth.le.ACTION_GATT_CONNECTING";
 	public final static String ACTION_GATT_DISCONNECTED =
 			"com.example.bluetooth.le.ACTION_GATT_DISCONNECTED";
 	public final static String ACTION_GATT_SERVICES_DISCOVERED =
@@ -65,9 +59,9 @@ public class BluetoothLeService extends Service {
 			"com.example.bluetooth.le.EXTRA_DATA";
 	public final static String EXTRA_DATA_BIOIMPEDANCE_STRING =
 			"com.example.bluetooth.le.EXTRA_DATA_BIOIMPEDANCE_STRING";
-	public final static String EXTRA_DATA_BIOIMPEDANCE_INT =
-			"com.example.bluetooth.le.EXTRA_DATA_BIOIMPEDANCE_INT";
-	public final static int[] Z_BLE = {1, 2, 3, 4};
+	public final static String EXTRA_DATA_BIOIMPEDANCE_DOUBLE =
+			"com.example.bluetooth.le.EXTRA_DATA_BIOIMPEDANCE_DOUBLE";
+	public final static double[] Z_BLE = {1, 2, 3, 4};
 	public final static UUID UUID_HEART_RATE_MEASUREMENT =
 			UUID.fromString(SampleGattAttributes.HEART_RATE_MEASUREMENT);
 	public final static UUID UUID_TX_DATA = 
@@ -87,13 +81,20 @@ public class BluetoothLeService extends Service {
 				// Attempts to discover services after successful connection.
 				Log.i(TAG, "Attempting to start service discovery:" +
 						mBluetoothGatt.discoverServices());
-
-			} else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
+			} 
+			else if (newState == BluetoothProfile.STATE_CONNECTING) {
+				intentAction = ACTION_GATT_CONNECTING;
+				mConnectionState = STATE_CONNECTING;
+				Log.i(TAG, "Attempting to connect to GATT server...");
+				broadcastUpdate(intentAction);
+			}
+			else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
 				intentAction = ACTION_GATT_DISCONNECTED;
 				mConnectionState = STATE_DISCONNECTED;
 				Log.i(TAG, "Disconnected from GATT server.");
 				broadcastUpdate(intentAction);
 			}
+
 		}
 
 		@Override
@@ -159,16 +160,42 @@ public class BluetoothLeService extends Service {
 			final byte[] data = characteristic.getValue();
 			if (data != null && data.length > 0) {
 				final StringBuilder stringBuilder = new StringBuilder(data.length);
+				final StringBuilder impVal = new StringBuilder(data.length);
 				int c = 0;
 				for(byte byteChar : data) {
-					Z_BLE[c] = Integer.parseInt(String.valueOf(byteChar));
 					c++;
-					stringBuilder.append(String.format("%8s", (String.valueOf(byteChar))));
-					stringBuilder.append(String.format("%1$8s", "|"));
+					if(c <= 3) {
+						Z_BLE[c] = Integer.parseInt(String.valueOf(byteChar));
+						stringBuilder.append(fixedLengthString(String.valueOf(byteChar), 6));
+						//stringBuilder.append(String.format("%1$6s", String.valueOf(byteChar)));
+					}
+					else {
+						if(c == 4) {
+							//stringBuilder.append(String.format("%1$3s", "|"));
+							if(String.valueOf(byteChar).length() == 1) {
+								impVal.append("0" + String.valueOf(byteChar));
+							}
+							else {
+								impVal.append(String.valueOf(byteChar));
+							}						
+						}
+						else {
+							if(String.valueOf(byteChar).length() == 1) {
+								impVal.append("0" + String.valueOf(byteChar));
+							}
+							else {
+								impVal.append(String.valueOf(byteChar));
+							}
+						}
+					}
 				}
 				c = 0;
+				double actualVal = Double.parseDouble(impVal.toString());
+				actualVal = actualVal / 1000;
+				Z_BLE[3] = actualVal;
+				stringBuilder.append(fixedLengthString(String.valueOf(actualVal), 7));
 				intent.putExtra(EXTRA_DATA_BIOIMPEDANCE_STRING, new String(stringBuilder.toString()));
-				intent.putExtra(EXTRA_DATA_BIOIMPEDANCE_INT, Z_BLE);
+				intent.putExtra(EXTRA_DATA_BIOIMPEDANCE_DOUBLE, Z_BLE);
 			}
 		} 
 
@@ -190,9 +217,6 @@ public class BluetoothLeService extends Service {
 		BluetoothLeService getService() {
 			return BluetoothLeService.this;
 		}
-	}
-	public static String fixedLengthString(String string, int length) {
-		return String.format("%1$"+length+ "s", string);
 	}
 
 	@Override
@@ -255,7 +279,7 @@ public class BluetoothLeService extends Service {
 		// Previously connected device.  Try to reconnect.
 		if (mBluetoothDeviceAddress != null && address.equals(mBluetoothDeviceAddress)
 				&& mBluetoothGatt != null) {
-			Log.d(TAG, "Trying to use an existing mBluetoothGatt for connection.");
+			Log.i(TAG, "Trying to use an existing mBluetoothGatt for connection.");
 			if (mBluetoothGatt.connect()) {
 				mConnectionState = STATE_CONNECTING;
 				return true;
@@ -272,12 +296,16 @@ public class BluetoothLeService extends Service {
 		// We want to directly connect to the device, so we are setting the autoConnect
 		// parameter to false.
 		mBluetoothGatt = device.connectGatt(this, false, mGattCallback);
-		Log.d(TAG, "Trying to create a new connection.");
+		Log.i(TAG, "Trying to create a new connection.");
 		mBluetoothDeviceAddress = address;
 		mConnectionState = STATE_CONNECTING;
 		return true;
 	}
 
+	public static String fixedLengthString(String string, int length) {
+		return String.format("%-"+length+ "s", string);
+	}
+	
 	/**
 	 * Disconnects an existing connection or cancel a pending connection. The disconnection result
 	 * is reported asynchronously through the
@@ -407,6 +435,34 @@ public class BluetoothLeService extends Service {
 		if (mBluetoothGatt == null) return null;
 
 		return mBluetoothGatt.getServices();
+	}
+
+	public void clientConnected() {
+		sNumBoundClients++;
+	}
+
+	public void clientDisconnected() {
+		sNumBoundClients--;
+	}
+
+	public int getNumberOfBoundClients() {
+		return sNumBoundClients;
+	}
+
+	public void setDeviceAdress(String address) {
+		this.mDeviceAddressRestore = address;
+	}
+
+	public String getDeviceAddress() {
+		return mDeviceAddressRestore;
+	}
+
+	public void setDeviceName(String name) {
+		this.mDeviceNameRestore = name;
+	}
+
+	public String getDeviceName() {
+		return mDeviceNameRestore;
 	}
 
 }

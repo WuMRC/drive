@@ -88,10 +88,18 @@
             android:name="com.shemanigans.mime.BluetoothLeService"
             android:enabled="true"
             android:label="@string/service_name_BluetoothLeService" />
+        <service
+            android:name="com.shemanigans.mime.ServiceBinder"
+            android:enabled="true"
+            android:label="@string/service_name_ServiceBinder" />
 
         <activity
-            android:name="com.shemanigans.mime.AccelerometerDataParser"
-            android:label="@string/title_activity_accelerometer_data_parser" >
+            android:name="com.shemanigans.mime.LongTerm"
+            android:label="@string/title_activity_long_term"
+            android:parentActivityName="com.shemanigans.mime.Scan" >
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.shemanigans.mime.Scan" />
         </activity>
     </application>
 

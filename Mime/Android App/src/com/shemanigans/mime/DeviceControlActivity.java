@@ -21,6 +21,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.IBinder;
@@ -28,12 +29,17 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Button;
 import android.widget.ExpandableListView;
+import android.widget.RelativeLayout;
 import android.widget.SimpleExpandableListAdapter;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.androidplot.xy.BoundaryMode;
+import com.androidplot.xy.LineAndPointFormatter;
+import com.androidplot.xy.SimpleXYSeries;
+import com.androidplot.xy.XYPlot;
 
 /**
  * For a given BLE device, this Activity provides the user interface to connect, display data,
@@ -50,7 +56,9 @@ public class DeviceControlActivity extends Activity implements NameTextFileFragm
 	public static final String EXTRAS_DEVICE_NAME = "DEVICE_NAME";
 	public static final String EXTRAS_DEVICE_ADDRESS = "DEVICE_ADDRESS";
 
-	public final static String EXTRA_MESSAGE = "Export_To_Text";
+	public static final String EXTRA_DEVICE_NAME_BINDER = "com.example.bluetooth.le.EXTRA_DEVICE_NAME_BINDER";
+	public static final String EXTRA_DEVICE_ADDRESS_BINDER = "com.example.bluetooth.le.EXTRA_DEVICE_ADDRESS_BINDER";
+	//public final static String EXTRA_MESSAGE = "EXPORT_TO_TEXT";
 
 	private TextView mConnectionState;
 	private TextView mDataField;
@@ -70,6 +78,15 @@ public class DeviceControlActivity extends Activity implements NameTextFileFragm
 	private Calendar c = Calendar.getInstance();
 	private boolean checkNamedTextFile = false;
 
+	// Graph variables
+
+	private static final int HISTORY_SIZE = 360;
+	private XYPlot bioimpedancePlot = null;
+	private SimpleXYSeries accelXseries = null;
+	private SimpleXYSeries accelYseries = null;
+	private SimpleXYSeries accelZseries = null;
+	private SimpleXYSeries bioimpedanceSeries = null;
+
 	// Fragment to set name
 	NameTextFileFragment dialog;
 
@@ -83,16 +100,20 @@ public class DeviceControlActivity extends Activity implements NameTextFileFragm
 		@Override
 		public void onServiceConnected(ComponentName componentName, IBinder service) {
 			mBluetoothLeService = ((BluetoothLeService.LocalBinder) service).getService();
+			Log.i(TAG, "mBluetoothLeService first initialized.");
+
 			if (!mBluetoothLeService.initialize()) {
 				Log.e(TAG, "Unable to initialize Bluetooth");
 				finish();
 			}
 			// Automatically connects to the device upon successful start-up initialization.
 			mBluetoothLeService.connect(mDeviceAddress);
+			mBluetoothLeService.clientConnected();
 		}
 
 		@Override
 		public void onServiceDisconnected(ComponentName componentName) {
+			mBluetoothLeService.clientDisconnected();
 			mBluetoothLeService = null;
 		}
 	};
@@ -112,6 +133,11 @@ public class DeviceControlActivity extends Activity implements NameTextFileFragm
 				updateConnectionState(R.string.connected);
 				invalidateOptionsMenu();
 			} 
+			else if (BluetoothLeService.ACTION_GATT_CONNECTING.equals(action)) {
+				mConnected = false;
+				updateConnectionState(R.string.connecting);
+				invalidateOptionsMenu();
+			}
 			else if (BluetoothLeService.ACTION_GATT_DISCONNECTED.equals(action)) {
 				mConnected = false;
 				updateConnectionState(R.string.disconnected);
@@ -126,21 +152,181 @@ public class DeviceControlActivity extends Activity implements NameTextFileFragm
 				displayData(intent.getStringExtra(BluetoothLeService.EXTRA_DATA));
 			}
 			else if (BluetoothLeService.ACTION_DATA_AVAILABLE_BIOIMPEDANCE.equals(action)) {
-				displayData(
-						fixedLengthString("X", 8) 
-						+ fixedLengthString("|", 8)
-						+ fixedLengthString("Y", 8)
-						+ fixedLengthString("|", 8)
-						+ fixedLengthString("Z", 8)
-						+ fixedLengthString("|", 8)
-						+ fixedLengthString("Imp.", 8)
-						+ fixedLengthString("|", 8)
+				displayData("\n"
+						+ fixedLengthString("X", 6)
+						+ fixedLengthString("Y", 6)
+						+ fixedLengthString("Z", 6)
+						+ fixedLengthString("I", 6)
 						+ "\n"												
 						+ intent.getStringExtra(BluetoothLeService.EXTRA_DATA_BIOIMPEDANCE_STRING));
 				textFile.add(intent.getStringExtra(BluetoothLeService.EXTRA_DATA_BIOIMPEDANCE_STRING));
+
+				double[] imp = {1, 2, 3, 4};
+				imp = intent.getDoubleArrayExtra(BluetoothLeService.EXTRA_DATA_BIOIMPEDANCE_DOUBLE);
+				
+				// update instantaneous data:
+
+				// get rid the oldest sample in history:
+				if (accelXseries.size() > HISTORY_SIZE) {		        	
+					accelXseries.removeFirst();
+					accelYseries.removeFirst();
+					accelZseries.removeFirst();
+					bioimpedanceSeries.removeFirst();
+				}
+
+				// add the latest history sample:
+				accelXseries.addLast(null, imp[0]);
+				accelYseries.addLast(null, imp[1]);
+				accelZseries.addLast(null, imp[2]);
+				bioimpedanceSeries.addLast(null, (0));
+
+				// redraw the Plots:
+				bioimpedancePlot.redraw();
 			}
 		}
 	};
+
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		Log.i(TAG, "Activity started afresh.");	
+
+		Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
+		bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
+		setContentView(R.layout.gatt_services_characteristics);
+
+		final Intent intent = getIntent();
+		mDeviceName = intent.getStringExtra(EXTRAS_DEVICE_NAME);
+		mDeviceAddress = intent.getStringExtra(EXTRAS_DEVICE_ADDRESS);
+		Log.i(TAG, "Names written for the first time.");
+
+		// Sets up UI references.
+		((TextView) findViewById(R.id.device_address)).setText(mDeviceAddress);
+		mGattServicesList = (ExpandableListView) findViewById(R.id.gatt_services_list);
+		mGattServicesList.setOnChildClickListener(servicesListClickListner);
+		mConnectionState = (TextView) findViewById(R.id.connection_state);
+		mDataField = (TextView) findViewById(R.id.data_value);
+
+		getActionBar().setTitle(mDeviceName);
+		getActionBar().setDisplayHomeAsUpEnabled(true);
+
+		// Set up bioimpedance plots
+
+		bioimpedancePlot = (XYPlot) findViewById(R.id.bioimpedancePlot);
+
+		accelXseries = new SimpleXYSeries("AccelX");
+		accelXseries.useImplicitXVals();
+		accelYseries = new SimpleXYSeries("AccelY");
+		accelYseries.useImplicitXVals();
+		accelZseries = new SimpleXYSeries("AccelZ");
+		accelZseries.useImplicitXVals();
+		bioimpedanceSeries = new SimpleXYSeries("bioimpedance");
+		bioimpedanceSeries.useImplicitXVals();
+
+		bioimpedancePlot.setRangeBoundaries(-120, 120, BoundaryMode.FIXED);
+		bioimpedancePlot.setDomainBoundaries(0, 360, BoundaryMode.FIXED);
+
+		bioimpedancePlot.addSeries(accelXseries, new LineAndPointFormatter(Color.CYAN, null, null, null));
+		bioimpedancePlot.addSeries(accelYseries, new LineAndPointFormatter(Color.GREEN, null, null, null));
+		bioimpedancePlot.addSeries(accelZseries, new LineAndPointFormatter(Color.MAGENTA, null, null, null));
+		bioimpedancePlot.addSeries(bioimpedanceSeries, new LineAndPointFormatter(Color.YELLOW, null, null, null));
+		bioimpedancePlot.setDomainStepValue(5);
+		bioimpedancePlot.setTicksPerRangeLabel(3);
+		bioimpedancePlot.setDomainLabel("Sample Index");
+		bioimpedancePlot.getDomainLabelWidget().pack();
+		bioimpedancePlot.setRangeLabel("Data)");
+		bioimpedancePlot.getRangeLabelWidget().pack();
+	}
+
+	@Override
+	protected void onResume() {
+		super.onResume();
+		registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
+		if (mBluetoothLeService != null) {
+			//final boolean result = mBluetoothLeService.connect(mDeviceAddress);
+			//Log.d(TAG, "Connect request result=" + result);
+		}
+	}
+
+	@Override
+	protected void onPause() {
+		super.onPause();
+		unregisterReceiver(mGattUpdateReceiver);
+	}
+
+	@Override
+	protected void onStop() {
+		super.onStop();
+		finish();
+	}
+
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		unbindService(mServiceConnection);
+		if(mBluetoothLeService.getNumberOfBoundClients() == 2) {
+			mBluetoothLeService.setDeviceName(mDeviceName);
+			mBluetoothLeService.setDeviceAdress(mDeviceAddress);
+			Log.i(TAG, "Names have been saved.");
+		}
+		Log.i(TAG, "Activity destroyed.");
+		//mBluetoothLeService = null;
+	}
+
+	@Override
+	public void onSaveInstanceState(Bundle savedInstanceState) {
+		mBluetoothLeService.setDeviceName(mDeviceName);
+		mBluetoothLeService.setDeviceAdress(mDeviceAddress);
+		Log.i(TAG, "Attempted state and name save.");
+		// Save the user's current game state
+		// Always call the superclass so it can save the view hierarchy state
+		super.onSaveInstanceState(savedInstanceState);
+	}
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		getMenuInflater().inflate(R.menu.gatt_services, menu);
+		if (mConnected) {    	
+			menu.findItem(R.id.menu_refresh).setVisible(false);
+			menu.findItem(R.id.menu_connect).setVisible(false);
+			menu.findItem(R.id.menu_disconnect).setVisible(true);
+		} else {
+			menu.findItem(R.id.menu_refresh).setVisible(false);
+			menu.findItem(R.id.menu_connect).setVisible(true);
+			menu.findItem(R.id.menu_disconnect).setVisible(false);
+		}
+		return true;
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		switch(item.getItemId()) {
+		case R.id.menu_connect:
+			mBluetoothLeService.connect(mDeviceAddress);
+			return true;
+		case R.id.menu_disconnect:
+			mBluetoothLeService.disconnect();
+			//mBluetoothLeService.close();
+			return true;
+		case android.R.id.home:
+			onBackPressed();
+			return true;
+		case R.id.name_text_file:
+			setTextFileName();
+			return true;
+		case R.id.set_time:
+			setNotificationTimer();
+			return true;
+		}
+		return super.onOptionsItemSelected(item);
+	}
+
+	public void clearTextFile(View view) {		
+		textFile = new ArrayList<String>();
+		Toast.makeText(getBaseContext(),
+				"Database sucessfully purged",
+				Toast.LENGTH_SHORT).show();
+	}
 
 	// If a given GATT characteristic is selected, check for supported features.  This sample
 	// demonstrates 'Read' and 'Notify' features.  See
@@ -154,11 +340,11 @@ public class DeviceControlActivity extends Activity implements NameTextFileFragm
 
 			// Hide export to text button
 
-			Button exportToText = (Button) findViewById(R.id.export_to_text);
-			exportToText.setVisibility(View.GONE);
-
-			Button clearTextFile = (Button) findViewById(R.id.clear_text_file);
-			clearTextFile.setVisibility(View.GONE);
+			RelativeLayout buttons = (RelativeLayout) findViewById(R.id.buttons);
+			buttons.setVisibility(View.GONE);
+			
+			com.androidplot.xy.XYPlot data = (com.androidplot.xy.XYPlot) findViewById(R.id.bioimpedancePlot);
+			data.setVisibility(View.GONE);
 
 			if (mGattCharacteristics != null) {
 				final BluetoothGattCharacteristic characteristic =
@@ -200,38 +386,42 @@ public class DeviceControlActivity extends Activity implements NameTextFileFragm
 		enableNotifications.setVisibility(View.VISIBLE);
 
 		// Turn off notifications.
-		if(enableNotifications.isChecked() == false) {
-			Button exportToText = (Button) findViewById(R.id.export_to_text);
-			exportToText.setVisibility(View.VISIBLE);
-			Button clearTextFile = (Button) findViewById(R.id.clear_text_file);
-			clearTextFile.setVisibility(View.VISIBLE);
+		if(enableNotifications.isChecked() == false) {		
+			Intent intent = new Intent(this, ServiceBinder.class);
+			stopService(intent);
+
+			RelativeLayout buttons = (RelativeLayout) findViewById(R.id.buttons);
+			buttons.setVisibility(View.VISIBLE);
+
 			mBluetoothLeService.removeCharacteristicNotification(mNotifyCharacteristic, false);
 			mBluetoothLeService.stopForeground(true);
 		}
-		// Turn on notifications.
 
+		// Turn on notifications.
 		else {
 			//ic_action_name.png
+			Intent intent = new Intent(this, ServiceBinder.class);
+			intent.putExtra(EXTRA_DEVICE_ADDRESS_BINDER, mDeviceAddress);
+			intent.putExtra(EXTRA_DEVICE_NAME_BINDER, mDeviceName);
+			startService(intent);
+
 			Notification notification = new Notification(R.drawable.mime_notification_icon, getText(R.string.sampling_data),System.currentTimeMillis());
-			Intent notificationIntent = new Intent(this, DeviceControlActivity.class);
-			PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, 0);
+			Intent notificationIntent = new Intent(this, LongTerm.class);
+			notificationIntent.putExtra(EXTRA_DEVICE_ADDRESS_BINDER, mDeviceAddress);
+			notificationIntent.putExtra(EXTRA_DEVICE_NAME_BINDER, mDeviceName);
+			PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_CANCEL_CURRENT);
 			notification.setLatestEventInfo(this,"Mime is sampling data","Service connected", pendingIntent);
 
 			mBluetoothLeService.startForeground(ONGOING_NOTIFICATION_ID, notification);
 
-			Button exportToText = (Button) findViewById(R.id.export_to_text);
-			exportToText.setVisibility(View.VISIBLE);
-			Button clearTextFile = (Button) findViewById(R.id.clear_text_file);
-			clearTextFile.setVisibility(View.VISIBLE);
+			com.androidplot.xy.XYPlot data = (com.androidplot.xy.XYPlot) findViewById(R.id.bioimpedancePlot);
+			data.setVisibility(View.VISIBLE);
+			
+			RelativeLayout buttons = (RelativeLayout) findViewById(R.id.buttons);
+			buttons.setVisibility(View.VISIBLE);
+
 			mBluetoothLeService.setCharacteristicNotification(mNotifyCharacteristic, true);			
 		}
-	}
-
-	public void clearTextFile(View view) {		
-		textFile = new ArrayList<String>();
-		Toast.makeText(getBaseContext(),
-				"Database sucessfully purged",
-				Toast.LENGTH_SHORT).show();
 	}
 
 	public void exportToText(View view) {
@@ -250,31 +440,21 @@ public class DeviceControlActivity extends Activity implements NameTextFileFragm
 			// set checkNamedTextFile back to false to revert back to default naming scheme.
 			checkNamedTextFile = false;
 
-			//			File accelData = new File(Environment.getExternalStorageDirectory() 
-			//					+ textFileName + ".txt");
-
 			File accelDataDir = new File(Environment.getExternalStorageDirectory() + "/Mime/");	
 
 			accelDataDir.mkdirs();			
 
 			File accelData = new File(accelDataDir, textFileName + ".txt");			
 
-			//			File accelData = new File("/sdcard/" 
-			//					+ textFileName + ".txt");
-
 			accelData.createNewFile();
 			FileOutputStream fOut = new FileOutputStream(accelData);
 			OutputStreamWriter myOutWriter = new OutputStreamWriter(fOut);
 
 			myOutWriter.append(
-					fixedLengthString("X", 8) 
-					+ fixedLengthString("|", 8)
-					+ fixedLengthString("Y", 8)
-					+ fixedLengthString("|", 8)
-					+ fixedLengthString("Z", 8)
-					+ fixedLengthString("|", 8)
-					+ fixedLengthString("¡C", 8)
-					+ fixedLengthString("|", 8)
+					fixedLengthString("X", 6) 
+					+ fixedLengthString("Y", 6)
+					+ fixedLengthString("Z", 6)
+					+ fixedLengthString("I", 7)
 					+ "\n");
 
 			for (int i = 0; i < textFile.size(); i++) {
@@ -299,89 +479,6 @@ public class DeviceControlActivity extends Activity implements NameTextFileFragm
 	private void clearUI() {
 		mGattServicesList.setAdapter((SimpleExpandableListAdapter) null);
 		mDataField.setText(R.string.no_data);
-	}
-
-	@Override
-	public void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-		setContentView(R.layout.gatt_services_characteristics);
-
-		final Intent intent = getIntent();
-		mDeviceName = intent.getStringExtra(EXTRAS_DEVICE_NAME);
-		mDeviceAddress = intent.getStringExtra(EXTRAS_DEVICE_ADDRESS);
-
-		// Sets up UI references.
-		((TextView) findViewById(R.id.device_address)).setText(mDeviceAddress);
-		mGattServicesList = (ExpandableListView) findViewById(R.id.gatt_services_list);
-		mGattServicesList.setOnChildClickListener(servicesListClickListner);
-		mConnectionState = (TextView) findViewById(R.id.connection_state);
-		mDataField = (TextView) findViewById(R.id.data_value);
-
-		getActionBar().setTitle(mDeviceName);
-		getActionBar().setDisplayHomeAsUpEnabled(true);
-		Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
-		bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
-	}
-
-	@Override
-	protected void onResume() {
-		super.onResume();
-		registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
-		if (mBluetoothLeService != null) {
-			final boolean result = mBluetoothLeService.connect(mDeviceAddress);
-			Log.d(TAG, "Connect request result=" + result);
-		}
-	}
-
-	@Override
-	protected void onPause() {
-		super.onPause();
-		unregisterReceiver(mGattUpdateReceiver);
-	}
-
-	@Override
-	protected void onDestroy() {
-		super.onDestroy();
-		unbindService(mServiceConnection);
-		mBluetoothLeService = null;
-	}
-
-	@Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-		getMenuInflater().inflate(R.menu.gatt_services, menu);
-		if (mConnected) {    	
-			menu.findItem(R.id.menu_refresh).setVisible(false);
-			menu.findItem(R.id.menu_connect).setVisible(false);
-			menu.findItem(R.id.menu_disconnect).setVisible(true);
-		} else {
-			menu.findItem(R.id.menu_refresh).setVisible(false);
-			menu.findItem(R.id.menu_connect).setVisible(true);
-			menu.findItem(R.id.menu_disconnect).setVisible(false);
-		}
-		return true;
-	}
-
-	@Override
-	public boolean onOptionsItemSelected(MenuItem item) {
-		switch(item.getItemId()) {
-		case R.id.menu_connect:
-			mBluetoothLeService.connect(mDeviceAddress);
-			return true;
-		case R.id.menu_disconnect:
-			mBluetoothLeService.disconnect();
-			//mBluetoothLeService.close();
-			return true;
-		case android.R.id.home:
-			onBackPressed();
-			return true;
-		case R.id.name_text_file:
-			setTextFileName();
-			return true;
-		case R.id.set_time:
-			setNotificationTimer();
-			return true;
-		}
-		return super.onOptionsItemSelected(item);
 	}
 
 	private void updateConnectionState(final int resourceId) {
@@ -459,7 +556,7 @@ public class DeviceControlActivity extends Activity implements NameTextFileFragm
 	}
 
 	public static String fixedLengthString(String string, int length) {
-		return String.format("%1$"+length+ "s", string);
+		return String.format("%-"+length+ "s", string);
 	}
 
 	public void setTextFileName() {
