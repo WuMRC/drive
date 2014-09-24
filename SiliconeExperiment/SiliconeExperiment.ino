@@ -19,7 +19,7 @@
 
 int SSRplate = 11;
 boolean Switch = false;
-int time = 5000;
+int time = 20000;
 
   
 void setup() {
@@ -59,8 +59,10 @@ void loop() {
     Serial.print("Switch is on for ");
     Serial.print((time/1000));    
     Serial.print(" seconds");
+    digitalWrite(SSRplate, HIGH);
     Serial.println();        
     delay(time);
+    digitalWrite(SSRplate, LOW);
     Switch = false;
   }  
 }

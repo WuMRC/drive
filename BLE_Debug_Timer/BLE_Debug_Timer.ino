@@ -1,30 +1,30 @@
-// Accelerometer demo sketch for TinyDuino
-// Based onBluegiga BGLib Arduino interface library slave device stub sketch
-// and accelerometer demo from TinyCitcuits 
-// 2013-06-30 by Ken Burns, TinyCircuits http://Tiny-Circuits.com
-// 2014-02-12 by Jeff Rowberg <jeff@rowberg.net>
-// 2014-07-13 modified by Adetunji Dahunsi <tunjid.com>
-// Updates should (hopefully) always be available at https://github.com/jrowberg/bglib
-// 
+//Accelerometer demo sketch for TinyDuino
+//Based onBluegiga BGLib Arduino interface library slave device stub sketch
+//and accelerometer demo from TinyCitcuits 
+//2013-06-30 by Ken Burns, TinyCircuits http://Tiny-Circuits.com
+//2014-02-12 by Jeff Rowberg <jeff@rowberg.net>
+//2014-07-13 modified by Adetunji Dahunsi <tunjid.com>
+//Updates should (hopefully) always be available at https://github.com/jrowberg/bglib
+//
 
-// Changelog:
-//      2014-06-13 - Initial release
+//Changelog:
+//   2014-06-13 - Initial release
 
 /* ============================================
-   !!!!!!!!!!!!!!!!!
-   !!! IMPORTANT !!!
-   !!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!
+!!! IMPORTANT !!!
+!!!!!!!!!!!!!!!!!
 
-   THIS SCRIPT WILL NOT COMMUNICATE PROPERLY IF YOU DO NOT ENSURE ONE OF THE
-   FOLLOWING IS TRUE:
+THIS SCRIPT WILL NOT COMMUNICATE PROPERLY IF YOU DO NOT ENSURE ONE OF THE
+FOLLOWING IS TRUE:
 
-   1. You enable the <wakeup_pin> functionality in your firmware
+1. You enable the <wakeup_pin> functionality in your firmware
 
-   2. You COMMENT OUT two lines below which depend on wake-up
-      funcitonality to work properly (they will BLOCK otherwise):
+2. You COMMENT OUT two lines below which depend on wake-up
+   funcitonality to work properly (they will BLOCK otherwise):
 
-          ble112.onBeforeTXCommand = onBeforeTXCommand;
-          ble112.onTXCommandComplete = onTXCommandComplete;
+       ble112.onBeforeTXCommand = onBeforeTXCommand;
+       ble112.onTXCommandComplete = onTXCommandComplete;
 
 /* ============================================
 BGLib Arduino interface library code is placed under the MIT license
@@ -55,23 +55,22 @@ THE SOFTWARE.
 #include <Math.h>
 #include "BGLib.h" // BGLib C library for BGAPI communication.
 #include <AltSoftSerial.h> // software serial library for input and output to the serial mnitor.
+#include <MsTimer2.h> // timer function for notifications
 
-//#include <SimpleTimer.h> // I experienced increased overhead using the timer library, decided to ditch it. You may fare better.
-
-// uncomment the following line for debug serial output
+//uncomment the following line for debug serial output
 #define DEBUG
 
-int x = 0;
+volatile int x = 0;
+volatile boolean writer = false;
 boolean notifier = false; // variable to manage notification settings
 uint8_t A[6] = {1, 2, 3, 42, 15, 66}; // integer array to carry accelerometer values
 int count = 0;
-//SimpleTimer timer;
 
-// ================================================================
-// BLE STATE TRACKING (UNIVERSAL TO JUST ABOUT ANY BLE PROJECT)
-// ================================================================
+//================================================================
+//BLE STATE TRACKING (UNIVERSAL TO JUST ABOUT ANY BLE PROJECT)
+//================================================================
 
-// BLE state machine definitions
+//BLE state machine definitions
 #define BLE_STATE_STANDBY           0
 #define BLE_STATE_SCANNING          1
 #define BLE_STATE_ADVERTISING       2
@@ -79,21 +78,21 @@ int count = 0;
 #define BLE_STATE_CONNECTED_MASTER  4
 #define BLE_STATE_CONNECTED_SLAVE   5
 
-// BLE state/link status tracker
+//BLE state/link status tracker
 uint8_t ble_state = BLE_STATE_STANDBY;
 uint8_t ble_encrypted = 0;  // 0 = not encrypted, otherwise = encrypted
 uint8_t ble_bonding = 0xFF; // 0xFF = no bonding, otherwise = bonding handle
 
-// ================================================================
-// HARDWARE CONNECTIONS AND GATT STRUCTURE SETUP
-// ================================================================
+//================================================================
+//HARDWARE CONNECTIONS AND GATT STRUCTURE SETUP
+//================================================================
 
-// NOTE: this assumes you are using one of the following firmwares:
-//  - BGLib_U1A1P_38400_noflow
-//  - BGLib_U1A1P_38400_noflow_wake16
-//  - BGLib_U1A1P_38400_noflow_wake16_hwake15
-// If not, then you may need to change the pin assignments and/or
-// GATT handles to match your firmware.
+//NOTE: this assumes you are using one of the following firmwares:
+//- BGLib_U1A1P_38400_noflow
+//- BGLib_U1A1P_38400_noflow_wake16
+//- BGLib_U1A1P_38400_noflow_wake16_hwake15
+//If not, then you may need to change the pin assignments and/or
+//GATT handles to match your firmware.
 
 #define LED_PIN         13  // Arduino Uno LED pin
 
@@ -102,23 +101,23 @@ uint8_t ble_bonding = 0xFF; // 0xFF = no bonding, otherwise = bonding handle
 
 //#define BLE_WAKEUP_PIN 5 // BLE Wake up pin
 
-// use SoftwareSerial on pins D3/D4 for RX/TX (Arduino side)
+//use SoftwareSerial on pins D3/D4 for RX/TX (Arduino side)
 AltSoftSerial bleSerialPort(8, 9);
 
-// create BGLib object:
-//  - use SoftwareSerial por for module comms
-//  - use nothing for passthrough comms (0 = null pointer)
-//  - enable packet mode on API protocol since flow control is unavailable
+//create BGLib object:
+//- use SoftwareSerial por for module comms
+//- use nothing for passthrough comms (0 = null pointer)
+//- enable packet mode on API protocol since flow control is unavailable
 
 BGLib ble112((HardwareSerial *)&bleSerialPort, 0, 1);
 
 #define BGAPI_GET_RESPONSE(v, dType) dType *v = (dType *)ble112.getLastRXPayload()
 
-// ================================================================
-// ARDUINO APPLICATION SETUP AND LOOP FUNCTIONS
-// ================================================================
+//================================================================
+//ARDUINO APPLICATION SETUP AND LOOP FUNCTIONS
+//================================================================
 
-// initialization sequence
+//initialization sequence
 void setup() {
 
 	//Initialize accelerometer
@@ -157,11 +156,14 @@ void setup() {
 
 	my_ble_evt_system_boot( NULL);
 
+	MsTimer2::set(500, notify);
+	MsTimer2::start();
+
 }
 
-// ================================================================
-// MAIN APPLICATION LOOP 
-// ================================================================
+//================================================================
+//MAIN APPLICATION LOOP 
+//================================================================
 void loop() {  
 	// keep polling for new data from BLE
 	count++;   
@@ -182,31 +184,25 @@ void loop() {
 		}
 	}   
 	// Check if GATT Client (Smartphone) is subscribed to notifications.
-	if (notifier == true) {  
-		//Simple way of changinging frequency of notifications. see documentation on WuMRC Github or tunjid.com/blog for more details on this.
-		//if (count > 150) {
-			x = x + 1;
-			if(x < 180) {
-				A[0] = (100 * sin((x*3.14)/180));
-				A[1] = (100 * cos((x*3.14)/180));
-				A[2] = (0);
-				//A[3] = fabs((x * 0.66));
-			}
-			else{ 
-				x = -180;
-			}
 
-			//Write notification to characteristic on ble112. Causes notification to be sent.
-			ble112.ble_cmd_attributes_write(GATT_HANDLE_C_TX_DATA, 0, 6 , A);
+	if (writer == true) { 
+		//Write notification to characteristic on ble112. Causes notification to be sent.
 
-			// Reset count to zero
-			count = 0;
-			//Serial.println(millis());
-		//}       
-	}   
-	else {
-		// Do zilch, zip, nada, nothing if notifications are not enabled.
-	} 
+		x = x + 1;
+		if(x < 180) {
+			A[0] = (100 * sin((x*3.14)/180));
+			A[1] = (100 * cos((x*3.14)/180));
+			A[2] = (0);
+			//A[3] = fabs((x * 0.66));
+		}
+		else{ 
+			x = -180;
+		}
+
+		ble112.ble_cmd_attributes_write(GATT_HANDLE_C_TX_DATA, 0, 6 , A);
+		Serial.println("Attributes written.");
+		writer = false;
+	}
 
 	// blink Arduino LED based on state:
 	//  - solid = STANDBY
@@ -232,33 +228,39 @@ void loop() {
 	}
 }
 
-// ================================================================
-// INTERNAL BGLIB CLASS CALLBACK FUNCTIONS
-// ================================================================
+//================================================================
+//INTERNAL BGLIB CLASS CALLBACK FUNCTIONS
+//================================================================
 
-// called when the module begins sending a command
+//called when the module begins sending a command
 void onBusy() {
 	// turn LED on when we're busy
 	//digitalWrite(LED_PIN, HIGH);
 
 }
 
-// called when the module receives a complete response or "system_boot" event
+//called when the module receives a complete response or "system_boot" event
 void onIdle() {
 	// turn LED off when we're no longer busy
 	//    digitalWrite(LED_PIN, LOW);
 }
 
-// called when the parser does not read the expected response in the specified time limit
+//called when the parser does not read the expected response in the specified time limit
 void onTimeout() {
 	// reset module (might be a bit drastic for a timeout condition though)
 	Serial.println("Timed out.");
 
 }
 
-// ================================================================
-// APPLICATION EVENT HANDLER FUNCTIONS
-// ================================================================
+//================================================================
+//APPLICATION EVENT HANDLER FUNCTIONS
+//================================================================
+
+void notify() {
+	if (notifier == true) {
+		writer = true; 
+	}  
+}
 
 void my_ble_evt_system_boot(const ble_msg_system_boot_evt_t *msg) {
 	#ifdef DEBUG

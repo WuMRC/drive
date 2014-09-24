@@ -70,7 +70,7 @@ double gain_factor = 0;
 #define cycles_base 200      
 #define cycles_multiplier 1                              
 #define start_frequency 50000 
-#define cal_resistance 554.72                            
+#define cal_resistance 10055                            
 #define cal_samples 10                            
 
 // For BLE and accelerometer
@@ -265,11 +265,11 @@ void loop() {
     //Simple way of changinging frequency of notifications. see documentation on WuMRC Github or tunji.com/blog for more details on this.
     if (i > 0) {
       //BMA250ReadAccel();
-      A[0] = (420);
-      A[1] = (480);
-      A[2] = (480);
+      //A[0] = (-40);
+      //A[1] = (0);
+      //A[2] = (40);
 
-      if((Z_value - 554.72) > -1.5 && (Z_value - 554.72) < 1.5) {
+     /* if((Z_value - 554.72) > -1.5 && (Z_value - 554.72) < 1.5) {
         A[3] = 0;
         A[4] = 0;
         A[5] = 0;
@@ -280,8 +280,9 @@ void loop() {
         A[5] = 0; 
       }
       else {
-        changeVal(s, A);
-      }
+      } */
+      
+       changeVal(s, A);
 
 
       //Write notification to characteristic on ble112. Causes notification to be sent.
