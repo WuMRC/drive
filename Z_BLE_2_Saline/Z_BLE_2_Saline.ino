@@ -70,7 +70,7 @@ double gain_factor = 0;
 #define cycles_base 200      
 #define cycles_multiplier 1                              
 #define start_frequency 50000 
-#define cal_resistance 10055                            
+#define cal_resistance 554.72                            
 #define cal_samples 10                            
 
 // For BLE and accelerometer

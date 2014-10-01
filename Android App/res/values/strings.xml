@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Mime</string>
+    <string name="action_settings">Settings</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="edit_message">Enter a message</string>
+    <string name="button_send">Send</string>
+    <string name="title_activity_display_message">My Message</string>
+    <string name="button_yes">Yes</string>
+    <string name="button_no">No</string>
+    <string name="ActAndPair_prompt">Attempting to turn on bluetooth.</string>
+    <string name="main_splash_screen">Hello! Welcome to Mime. This app requires you have a Bluetooth Low Energy (BLE) compatible device.
+         Would you like to turn on Bluetooth and begin searching?</string>
+    <string name="scan_request">Tap the button below to begin a search for a compatible BLE device.</string>
+    <string name="button_scan">Scan</string>
+    <string name="title_activity_act_and_pair">ActAndPair</string>
+    <string name="title_activity_pair">Pair</string>
+    <string name="title_activity_scan">Scan For BLE Devices</string>
+    <string name="title_activity_device_scan">DeviceScanActivity</string>
+    <string name="title_activity_device_control">DeviceControlActivity</string>
+    <string name="service_name_BluetoothLeService">BluetoothLeService</string>
+    <string name="service_name_ServiceBinder">ServiceBinder</string>
+    <string name="buttonNo">That\'s no fun. :/</string>
+    <string name="exportToText">Export</string>
+    <string name="clearTextFile">Clear</string>
+    <string name="enableNotifications">Notifications</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="sampling_data">Mime is sampling data.</string>
+    <string name="monitor">Tap to monitor data.</string>
+    <string name="showMain">Main</string>
+    <string name="showGraph">Graph</string>
+    <string name="uc">Under Construction.</string>
+    <string name="desc">Under Construction.</string>
+    <string name="mime_options">Mime Options</string>
+
+    <string-array name="LongTermOptionsArray">
+        <item>Live Data</item>
+        <item>Past Hour</item>
+        <item>Past 12 Hours</item>
+        <item>Export Data</item>
+        <item>Back to Scanning</item>
+    </string-array>
+
+    <!-- Imported strings fron example -->
+
+    <string name="ble_not_supported">BLE is not supported</string>
+    <string name="label_data">Data:</string>
+    <string name="label_device_address">Device address:</string>
+    <string name="label_device_name">Device name:</string>
+    <string name="label_state">State:</string>
+    <string name="no_data">No data</string>
+    <string name="connected">Connected</string>
+    <string name="connecting">Connecting...</string>
+    <string name="disconnected">Disconnected</string>
+    <string name="title_devices">BLE Device Scan</string>
+    <string name="error_bluetooth_not_supported">Bluetooth not supported.</string>
+    <string name="unknown_device">Unknown device</string>
+    <string name="unknown_characteristic">Unknown characteristic</string>
+    <string name="unknown_service">Unknown service</string>
+
+    <!-- Menu items -->
+    <string name="menu_connect">Connect</string>
+    <string name="menu_disconnect">Disconnect</string>
+    <string name="menu_scan">Scan</string>
+    <string name="menu_stop">Stop</string>
+    <string name="menu_refresh">Refresh</string>
+    <string name="title_activity_button_no">Welp</string>
+    <string name="title_activity_accelerometer_data_parser">AccelerometerDataParser</string>
+    <string name="set_time">Set sampling time</string>
+    <string name="name_text_file">Name text file</string>
+    <string name="text_file_name">Enter new text file name here.</string>
+    <string name="live_data">Live Data</string>
+    <string name="past_hour">Past Hour</string>
+    <string name="past_12">Past 12 Hours</string>
+    <string name="data_export">Data Export</string>
+    <string name="back_to_scan">Back to Scanning</string>
+    <string name="title_activity_test">Test</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="action_example">Example action</string>
+    <string name="title_activity_long_term">LongTerm</string>
+
+</resources>
