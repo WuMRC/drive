@@ -60,7 +60,7 @@
 //uncomment the following line for debug serial output
 #define DEBUG
 
-volatile int x = 0;
+volatile double x = 0;
 volatile boolean writer = false;
 boolean notifier = false; // variable to manage notification settings
 uint8_t A[6] = {
@@ -158,7 +158,7 @@ void setup() {
 
   my_ble_evt_system_boot( NULL);
 
-  MsTimer2::set(2000, notify);
+  MsTimer2::set(20, notify);
   MsTimer2::start();
 
 }
@@ -187,22 +187,21 @@ void loop() {
   }   
   // Check if GATT Client (Smartphone) is subscribed to notifications.
 
-  if (writer == true) { 
-    //Write notification to characteristic on ble112. Causes notification to be sent.
+// Put Z value here. Place holder pseudo signal.
+ x = x + 0.02;
+    if(x >= 180) {
+      x = -180;
+    }
 
-    x = x + 1;
-    if(x < 180) {
+
+  if (writer == true) { 
+    //Write notification to characteristic on ble112. Causes notification to be sent.   
       A[0] = (100 * sin((x*3.14)/180));
       A[1] = (100 * cos((x*3.14)/180));
       A[2] = (0);
       //A[3] = fabs((x * 0.66));
-    }
-    else{ 
-      x = -180;
-    }
-
     ble112.ble_cmd_attributes_write(GATT_HANDLE_C_TX_DATA, 0, 6 , A);
-    Serial.println("Attributes written.");
+    //Serial.println("Attributes written.");
     writer = false;
   }
 
@@ -435,7 +434,7 @@ void my_ble_evt_connection_disconnect(const struct ble_msg_connection_disconnect
   ble_bonding = 0xFF;
   
   // reset frequency to default
-  MsTimer2::set(2000, notify);
+  MsTimer2::set(20, notify);
    MsTimer2::start();
 }
 
@@ -469,12 +468,12 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
     //digitalWrite(9, msg -> value.data[0] & 0x02);
     //digitalWrite(10, msg -> value.data[0] & 0x04);
     sampleRate = (long) (1000 / (msg -> value.data[0])); 
-    Serial.print("Sucessful write attempt. New frequency / period: ");
+    Serial.print("Sucessful write attempt; new frequency / period: ");
     Serial.print(msg -> value.data[0]);
     Serial.print(" hertz");
     Serial.print(" / ");         
     Serial.print(sampleRate);
-    Serial.print(" milliseconds");    
+    Serial.print(" milliseconds.");    
     MsTimer2::set(sampleRate, notify);
     MsTimer2::start();
     Serial.println();

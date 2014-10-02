@@ -236,7 +236,7 @@ SampleRateFragment.SampleRateListener {
 		bioimpedanceSeries = new SimpleXYSeries("bioimpedance");
 		bioimpedanceSeries.useImplicitXVals();
 
-		bioimpedancePlot.setRangeBoundaries(200, 800, BoundaryMode.FIXED);
+		bioimpedancePlot.setRangeBoundaries(0, 600, BoundaryMode.FIXED);
 		bioimpedancePlot.setDomainBoundaries(0, 360, BoundaryMode.FIXED);
 
 		bioimpedancePlot.addSeries(accelXseries, new LineAndPointFormatter(Color.CYAN, null, null, null));
@@ -318,6 +318,8 @@ SampleRateFragment.SampleRateListener {
 			mBluetoothLeService.connect(mDeviceAddress);
 			return true;
 		case R.id.menu_disconnect:
+			Switch enableNotifications = (Switch) findViewById(R.id.enable_notifications);
+			enableNotifications.setChecked(false);
 			mBluetoothLeService.stopForeground(true);
 			mBluetoothLeService.disconnect();
 			//mBluetoothLeService.close();
@@ -391,6 +393,9 @@ SampleRateFragment.SampleRateListener {
 				if ((charaProp & BluetoothGattCharacteristic.PROPERTY_WRITE) > 0) {
 					//mBluetoothLeService.writeCharacteristic(characteristic, 12);
 					mWriteCharacteristic = characteristic;
+					Log.i(TAG, String.valueOf(characteristic.getProperties()));
+					Log.i(TAG, String.valueOf(characteristic.getPermissions()));
+					Log.i(TAG, String.valueOf(characteristic.getInstanceId()));
 				}
 				return true;
 			}
@@ -526,8 +531,10 @@ SampleRateFragment.SampleRateListener {
 		String unknownServiceString = getResources().getString(R.string.unknown_service);
 		String unknownCharaString = getResources().getString(R.string.unknown_characteristic);
 		ArrayList<HashMap<String, String>> gattServiceData = new ArrayList<HashMap<String, String>>();
+		
 		ArrayList<ArrayList<HashMap<String, String>>> gattCharacteristicData
 		= new ArrayList<ArrayList<HashMap<String, String>>>();
+		
 		mGattCharacteristics = new ArrayList<ArrayList<BluetoothGattCharacteristic>>();
 
 		// Loops through available GATT Services.

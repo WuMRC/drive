@@ -7,9 +7,15 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.channels.FileChannel;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
+import java.util.List;
+import java.util.UUID;
 
 import android.app.Service;
+import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattService;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -37,13 +43,20 @@ public class ServiceBinder extends Service {
 	private File DataDir = new File(Environment.getExternalStorageDirectory() + "/Mime/");
 	private File duodecimalMinute = new File(DataDir, "duodecimalMinute.txt");
 	private File monoHour  = new File(DataDir, "monoHour.txt");
-	//private File complete  = new File(DataDir, "complete.txt");
 
-
-	//private Calendar c = Calendar.getInstance();
-	//File file = new File(this.getFilesDir(), "cache");
+	private final String LIST_NAME = "NAME";
+	private final String LIST_UUID = "UUID";
 
 	private BluetoothLeService mBluetoothLeService;
+	
+	private ArrayList<ArrayList<BluetoothGattCharacteristic>> mGattCharacteristics =
+			new ArrayList<ArrayList<BluetoothGattCharacteristic>>();
+	
+	public BluetoothGattCharacteristic mWriteCharacteristic = 
+			new BluetoothGattCharacteristic(
+					UUID.fromString(SampleGattAttributes.RX_DATA), 
+					BluetoothGattCharacteristic.PROPERTY_WRITE,
+					BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
 
 	private final ServiceConnection mServiceConnection = new ServiceConnection() {
 
@@ -54,6 +67,7 @@ public class ServiceBinder extends Service {
 			Log.i(TAG, "Bound to BLE service. No of clients = " + mBluetoothLeService.getNumberOfBoundClients());
 			//mBluetoothLeService.connect(mDeviceAddress);
 			Log.i(TAG, mDeviceAddress);
+			getGattServices(mBluetoothLeService.getSupportedGattServices());
 		}
 
 		@Override
@@ -67,7 +81,13 @@ public class ServiceBinder extends Service {
 		@Override
 		public void onReceive(Context context, Intent intent) {
 			final String action = intent.getAction();
-			if (BluetoothLeService.ACTION_DATA_AVAILABLE_BIOIMPEDANCE.equals(action)) {
+			
+			if (BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED.equals(action)) {
+				// Show all the supported services and characteristics on the user interface.
+				getGattServices(mBluetoothLeService.getSupportedGattServices());
+			} 
+			
+			else if (BluetoothLeService.ACTION_DATA_AVAILABLE_BIOIMPEDANCE.equals(action)) {
 				values = intent.getDoubleArrayExtra(BluetoothLeService.EXTRA_DATA_BIOIMPEDANCE_DOUBLE);
 				data = intent.getStringExtra(BluetoothLeService.EXTRA_DATA_BIOIMPEDANCE_STRING);
 
@@ -301,6 +321,66 @@ public class ServiceBinder extends Service {
 
 	public static String fixedLengthString(String string, int length) {
 		return String.format("%-"+length+ "s", string);
+	}
+
+	public void writeCharacteristic(int value) {
+		mBluetoothLeService.writeCharacteristic(mWriteCharacteristic, value);
+	}
+	
+	private void getGattServices(List<BluetoothGattService> gattServices) {
+		if (gattServices == null) return;
+		String uuid = null;
+		String unknownServiceString = getResources().getString(R.string.unknown_service);
+		String unknownCharaString = getResources().getString(R.string.unknown_characteristic);
+		ArrayList<HashMap<String, String>> gattServiceData = new ArrayList<HashMap<String, String>>();
+
+		ArrayList<ArrayList<HashMap<String, String>>> gattCharacteristicData
+		= new ArrayList<ArrayList<HashMap<String, String>>>();
+
+		mGattCharacteristics = new ArrayList<ArrayList<BluetoothGattCharacteristic>>();
+
+		// Loops through available GATT Services.
+		for (BluetoothGattService gattService : gattServices) {
+			HashMap<String, String> currentServiceData = new HashMap<String, String>();
+			uuid = gattService.getUuid().toString();
+
+			currentServiceData.put(
+					LIST_NAME, SampleGattAttributes.lookup(uuid, unknownServiceString));
+
+			currentServiceData.put(LIST_UUID, uuid);
+			gattServiceData.add(currentServiceData);
+
+			ArrayList<HashMap<String, String>> gattCharacteristicGroupData =
+					new ArrayList<HashMap<String, String>>();
+
+			List<BluetoothGattCharacteristic> gattCharacteristics =
+					gattService.getCharacteristics();
+
+			ArrayList<BluetoothGattCharacteristic> charas =
+					new ArrayList<BluetoothGattCharacteristic>();
+
+			// Loops through available Characteristics.
+			for (BluetoothGattCharacteristic gattCharacteristic : gattCharacteristics) {
+				if ((gattCharacteristic.getProperties() & BluetoothGattCharacteristic.PROPERTY_WRITE) > 0) {
+					mWriteCharacteristic = gattCharacteristic;
+					/*Log.i(TAG, mWriteCharacteristic.getUuid().toString());
+					Log.i(TAG, String.valueOf(mWriteCharacteristic.getProperties()));
+					Log.i(TAG, String.valueOf(mWriteCharacteristic.getPermissions()));
+					Log.i(TAG, String.valueOf(mWriteCharacteristic.getInstanceId()));*/
+				}
+				charas.add(gattCharacteristic);
+				HashMap<String, String> currentCharaData = new HashMap<String, String>();
+				uuid = gattCharacteristic.getUuid().toString();
+				currentCharaData.put(
+						LIST_NAME, SampleGattAttributes.lookup(uuid, unknownCharaString));
+				currentCharaData.put(LIST_UUID, uuid);
+				gattCharacteristicGroupData.add(currentCharaData);
+			}
+			mGattCharacteristics.add(charas);
+			gattCharacteristicData.add(gattCharacteristicGroupData);
+		}
+
+
 	}
 
 }

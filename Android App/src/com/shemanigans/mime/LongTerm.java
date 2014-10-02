@@ -9,15 +9,12 @@ import java.io.OutputStreamWriter;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.UUID;
 
 import android.app.ActionBar;
 import android.app.Activity;
 import android.app.DialogFragment;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
-import android.bluetooth.BluetoothGattCharacteristic;
-import android.bluetooth.BluetoothGattDescriptor;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -72,17 +69,7 @@ SampleRateFragment.SampleRateListener {
 	private String mDeviceAddress;
 	private boolean mConnected = true;
 	private int sampleRate = 0;
-	
-	private BluetoothGattCharacteristic mWriteCharacteristic = 
-			new BluetoothGattCharacteristic(
-					UUID.fromString(SampleGattAttributes.RX_DATA), 
-					BluetoothGattCharacteristic.PROPERTY_WRITE,
-					BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
 
-	BluetoothGattDescriptor mWriteDescriptor = 
-			new BluetoothGattDescriptor(
-					UUID.fromString(SampleGattAttributes.RX_DATA), 
-					BluetoothGattDescriptor.PERMISSION_WRITE);
 
 	// Code to manage Service lifecycle.
 	private final ServiceConnection mServiceConnectionBLE = new ServiceConnection() {
@@ -452,8 +439,8 @@ SampleRateFragment.SampleRateListener {
 		// Set Value
 		sampleRate = Integer.parseInt(sampleRateDialog.getValue());
 		Toast.makeText(this, "New frequency: " + sampleRateDialog.getValue(), Toast.LENGTH_SHORT).show();
-		mWriteCharacteristic.addDescriptor(mWriteDescriptor);
-		mBluetoothLeService.writeCharacteristic(mWriteCharacteristic, sampleRate);
+
+		mServiceBinder.writeCharacteristic(sampleRate);
 	}
 
 	@Override
