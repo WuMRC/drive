@@ -25,6 +25,9 @@ Current functionalty:
 #define cycles_base 200      //First term to set a number of cycles to ignore
                              //to dissipate transients before a measurement is
                              //taken. The max value for this is 511.
+// 200 - 50kHz
+// 
+
 
 #define cycles_multiplier 1  //Set a multiple for the cycles_base which
                              //is used to calculate the desired number
