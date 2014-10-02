@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 
 import android.app.Activity;
 import android.app.DialogFragment;
@@ -47,7 +48,11 @@ import com.androidplot.xy.XYPlot;
  * communicates with {@code BluetoothLeService}, which in turn interacts with the
  * Bluetooth LE API.
  */
-public class DeviceControlActivity extends Activity implements NameTextFileFragment.NameTextFileListener {
+public class DeviceControlActivity 
+extends Activity 
+implements 
+NameTextFileFragment.NameTextFileListener,
+SampleRateFragment.SampleRateListener {
 
 	//	implements NameTextFileFragment.NameTextFileListener
 
@@ -70,6 +75,11 @@ public class DeviceControlActivity extends Activity implements NameTextFileFragm
 			new ArrayList<ArrayList<BluetoothGattCharacteristic>>();
 	private boolean mConnected = false;
 	private BluetoothGattCharacteristic mNotifyCharacteristic;
+	private BluetoothGattCharacteristic mWriteCharacteristic = 
+			new BluetoothGattCharacteristic(
+					UUID.fromString(SampleGattAttributes.RX_DATA), 
+					BluetoothGattCharacteristic.PROPERTY_WRITE,
+					BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
 
 	// Variables created by me
 
@@ -77,6 +87,8 @@ public class DeviceControlActivity extends Activity implements NameTextFileFragm
 	private String textFileName = "AccelData";	
 	private Calendar c = Calendar.getInstance();
 	private boolean checkNamedTextFile = false;
+	private int sampleRate = 0;
+
 
 	// Graph variables
 
@@ -88,7 +100,8 @@ public class DeviceControlActivity extends Activity implements NameTextFileFragm
 	private SimpleXYSeries bioimpedanceSeries = null;
 
 	// Fragment to set name
-	NameTextFileFragment dialog;
+	NameTextFileFragment nameTextFileDialog;
+	SampleRateFragment sampleRateDialog;
 
 	private final String LIST_NAME = "NAME";
 	private final String LIST_UUID = "UUID";
@@ -135,7 +148,7 @@ public class DeviceControlActivity extends Activity implements NameTextFileFragm
 			} 
 			else if (BluetoothLeService.ACTION_GATT_CONNECTING.equals(action)) {
 				mConnected = false;
-				updateConnectionState(R.string.connecting);
+				//updateConnectionState(R.string.connecting);
 				invalidateOptionsMenu();
 			}
 			else if (BluetoothLeService.ACTION_GATT_DISCONNECTED.equals(action)) {
@@ -163,7 +176,7 @@ public class DeviceControlActivity extends Activity implements NameTextFileFragm
 
 				double[] imp = {1, 2, 3, 4};
 				imp = intent.getDoubleArrayExtra(BluetoothLeService.EXTRA_DATA_BIOIMPEDANCE_DOUBLE);
-				
+
 				// update instantaneous data:
 
 				// get rid the oldest sample in history:
@@ -305,6 +318,7 @@ public class DeviceControlActivity extends Activity implements NameTextFileFragm
 			mBluetoothLeService.connect(mDeviceAddress);
 			return true;
 		case R.id.menu_disconnect:
+			mBluetoothLeService.stopForeground(true);
 			mBluetoothLeService.disconnect();
 			//mBluetoothLeService.close();
 			return true;
@@ -314,8 +328,8 @@ public class DeviceControlActivity extends Activity implements NameTextFileFragm
 		case R.id.name_text_file:
 			setTextFileName();
 			return true;
-		case R.id.set_time:
-			setNotificationTimer();
+		case R.id.set_sample_rate:
+			setSampleRate();
 			return true;
 		}
 		return super.onOptionsItemSelected(item);
@@ -342,7 +356,7 @@ public class DeviceControlActivity extends Activity implements NameTextFileFragm
 
 			RelativeLayout buttons = (RelativeLayout) findViewById(R.id.buttons);
 			buttons.setVisibility(View.GONE);
-			
+
 			com.androidplot.xy.XYPlot data = (com.androidplot.xy.XYPlot) findViewById(R.id.bioimpedancePlot);
 			data.setVisibility(View.GONE);
 
@@ -375,7 +389,8 @@ public class DeviceControlActivity extends Activity implements NameTextFileFragm
 					mNotifyCharacteristic = characteristic;
 				}
 				if ((charaProp & BluetoothGattCharacteristic.PROPERTY_WRITE) > 0) {
-					mBluetoothLeService.writeCharacteristic(characteristic, 12);
+					//mBluetoothLeService.writeCharacteristic(characteristic, 12);
+					mWriteCharacteristic = characteristic;
 				}
 				return true;
 			}
@@ -397,6 +412,7 @@ public class DeviceControlActivity extends Activity implements NameTextFileFragm
 			buttons.setVisibility(View.VISIBLE);
 
 			mBluetoothLeService.removeCharacteristicNotification(mNotifyCharacteristic, false);
+			mNotifyCharacteristic = null;
 			mBluetoothLeService.stopForeground(true);
 		}
 
@@ -419,7 +435,7 @@ public class DeviceControlActivity extends Activity implements NameTextFileFragm
 
 			com.androidplot.xy.XYPlot data = (com.androidplot.xy.XYPlot) findViewById(R.id.bioimpedancePlot);
 			data.setVisibility(View.VISIBLE);
-			
+
 			RelativeLayout buttons = (RelativeLayout) findViewById(R.id.buttons);
 			buttons.setVisibility(View.VISIBLE);
 
@@ -438,7 +454,7 @@ public class DeviceControlActivity extends Activity implements NameTextFileFragm
 				textFileName = "AccelData" + strDate;
 			}
 			else {
-				textFileName = dialog.getName();
+				textFileName = nameTextFileDialog.getName();
 			}
 			// set checkNamedTextFile back to false to revert back to default naming scheme.
 			checkNamedTextFile = false;
@@ -518,20 +534,27 @@ public class DeviceControlActivity extends Activity implements NameTextFileFragm
 		for (BluetoothGattService gattService : gattServices) {
 			HashMap<String, String> currentServiceData = new HashMap<String, String>();
 			uuid = gattService.getUuid().toString();
+			
 			currentServiceData.put(
 					LIST_NAME, SampleGattAttributes.lookup(uuid, unknownServiceString));
+			
 			currentServiceData.put(LIST_UUID, uuid);
 			gattServiceData.add(currentServiceData);
 
 			ArrayList<HashMap<String, String>> gattCharacteristicGroupData =
 					new ArrayList<HashMap<String, String>>();
+			
 			List<BluetoothGattCharacteristic> gattCharacteristics =
 					gattService.getCharacteristics();
+			
 			ArrayList<BluetoothGattCharacteristic> charas =
 					new ArrayList<BluetoothGattCharacteristic>();
 
 			// Loops through available Characteristics.
 			for (BluetoothGattCharacteristic gattCharacteristic : gattCharacteristics) {
+				if ((gattCharacteristic.getProperties() & BluetoothGattCharacteristic.PROPERTY_WRITE) > 0) {
+					mWriteCharacteristic = gattCharacteristic;
+				}
 				charas.add(gattCharacteristic);
 				HashMap<String, String> currentCharaData = new HashMap<String, String>();
 				uuid = gattCharacteristic.getUuid().toString();
@@ -563,32 +586,54 @@ public class DeviceControlActivity extends Activity implements NameTextFileFragm
 	}
 
 	public void setTextFileName() {
-		showTextFileDialog();
-	}
-
-	public void setNotificationTimer() {
-	}
-
-	public void showTextFileDialog() {
 		// Create an instance of the dialog fragment and show it
-		dialog = new NameTextFileFragment();
-		dialog.show(getFragmentManager(), "NameTextFileFragment");
+		nameTextFileDialog = new NameTextFileFragment();
+		nameTextFileDialog.show(getFragmentManager(), "NameTextFileFragment");
 	}
 
 	// The dialog fragment receives a reference to this Activity through the
 	// Fragment.onAttach() callback, which it uses to call the following methods
 	// defined by the NoticeDialogFragment.NoticeDialogListener interface
 	@Override
-	public void onDialogPositiveClick(DialogFragment dialog) {
+	public void onDialogPositiveClickNameTextFile(DialogFragment dialog) {
 		// User touched the dialog's positive button
 		//checkNamedTextFile
 		checkNamedTextFile = true;
 	}
 
 	@Override
-	public void onDialogNegativeClick(DialogFragment dialog) {
+	public void onDialogNegativeClickNameTextFile(DialogFragment dialog) {
 		// User touched the dialog's negative button
 		checkNamedTextFile = false;
+	}
+
+	public void setSampleRate() {
+		// Create an instance of the dialog fragment and show it
+		Switch enableNotifications = (Switch) findViewById(R.id.enable_notifications);
+		if(!enableNotifications.isChecked()) {
+			Toast.makeText(this, "Notifications are not enabled.", Toast.LENGTH_SHORT).show();
+		}	
+		else {
+			sampleRateDialog = new SampleRateFragment();
+			sampleRateDialog.show(getFragmentManager(), "SampleRateFragment");
+		}
+	}
+
+	// The dialog fragment receives a reference to this Activity through the
+	// Fragment.onAttach() callback, which it uses to call the following methods
+	// defined by the NoticeDialogFragment.NoticeDialogListener interface
+	@Override
+	public void onDialogPositiveClickSampleRate(DialogFragment dialog) {
+		// User touched the dialog's positive button
+		// Set Value
+		sampleRate = Integer.parseInt(sampleRateDialog.getValue());
+		Toast.makeText(this, "New frequency: " + sampleRateDialog.getValue(), Toast.LENGTH_SHORT).show();
+		mBluetoothLeService.writeCharacteristic(mWriteCharacteristic, sampleRate);
+	}
+
+	@Override
+	public void onDialogNegativeClickSampleRate(DialogFragment dialog) {
+		// User touched the dialog's negative button
 	}
 
 	/* Checks if external storage is available for read and write */

@@ -9,12 +9,15 @@ import java.io.OutputStreamWriter;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.UUID;
 
 import android.app.ActionBar;
 import android.app.Activity;
 import android.app.DialogFragment;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
+import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattDescriptor;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -36,13 +39,16 @@ Activity
 implements 
 NavigationDrawerFragment.NavigationDrawerCallbacks, 
 NameTextFileFragment.NameTextFileListener,
-BioimpFragment.OnButtonClickedListener {
+BioimpFragment.OnButtonClickedListener,
+SampleRateFragment.SampleRateListener {
 
 	/**
 	 * Fragment managing the behaviors, interactions and presentation of the navigation drawer.
 	 */
 	private NavigationDrawerFragment mNavigationDrawerFragment;
-	private NameTextFileFragment dialog;
+	private NameTextFileFragment nameTextFileDialog;
+	SampleRateFragment sampleRateDialog;
+
 	/**
 	 * Used to store the last screen title. For use in {@link #restoreActionBar()}.
 	 */
@@ -62,11 +68,21 @@ BioimpFragment.OnButtonClickedListener {
 	public ArrayList<String> textFile = new ArrayList<String>();
 	private String textFileName = "AccelData";
 	private Calendar c = Calendar.getInstance();
-	//private BluetoothGattCharacteristic frequencyCharacteristic;
 	private String mDeviceName;
 	private String mDeviceAddress;
 	private boolean mConnected = true;
+	private int sampleRate = 0;
+	
+	private BluetoothGattCharacteristic mWriteCharacteristic = 
+			new BluetoothGattCharacteristic(
+					UUID.fromString(SampleGattAttributes.RX_DATA), 
+					BluetoothGattCharacteristic.PROPERTY_WRITE,
+					BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
 
+	BluetoothGattDescriptor mWriteDescriptor = 
+			new BluetoothGattDescriptor(
+					UUID.fromString(SampleGattAttributes.RX_DATA), 
+					BluetoothGattDescriptor.PERMISSION_WRITE);
 
 	// Code to manage Service lifecycle.
 	private final ServiceConnection mServiceConnectionBLE = new ServiceConnection() {
@@ -295,8 +311,11 @@ BioimpFragment.OnButtonClickedListener {
 			onBackPressed();
 			return true;
 		case R.id.name_text_file:
-			setTextFileName();
+			showTextFileDialog();
 			Log.i(TAG, "Attempted text file naming.");
+			return true;
+		case R.id.set_sample_rate:
+			setSampleRate();
 			return true;
 		}
 		return super.onOptionsItemSelected(item);
@@ -311,7 +330,7 @@ BioimpFragment.OnButtonClickedListener {
 
 	public void readText() {
 		File DataDir = new File(Environment.getExternalStorageDirectory() + "/Mime/");
-		
+
 		//Get the text file
 		File duodecimalMinute = new File(DataDir, "duodecimalMinute.txt");
 
@@ -345,7 +364,7 @@ BioimpFragment.OnButtonClickedListener {
 				textFileName = "AccelData" + strDate;
 			}
 			else {
-				textFileName = dialog.getName();
+				textFileName = nameTextFileDialog.getName();
 			}
 			// set checkNamedTextFile back to false to revert back to default naming scheme.
 			checkNamedTextFile = false;
@@ -392,34 +411,54 @@ BioimpFragment.OnButtonClickedListener {
 		}
 	}
 
-	public void setTextFileName() {
-		showTextFileDialog();
-	}
-
 	public static String fixedLengthString(String string, int length) {
 		return String.format("%-"+length+ "s", string);
 	}
 
 	public void showTextFileDialog() {
 		// Create an instance of the dialog fragment and show it
-		dialog = new NameTextFileFragment();
-		dialog.show(getFragmentManager(), "NameTextFileFragment");
+		nameTextFileDialog = new NameTextFileFragment();
+		nameTextFileDialog.show(getFragmentManager(), "NameTextFileFragment");
 	}
 
 	// The dialog fragment receives a reference to this Activity through the
 	// Fragment.onAttach() callback, which it uses to call the following methods
 	// defined by the NoticeDialogFragment.NoticeDialogListener interface
 	@Override
-	public void onDialogPositiveClick(DialogFragment dialog) {
+	public void onDialogPositiveClickNameTextFile(DialogFragment dialog) {
 		// User touched the dialog's positive button
 		//checkNamedTextFile
 		checkNamedTextFile = true;
 	}
 
 	@Override
-	public void onDialogNegativeClick(DialogFragment dialog) {
+	public void onDialogNegativeClickNameTextFile(DialogFragment dialog) {
 		// User touched the dialog's negative button
 		checkNamedTextFile = false;
+	}
+
+	public void setSampleRate() {
+		// Create an instance of the dialog fragment and show it
+			sampleRateDialog = new SampleRateFragment();
+			sampleRateDialog.show(getFragmentManager(), "SampleRateFragment");
+	}
+
+	// The dialog fragment receives a reference to this Activity through the
+	// Fragment.onAttach() callback, which it uses to call the following methods
+	// defined by the NoticeDialogFragment.NoticeDialogListener interface
+	@Override
+	public void onDialogPositiveClickSampleRate(DialogFragment dialog) {
+		// User touched the dialog's positive button
+		// Set Value
+		sampleRate = Integer.parseInt(sampleRateDialog.getValue());
+		Toast.makeText(this, "New frequency: " + sampleRateDialog.getValue(), Toast.LENGTH_SHORT).show();
+		mWriteCharacteristic.addDescriptor(mWriteDescriptor);
+		mBluetoothLeService.writeCharacteristic(mWriteCharacteristic, sampleRate);
+	}
+
+	@Override
+	public void onDialogNegativeClickSampleRate(DialogFragment dialog) {
+		// User touched the dialog's negative button
 	}
 
 	private static IntentFilter makeGattUpdateIntentFilter() {

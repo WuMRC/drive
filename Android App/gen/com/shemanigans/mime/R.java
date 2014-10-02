@@ -142,7 +142,7 @@ public final class R {
     public static final class id {
         public static final int ViewColorPickerHelper=0x7f0a000b;
         public static final int action_example=0x7f0a0023;
-        public static final int action_settings=0x7f0a001d;
+        public static final int action_settings=0x7f0a001e;
         public static final int bioimpedancePlot=0x7f0a0015;
         public static final int bioimpedancePlot2=0x7f0a000a;
         public static final int bluetooth_prompt=0x7f0a0000;
@@ -165,19 +165,19 @@ public final class R {
         public static final int export_to_text_frag=0x7f0a000c;
         public static final int gatt_services_list=0x7f0a0018;
         public static final int hscrollview=0x7f0a0014;
-        public static final int menu_connect=0x7f0a001f;
-        public static final int menu_disconnect=0x7f0a0020;
-        public static final int menu_refresh=0x7f0a001e;
+        public static final int menu_connect=0x7f0a0020;
+        public static final int menu_disconnect=0x7f0a0021;
+        public static final int menu_refresh=0x7f0a001f;
         public static final int menu_scan=0x7f0a0024;
         public static final int menu_stop=0x7f0a0025;
         public static final int name_text_file=0x7f0a0022;
         public static final int navigation_drawer=0x7f0a0006;
         public static final int pairing_prompt=0x7f0a0002;
-        public static final int set_time=0x7f0a0021;
+        public static final int set_sample_rate=0x7f0a001c;
         public static final int state_tag=0x7f0a0010;
         public static final int state_tag_space=0x7f0a0011;
         public static final int textViewName=0x7f0a0007;
-        public static final int textfile_name=0x7f0a001c;
+        public static final int textfile_name=0x7f0a001d;
     }
     public static final class layout {
         public static final int actionbar_indeterminate_progress=0x7f030000;
@@ -193,7 +193,8 @@ public final class R {
         public static final int fragment_navigation_drawer=0x7f03000a;
         public static final int fragment_placeholder=0x7f03000b;
         public static final int gatt_services_characteristics=0x7f03000c;
-        public static final int set_text_file_name=0x7f03000d;
+        public static final int set_sample_rate=0x7f03000d;
+        public static final int set_text_file_name=0x7f03000e;
     }
     public static final class menu {
         public static final int act_and_pair=0x7f090000;
@@ -210,13 +211,13 @@ public final class R {
     }
     public static final class string {
         public static final int ActAndPair_prompt=0x7f060008;
-        public static final int action_example=0x7f060040;
+        public static final int action_example=0x7f060041;
         public static final int action_settings=0x7f060001;
         public static final int app_name=0x7f060000;
-        public static final int back_to_scan=0x7f06003c;
+        public static final int back_to_scan=0x7f06003d;
         /**  Imported strings fron example 
          */
-        public static final int ble_not_supported=0x7f060020;
+        public static final int ble_not_supported=0x7f060022;
         public static final int buttonNo=0x7f060013;
         public static final int button_no=0x7f060007;
         public static final int button_scan=0x7f06000b;
@@ -224,61 +225,64 @@ public final class R {
         public static final int button_yes=0x7f060006;
         public static final int cancel=0x7f060018;
         public static final int clearTextFile=0x7f060015;
-        public static final int connected=0x7f060026;
-        public static final int connecting=0x7f060027;
-        public static final int data_export=0x7f06003b;
+        public static final int connected=0x7f060028;
+        public static final int data_export=0x7f06003c;
         public static final int desc=0x7f06001e;
-        public static final int disconnected=0x7f060028;
+        /**  <string name="connecting">Connecting...</string> 
+         */
+        public static final int disconnected=0x7f060029;
         public static final int edit_message=0x7f060003;
         public static final int enableNotifications=0x7f060016;
-        public static final int error_bluetooth_not_supported=0x7f06002a;
+        public static final int error_bluetooth_not_supported=0x7f06002b;
         public static final int exportToText=0x7f060014;
         public static final int hello_world=0x7f060002;
-        public static final int label_data=0x7f060021;
-        public static final int label_device_address=0x7f060022;
-        public static final int label_device_name=0x7f060023;
-        public static final int label_state=0x7f060024;
-        public static final int live_data=0x7f060038;
+        public static final int label_data=0x7f060023;
+        public static final int label_device_address=0x7f060024;
+        public static final int label_device_name=0x7f060025;
+        public static final int label_state=0x7f060026;
+        public static final int live_data=0x7f060039;
         public static final int main_splash_screen=0x7f060009;
         /**  Menu items 
          */
-        public static final int menu_connect=0x7f06002e;
-        public static final int menu_disconnect=0x7f06002f;
-        public static final int menu_refresh=0x7f060032;
-        public static final int menu_scan=0x7f060030;
-        public static final int menu_stop=0x7f060031;
+        public static final int menu_connect=0x7f06002f;
+        public static final int menu_disconnect=0x7f060030;
+        public static final int menu_refresh=0x7f060033;
+        public static final int menu_scan=0x7f060031;
+        public static final int menu_stop=0x7f060032;
         public static final int mime_options=0x7f06001f;
         public static final int monitor=0x7f06001a;
-        public static final int name_text_file=0x7f060036;
-        public static final int navigation_drawer_close=0x7f06003f;
-        public static final int navigation_drawer_open=0x7f06003e;
-        public static final int no_data=0x7f060025;
+        public static final int name_text_file=0x7f060037;
+        public static final int navigation_drawer_close=0x7f060040;
+        public static final int navigation_drawer_open=0x7f06003f;
+        public static final int no_data=0x7f060027;
         public static final int ok=0x7f060017;
-        public static final int past_12=0x7f06003a;
-        public static final int past_hour=0x7f060039;
+        public static final int past_12=0x7f06003b;
+        public static final int past_hour=0x7f06003a;
+        public static final int sample_rate_options=0x7f060021;
         public static final int sampling_data=0x7f060019;
         public static final int scan_request=0x7f06000a;
         public static final int service_name_BluetoothLeService=0x7f060011;
         public static final int service_name_ServiceBinder=0x7f060012;
-        public static final int set_time=0x7f060035;
+        public static final int set_sample_rate=0x7f060020;
+        public static final int set_time=0x7f060036;
         public static final int showGraph=0x7f06001c;
         public static final int showMain=0x7f06001b;
-        public static final int text_file_name=0x7f060037;
-        public static final int title_activity_accelerometer_data_parser=0x7f060034;
+        public static final int text_file_name=0x7f060038;
+        public static final int title_activity_accelerometer_data_parser=0x7f060035;
         public static final int title_activity_act_and_pair=0x7f06000c;
-        public static final int title_activity_button_no=0x7f060033;
+        public static final int title_activity_button_no=0x7f060034;
         public static final int title_activity_device_control=0x7f060010;
         public static final int title_activity_device_scan=0x7f06000f;
         public static final int title_activity_display_message=0x7f060005;
-        public static final int title_activity_long_term=0x7f060041;
+        public static final int title_activity_long_term=0x7f060042;
         public static final int title_activity_pair=0x7f06000d;
         public static final int title_activity_scan=0x7f06000e;
-        public static final int title_activity_test=0x7f06003d;
-        public static final int title_devices=0x7f060029;
+        public static final int title_activity_test=0x7f06003e;
+        public static final int title_devices=0x7f06002a;
         public static final int uc=0x7f06001d;
-        public static final int unknown_characteristic=0x7f06002c;
-        public static final int unknown_device=0x7f06002b;
-        public static final int unknown_service=0x7f06002d;
+        public static final int unknown_characteristic=0x7f06002d;
+        public static final int unknown_device=0x7f06002c;
+        public static final int unknown_service=0x7f06002e;
     }
     public static final class style {
         /** 

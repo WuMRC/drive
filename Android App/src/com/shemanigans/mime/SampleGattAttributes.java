@@ -10,7 +10,7 @@ public class SampleGattAttributes {
     public static String HEART_RATE_MEASUREMENT = "00002a37-0000-1000-8000-00805f9b34fb";
     public static String CLIENT_CHARACTERISTIC_CONFIG = "00002902-0000-1000-8000-00805f9b34fb";
     public static String TX_DATA = "21819ab0-c937-4188-b0db-b9621e1696cd";
-
+    public static String RX_DATA = "5fc569a0-74a9-4fa4-b8b7-8354c86e45a4";
  
     static {
         // Sample Services.
@@ -27,7 +27,7 @@ public class SampleGattAttributes {
         attributes.put("00002a29-0000-1000-8000-00805f9b34fb", "Manufacturer Name String");
         attributes.put("00002a24-0000-1000-8000-00805f9b34fb", "Model Number String");
         attributes.put("00002a25-0000-1000-8000-00805f9b34fb", "Serial Number String");
-        attributes.put("5fc569a0-74a9-4fa4-b8b7-8354c86e45a4", "RX Data");
+        attributes.put(RX_DATA, "RX Data");
         attributes.put(TX_DATA, "TX Data");
 
 

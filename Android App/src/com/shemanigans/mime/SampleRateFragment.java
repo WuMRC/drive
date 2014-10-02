@@ -12,24 +12,23 @@ import android.view.View;
 import android.widget.EditText;
 
 @SuppressLint("InflateParams")
-public class NameTextFileFragment extends DialogFragment {
+public class SampleRateFragment extends DialogFragment {
 
 	public boolean selection = false;
-	public String name;
+	public String value;
 	EditText editText;
-
 
 	@Override
 	public Dialog onCreateDialog(Bundle savedInstanceState) {
 		AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
 		// Set the dialog title
-		builder.setTitle(R.string.name_text_file);
+		builder.setTitle(R.string.set_sample_rate);
 		// Get the layout inflater
 		LayoutInflater inflater = getActivity().getLayoutInflater();
-		View view = inflater.inflate(R.layout.set_text_file_name, null);
+		View view = inflater.inflate(R.layout.set_sample_rate, null);
 
-		editText = (EditText) view.findViewById(R.id.textfile_name);
-		name = editText.getText().toString();
+		editText = (EditText) view.findViewById(R.id.set_sample_rate);
+		value = editText.getText().toString();
 
 
 		// Inflate and set the layout for the dialog
@@ -40,30 +39,31 @@ public class NameTextFileFragment extends DialogFragment {
 		.setPositiveButton(R.string.ok, new DialogInterface.OnClickListener() {
 			@Override
 			public void onClick(DialogInterface dialog, int id) {
-				// Get new string for file name
-                mListener.onDialogPositiveClickNameTextFile(NameTextFileFragment.this);
-
-				name = editText.getText().toString();
+				// Get new value for sample rate
+				
+				value = editText.getText().toString();
 				selection = true;
+				
+				mListener.onDialogPositiveClickSampleRate(SampleRateFragment.this);
 			}
 		})
 		.setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int id) {
-                mListener.onDialogNegativeClickNameTextFile(NameTextFileFragment.this);
+				mListener.onDialogNegativeClickSampleRate(SampleRateFragment.this);
 				selection = false;
-				NameTextFileFragment.this.getDialog().cancel();
+				SampleRateFragment.this.getDialog().cancel();
 			}
 		});      
 		return builder.create();
 	}
 
-	public interface NameTextFileListener {
-		public void onDialogPositiveClickNameTextFile(DialogFragment dialog);
-		public void onDialogNegativeClickNameTextFile(DialogFragment dialog);
+	public interface SampleRateListener {
+		public void onDialogPositiveClickSampleRate(DialogFragment dialog);
+		public void onDialogNegativeClickSampleRate(DialogFragment dialog);
 	}
 
 	// Use this instance of the interface to deliver action events
-	NameTextFileListener mListener;
+	SampleRateListener mListener;
 
 	// Override the Fragment.onAttach() method to instantiate the NoticeDialogListener
 	@Override
@@ -72,12 +72,11 @@ public class NameTextFileFragment extends DialogFragment {
 		// Verify that the host activity implements the callback interface
 		try {
 			// Instantiate the NoticeDialogListener so we can send events to the host
-			mListener = (NameTextFileListener) activity;
-			
+			mListener = (SampleRateListener) activity;
 		} catch (ClassCastException e) {
 			// The activity doesn't implement the interface, throw exception
 			throw new ClassCastException(activity.toString()
-					+ " must implement NameTextFileListener");
+					+ " must implement SampleRateListener");
 		}
 	}
 
@@ -85,8 +84,8 @@ public class NameTextFileFragment extends DialogFragment {
 		return this.selection;
 	}
 
-	public String getName() {
-		return this.name;
+	public String getValue() {
+		return this.value;
 	}
 
 }

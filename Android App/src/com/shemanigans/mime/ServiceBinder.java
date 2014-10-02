@@ -26,7 +26,7 @@ public class ServiceBinder extends Service {
 	private final static String TAG = BluetoothLeService.class.getSimpleName();
 	private String mDeviceAddress;
 	public String mDeviceName;
-	private int arraySize = 60000;
+	private int arraySize = 65000;
 	public double[] values = {1, 2, 3, 4};
 	private String data;
 	private String[] imp = new String[arraySize];

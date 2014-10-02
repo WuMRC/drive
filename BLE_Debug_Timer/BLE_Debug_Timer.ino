@@ -66,6 +66,7 @@ boolean notifier = false; // variable to manage notification settings
 uint8_t A[6] = {
   1, 2, 3, 42, 15, 66}; // integer array to carry accelerometer values
 int count = 0;
+long sampleRate = 0;
 
 //================================================================
 //BLE STATE TRACKING (UNIVERSAL TO JUST ABOUT ANY BLE PROJECT)
@@ -467,9 +468,14 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
     //digitalWrite(8, msg -> value.data[0] & 0x01);
     //digitalWrite(9, msg -> value.data[0] & 0x02);
     //digitalWrite(10, msg -> value.data[0] & 0x04);
-    Serial.print("Sucessful write attempt. Value: ");
+    sampleRate = (long) (1000 / (msg -> value.data[0])); 
+    Serial.print("Sucessful write attempt. New frequency / period: ");
     Serial.print(msg -> value.data[0]);
-    MsTimer2::set(msg -> value.data[0], notify);
+    Serial.print(" hertz");
+    Serial.print(" / ");         
+    Serial.print(sampleRate);
+    Serial.print(" milliseconds");    
+    MsTimer2::set(sampleRate, notify);
     MsTimer2::start();
     Serial.println();
   }

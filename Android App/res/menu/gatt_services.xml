@@ -23,14 +23,14 @@
         android:showAsAction="ifRoom|withText"
         android:title="@string/menu_disconnect"/>
     <item
-        android:id="@+id/set_time"
+        android:id="@+id/name_text_file"
         android:orderInCategory="102"
         android:showAsAction="never"
-        android:title="@string/set_time"/>
+        android:title="@string/name_text_file"/>
     <item
-        android:id="@+id/name_text_file"
+        android:id="@+id/set_sample_rate"
         android:orderInCategory="103"
         android:showAsAction="never"
-        android:title="@string/name_text_file"/>
+        android:title="@string/set_sample_rate"/>
 
 </menu>

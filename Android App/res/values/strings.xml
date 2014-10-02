@@ -34,6 +34,8 @@
     <string name="uc">Under Construction.</string>
     <string name="desc">Under Construction.</string>
     <string name="mime_options">Mime Options</string>
+    <string name="set_sample_rate">Set Sample Rate</string>
+    <string name="sample_rate_options">Hertz. Must be between 1 and 90.</string>
 
     <string-array name="LongTermOptionsArray">
         <item>Live Data</item>
@@ -52,7 +54,7 @@
     <string name="label_state">State:</string>
     <string name="no_data">No data</string>
     <string name="connected">Connected</string>
-    <string name="connecting">Connecting...</string>
+    <!-- <string name="connecting">Connecting...</string> -->
     <string name="disconnected">Disconnected</string>
     <string name="title_devices">BLE Device Scan</string>
     <string name="error_bluetooth_not_supported">Bluetooth not supported.</string>
