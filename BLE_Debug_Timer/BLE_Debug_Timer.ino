@@ -66,7 +66,12 @@ boolean notifier = false; // variable to manage notification settings
 uint8_t A[6] = {
   1, 2, 3, 42, 15, 66}; // integer array to carry accelerometer values
 int count = 0;
-long sampleRate = 0;
+long sampleRate = 0; // Android app sample Rate
+uint8_t upperFreq = 0; // Upper value for frequency sweep, or single value of frequency
+                       // when frequency sweep is off.
+uint8_t stepSize = 0;  // frequency step size between upp and lower values.
+uint8_t lowerFreq = 0;  // Lower value of frequency sweep.
+
 
 //================================================================
 //BLE STATE TRACKING (UNIVERSAL TO JUST ABOUT ANY BLE PROJECT)
@@ -98,8 +103,9 @@ uint8_t ble_bonding = 0xFF; // 0xFF = no bonding, otherwise = bonding handle
 
 #define LED_PIN         13  // Arduino Uno LED pin
 
-#define GATT_HANDLE_C_RX_DATA   17  // 0x11, supports "write" operation
-#define GATT_HANDLE_C_TX_DATA   20  // 0x14, supports "read" and "indicate" operations
+#define GATT_HANDLE_C_BIOIMPEDANCE_DATA   17  // 0x11, supports "read", "notify" and "indicate" operations
+#define GATT_HANDLE_C_SAMPLE_RATE   21  // 0x15, supports "write" operation
+#define GATT_HANDLE_C_AC_FREQ   24  // 0x18, supports "write" operation
 
 //#define BLE_WAKEUP_PIN 5 // BLE Wake up pin
 
@@ -200,7 +206,7 @@ void loop() {
       A[1] = (100 * cos((x*3.14)/180));
       A[2] = (0);
       //A[3] = fabs((x * 0.66));
-    ble112.ble_cmd_attributes_write(GATT_HANDLE_C_TX_DATA, 0, 6 , A);
+    ble112.ble_cmd_attributes_write(GATT_HANDLE_C_BIOIMPEDANCE_DATA, 0, 6 , A);
     //Serial.println("Attributes written.");
     writer = false;
   }
@@ -250,6 +256,7 @@ void onIdle() {
 void onTimeout() {
   // reset module (might be a bit drastic for a timeout condition though)
   Serial.println("Timed out.");
+  ble112.ble_cmd_system_reset(0);
 
 }
 
@@ -460,8 +467,8 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
   Serial.println(" }");
 #endif
 
-  // check for data written to "c_rx_data" handle
-  if (msg -> handle == GATT_HANDLE_C_RX_DATA && msg -> value.len > 0) {
+  // check for data written to "c_sample_rate" handle
+  if (msg -> handle == GATT_HANDLE_C_SAMPLE_RATE && msg -> value.len > 0) {
     // set ping 8, 9, and 10 to three lower-most bits of first byte of RX data
     // (nice for controlling RGB LED or something)
     //digitalWrite(8, msg -> value.data[0] & 0x01);
@@ -477,6 +484,23 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
     MsTimer2::set(sampleRate, notify);
     MsTimer2::start();
     Serial.println();
+  }
+  // check for data written to "c_ac_freq" handle  
+  if (msg -> handle == GATT_HANDLE_C_AC_FREQ && msg -> value.len > 0) {
+  upperFreq = msg -> value.data[0];
+  stepSize = msg -> value.data[1];  
+  lowerFreq = msg -> value.data[2];  
+  Serial.print("Sucessful write attempt to c_ac_freq.");
+  Serial.println();      
+  Serial.print("Upper Frequency (KHz): ");  
+  Serial.print(upperFreq);
+  Serial.println();    
+  Serial.print("Step size (KHz): ");    
+  Serial.print(stepSize);
+  Serial.println();    
+  Serial.print("Lower Frequency (KHz): ");    
+  Serial.print(lowerFreq);  
+  Serial.println();    
   }
 }
 void my_ble_evt_attclient_indicated(const struct ble_msg_attclient_indicated_evt_t *msg) {

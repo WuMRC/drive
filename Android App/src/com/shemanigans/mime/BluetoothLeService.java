@@ -64,8 +64,8 @@ public class BluetoothLeService extends Service {
 	public final static double[] Z_BLE = {1, 2, 3, 4};
 	public final static UUID UUID_HEART_RATE_MEASUREMENT =
 			UUID.fromString(SampleGattAttributes.HEART_RATE_MEASUREMENT);
-	public final static UUID UUID_TX_DATA = 
-			UUID.fromString(SampleGattAttributes.TX_DATA);
+	public final static UUID UUID_BIOIMPEDANCE_DATA = 
+			UUID.fromString(SampleGattAttributes.BIOIMPEDANCE_DATA);
 
 	// Implements callback methods for GATT events that the app cares about.  For example,
 	// connection change and services discovered.
@@ -118,7 +118,7 @@ public class BluetoothLeService extends Service {
 		@Override
 		public void onCharacteristicChanged(BluetoothGatt gatt,
 				BluetoothGattCharacteristic characteristic) {
-			if(UUID_TX_DATA.equals(characteristic.getUuid())) {
+			if(UUID_BIOIMPEDANCE_DATA.equals(characteristic.getUuid())) {
 				broadcastUpdate(ACTION_DATA_AVAILABLE_BIOIMPEDANCE, characteristic);
 			}
 			else {
@@ -155,7 +155,7 @@ public class BluetoothLeService extends Service {
 			intent.putExtra(EXTRA_DATA, String.valueOf(heartRate));
 		} 
 
-		if (UUID_TX_DATA.equals(characteristic.getUuid())) {
+		if (UUID_BIOIMPEDANCE_DATA.equals(characteristic.getUuid())) {
 			// Formatting for transceiver data
 			final byte[] data = characteristic.getValue();
 			if (data != null && data.length > 0) {
@@ -356,6 +356,15 @@ public class BluetoothLeService extends Service {
 		characteristic.setValue(value, BluetoothGattCharacteristic.FORMAT_UINT8, 0);
 		mBluetoothGatt.writeCharacteristic(characteristic);
 	}
+	
+	public void writeCharacteristicArray(BluetoothGattCharacteristic characteristic, byte[] values) {
+		if (mBluetoothAdapter == null || mBluetoothGatt == null) {
+			Log.w(TAG, "BluetoothAdapter not initialized");
+			return;
+		}
+		characteristic.setValue(values);
+		mBluetoothGatt.writeCharacteristic(characteristic);
+	}
 
 	/**
 	 * Enables or disables notification on a give characteristic.
@@ -379,7 +388,7 @@ public class BluetoothLeService extends Service {
 			mBluetoothGatt.writeDescriptor(descriptor);
 		}
 
-		if (UUID_TX_DATA.equals(characteristic.getUuid())) {
+		if (UUID_BIOIMPEDANCE_DATA.equals(characteristic.getUuid())) {
 			BluetoothGattDescriptor descriptor = characteristic.getDescriptor(
 					UUID.fromString(SampleGattAttributes.CLIENT_CHARACTERISTIC_CONFIG));
 			descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
@@ -403,7 +412,7 @@ public class BluetoothLeService extends Service {
 			mBluetoothGatt.writeDescriptor(descriptor);
 		}
 
-		if (UUID_TX_DATA.equals(characteristic.getUuid())) {
+		if (UUID_BIOIMPEDANCE_DATA.equals(characteristic.getUuid())) {
 			BluetoothGattDescriptor descriptor = characteristic.getDescriptor(
 					UUID.fromString(SampleGattAttributes.CLIENT_CHARACTERISTIC_CONFIG));
 			descriptor.setValue(BluetoothGattDescriptor.ENABLE_INDICATION_VALUE);
@@ -427,7 +436,7 @@ public class BluetoothLeService extends Service {
 			mBluetoothGatt.writeDescriptor(descriptor);
 		}
 
-		if (UUID_TX_DATA.equals(characteristic.getUuid())) {
+		if (UUID_BIOIMPEDANCE_DATA.equals(characteristic.getUuid())) {
 			BluetoothGattDescriptor descriptor = characteristic.getDescriptor(
 					UUID.fromString(SampleGattAttributes.CLIENT_CHARACTERISTIC_CONFIG));
 			descriptor.setValue(BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE);

@@ -89,7 +89,7 @@ public class BioimpFragment extends Fragment{
 			bioimpedanceSeries = new SimpleXYSeries("bioimpedance");
 			bioimpedanceSeries.useImplicitXVals();
 
-			bioimpedancePlot.setRangeBoundaries(0, 600, BoundaryMode.FIXED);
+			bioimpedancePlot.setRangeBoundaries(-100, 600, BoundaryMode.FIXED);
 			bioimpedancePlot.setDomainBoundaries(0, 360, BoundaryMode.FIXED);
 
 			bioimpedancePlot.addSeries(accelXseries, new LineAndPointFormatter(Color.CYAN, null, null, null));

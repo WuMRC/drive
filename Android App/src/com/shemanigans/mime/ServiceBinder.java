@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
-import java.util.UUID;
 
 import android.app.Service;
 import android.bluetooth.BluetoothGattCharacteristic;
@@ -52,11 +51,8 @@ public class ServiceBinder extends Service {
 	private ArrayList<ArrayList<BluetoothGattCharacteristic>> mGattCharacteristics =
 			new ArrayList<ArrayList<BluetoothGattCharacteristic>>();
 	
-	public BluetoothGattCharacteristic mWriteCharacteristic = 
-			new BluetoothGattCharacteristic(
-					UUID.fromString(SampleGattAttributes.RX_DATA), 
-					BluetoothGattCharacteristic.PROPERTY_WRITE,
-					BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
+	private BluetoothGattCharacteristic mSampleRateCharacteristic;
+	private BluetoothGattCharacteristic mACFrequencyCharacteristic;
 
 	private final ServiceConnection mServiceConnection = new ServiceConnection() {
 
@@ -323,8 +319,30 @@ public class ServiceBinder extends Service {
 		return String.format("%-"+length+ "s", string);
 	}
 
-	public void writeCharacteristic(int value) {
-		mBluetoothLeService.writeCharacteristic(mWriteCharacteristic, value);
+	public void writeSampleRateCharacteristic(int value) {
+		mBluetoothLeService.writeCharacteristic(mSampleRateCharacteristic, value);
+	}
+	
+	public void writeFrequencySweepCharacteristic(byte[] values) {
+		mBluetoothLeService.writeCharacteristicArray(mACFrequencyCharacteristic, values);
+	}
+	
+	private boolean findCharacteristic(String characteristicUUID, String referenceUUID) {
+		byte[]characteristic;
+		byte[] reference;
+		boolean check = false;
+		characteristic = characteristicUUID.getBytes();
+		reference = referenceUUID.getBytes();
+		for(int i = 0; i< characteristic.length; i++) {
+			if(characteristic[i] == reference[i]) {
+				check = true;
+			}
+			else {
+				check = false;
+				i = characteristic.length;
+			}
+		}
+		return check;
 	}
 	
 	private void getGattServices(List<BluetoothGattService> gattServices) {
@@ -362,11 +380,17 @@ public class ServiceBinder extends Service {
 			// Loops through available Characteristics.
 			for (BluetoothGattCharacteristic gattCharacteristic : gattCharacteristics) {
 				if ((gattCharacteristic.getProperties() & BluetoothGattCharacteristic.PROPERTY_WRITE) > 0) {
-					mWriteCharacteristic = gattCharacteristic;
-					/*Log.i(TAG, mWriteCharacteristic.getUuid().toString());
-					Log.i(TAG, String.valueOf(mWriteCharacteristic.getProperties()));
-					Log.i(TAG, String.valueOf(mWriteCharacteristic.getPermissions()));
-					Log.i(TAG, String.valueOf(mWriteCharacteristic.getInstanceId()));*/
+
+					if(findCharacteristic(gattCharacteristic.getUuid().toString(), 
+							SampleGattAttributes.SAMPLE_RATE)) {
+						mSampleRateCharacteristic = gattCharacteristic;
+						Log.i(TAG, "Found sample rate.");
+					}
+					if(findCharacteristic(gattCharacteristic.getUuid().toString(), 
+							SampleGattAttributes.AC_FREQ)) {
+						mACFrequencyCharacteristic = gattCharacteristic;
+						Log.i(TAG, "Found Ac frequency.");
+					}
 				}
 				charas.add(gattCharacteristic);
 				HashMap<String, String> currentCharaData = new HashMap<String, String>();

@@ -36,6 +36,16 @@
     <string name="mime_options">Mime Options</string>
     <string name="set_sample_rate">Set Sample Rate</string>
     <string name="sample_rate_options">Hertz. Must be between 1 and 90.</string>
+    <string name="set_frequency_sweep">Set Frequency Sweep</string>
+    <string name="enable_frequency_sweep">Enable Frequency Sweep</string>
+    <string name="set_upper_freq">Single or Upper Frequency in KHz.</string>
+    <string name="set_step_size">Step size in Khz.</string>
+    <string name="set_lower_freq">Lower Frequency in Khz.</string>
+    <string name="enable">Enable</string>
+    <string name="disable">Disable</string>
+    <string name="set_fail">Failed: Empty fields or invalid characters</string>
+    <string name="freq_sweep_enabled">Freequency sweep enabled</string>
+    <string name="freq_sweep_disabled">Frequency sweep disabled</string>
 
     <string-array name="LongTermOptionsArray">
         <item>Live Data</item>

@@ -18,14 +18,14 @@
         android:showAsAction="never"
         android:title="@string/name_text_file"/>
     <item
-        android:id="@+id/action_example"
+        android:id="@+id/set_sample_rate"
         android:orderInCategory="103"
         android:showAsAction="never"
-        android:title="@string/action_example"/>
-     <item
-        android:id="@+id/set_sample_rate"
+        android:title="@string/set_sample_rate"/>
+    <item
+        android:id="@+id/set_frequency_sweep"
         android:orderInCategory="104"
         android:showAsAction="never"
-        android:title="@string/set_sample_rate"/>
+        android:title="@string/set_frequency_sweep"/>
 
 </menu>

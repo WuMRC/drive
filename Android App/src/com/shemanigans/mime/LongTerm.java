@@ -28,6 +28,7 @@ import android.support.v4.widget.DrawerLayout;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Switch;
 import android.widget.Toast;
 
 public class LongTerm 
@@ -37,14 +38,16 @@ implements
 NavigationDrawerFragment.NavigationDrawerCallbacks, 
 NameTextFileFragment.NameTextFileListener,
 BioimpFragment.OnButtonClickedListener,
-SampleRateFragment.SampleRateListener {
+SampleRateFragment.SampleRateListener,
+FrequencySweepFragment.FrequencySweepListener{
 
 	/**
 	 * Fragment managing the behaviors, interactions and presentation of the navigation drawer.
 	 */
 	private NavigationDrawerFragment mNavigationDrawerFragment;
 	private NameTextFileFragment nameTextFileDialog;
-	SampleRateFragment sampleRateDialog;
+	private SampleRateFragment sampleRateDialog;
+	private FrequencySweepFragment frequencySweepDialog;
 
 	/**
 	 * Used to store the last screen title. For use in {@link #restoreActionBar()}.
@@ -52,7 +55,7 @@ SampleRateFragment.SampleRateListener {
 	private CharSequence mTitle;
 	private final static String TAG = LongTerm.class.getSimpleName();
 	private BluetoothLeService mBluetoothLeService;
-	ServiceBinder mServiceBinder;
+	private ServiceBinder mServiceBinder;
 	private static final String LIVE_DATA_TAG = "LIVE_DATA_TAG";
 	private static final String PAST_HOUR_TAG = "PAST_HOUR_TAG";
 	private static final String PAST_DAY_TAG = "PAST_DAY_TAG";
@@ -68,8 +71,11 @@ SampleRateFragment.SampleRateListener {
 	private String mDeviceName;
 	private String mDeviceAddress;
 	private boolean mConnected = true;
+	
 	private int sampleRate = 0;
-
+	private byte upperFreq = 0;
+	private byte stepSize = 0;
+	private byte lowerFreq = 0;
 
 	// Code to manage Service lifecycle.
 	private final ServiceConnection mServiceConnectionBLE = new ServiceConnection() {
@@ -304,6 +310,9 @@ SampleRateFragment.SampleRateListener {
 		case R.id.set_sample_rate:
 			setSampleRate();
 			return true;
+		case R.id.set_frequency_sweep:
+			setFrequencySweep();
+			return true;
 		}
 		return super.onOptionsItemSelected(item);
 	}
@@ -426,27 +435,73 @@ SampleRateFragment.SampleRateListener {
 
 	public void setSampleRate() {
 		// Create an instance of the dialog fragment and show it
-			sampleRateDialog = new SampleRateFragment();
-			sampleRateDialog.show(getFragmentManager(), "SampleRateFragment");
+		sampleRateDialog = new SampleRateFragment();
+		sampleRateDialog.show(getFragmentManager(), "SampleRateFragment");
 	}
 
-	// The dialog fragment receives a reference to this Activity through the
-	// Fragment.onAttach() callback, which it uses to call the following methods
-	// defined by the NoticeDialogFragment.NoticeDialogListener interface
+
 	@Override
 	public void onDialogPositiveClickSampleRate(DialogFragment dialog) {
 		// User touched the dialog's positive button
 		// Set Value
-		sampleRate = Integer.parseInt(sampleRateDialog.getValue());
-		Toast.makeText(this, "New frequency: " + sampleRateDialog.getValue(), Toast.LENGTH_SHORT).show();
-
-		mServiceBinder.writeCharacteristic(sampleRate);
+		try {
+			sampleRate = Integer.parseInt(sampleRateDialog.getValue());
+			Toast.makeText(this, "New frequency: " + sampleRateDialog.getValue(), Toast.LENGTH_SHORT).show();
+			mServiceBinder.writeSampleRateCharacteristic(sampleRate);
+		}
+		catch (Exception e) {
+			Toast.makeText(this, R.string.set_fail, Toast.LENGTH_SHORT).show();
+		}
 	}
 
 	@Override
 	public void onDialogNegativeClickSampleRate(DialogFragment dialog) {
 		// User touched the dialog's negative button
 	}
+	
+	public void setFrequencySweep() {
+		// Create an instance of the dialog fragment and show it
+			frequencySweepDialog = new FrequencySweepFragment();
+			frequencySweepDialog.show(getFragmentManager(), "FrequencySweepFragment");
+	}
+
+	@Override
+	public void onDialogPositiveClickFrequencySweep(DialogFragment dialog) {
+		// User touched the dialog's positive button
+		// Set Value
+		String[] freqValuesString;
+		freqValuesString = frequencySweepDialog.getValue();
+		try {
+			upperFreq = (byte) (Integer.parseInt(freqValuesString[0]));
+			stepSize = (byte) (Integer.parseInt(freqValuesString[1]));
+			lowerFreq = (byte) (Integer.parseInt(freqValuesString[2]));
+			byte[] freqValuesByte = {upperFreq, stepSize, lowerFreq}; 
+			Toast.makeText(this, R.string.freq_sweep_enabled, Toast.LENGTH_SHORT).show();
+			mServiceBinder.writeFrequencySweepCharacteristic(freqValuesByte);
+		}
+		catch (Exception e) {
+			Toast.makeText(this, R.string.set_fail, Toast.LENGTH_SHORT).show();
+		}
+	}
+
+	@Override
+	public void onDialogNegativeClickFrequencySweep(DialogFragment dialog) {
+		// User touched the dialog's negative button
+		String[] freqValuesString;
+		freqValuesString = frequencySweepDialog.getValue();
+		try {
+			upperFreq = (byte) (Integer.parseInt(freqValuesString[0]));
+			stepSize = (byte) (Integer.parseInt(freqValuesString[1]));
+			lowerFreq = (byte) (Integer.parseInt(freqValuesString[2]));
+			byte[] freqValuesByte = {upperFreq, stepSize, lowerFreq}; 
+			Toast.makeText(this, R.string.freq_sweep_disabled, Toast.LENGTH_SHORT).show();
+			mServiceBinder.writeFrequencySweepCharacteristic(freqValuesByte);
+		}
+		catch (Exception e) {
+			Toast.makeText(this, R.string.set_fail, Toast.LENGTH_SHORT).show();
+		}
+	}
+
 
 	private static IntentFilter makeGattUpdateIntentFilter() {
 		final IntentFilter intentFilter = new IntentFilter();

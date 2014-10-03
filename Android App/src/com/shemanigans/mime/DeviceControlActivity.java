@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
-import java.util.UUID;
 
 import android.app.Activity;
 import android.app.DialogFragment;
@@ -52,7 +51,8 @@ public class DeviceControlActivity
 extends Activity 
 implements 
 NameTextFileFragment.NameTextFileListener,
-SampleRateFragment.SampleRateListener {
+SampleRateFragment.SampleRateListener,
+FrequencySweepFragment.FrequencySweepListener{
 
 	//	implements NameTextFileFragment.NameTextFileListener
 
@@ -75,11 +75,9 @@ SampleRateFragment.SampleRateListener {
 			new ArrayList<ArrayList<BluetoothGattCharacteristic>>();
 	private boolean mConnected = false;
 	private BluetoothGattCharacteristic mNotifyCharacteristic;
-	private BluetoothGattCharacteristic mWriteCharacteristic = 
-			new BluetoothGattCharacteristic(
-					UUID.fromString(SampleGattAttributes.RX_DATA), 
-					BluetoothGattCharacteristic.PROPERTY_WRITE,
-					BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE);
+	private BluetoothGattCharacteristic mSampleRateCharacteristic;
+	private BluetoothGattCharacteristic mACFrequencyCharacteristic;
+
 
 	// Variables created by me
 
@@ -88,6 +86,10 @@ SampleRateFragment.SampleRateListener {
 	private Calendar c = Calendar.getInstance();
 	private boolean checkNamedTextFile = false;
 	private int sampleRate = 0;
+	private byte upperFreq = 0;
+	private byte stepSize = 0;
+	private byte lowerFreq = 0;
+
 
 
 	// Graph variables
@@ -102,6 +104,7 @@ SampleRateFragment.SampleRateListener {
 	// Fragment to set name
 	NameTextFileFragment nameTextFileDialog;
 	SampleRateFragment sampleRateDialog;
+	FrequencySweepFragment frequencySweepDialog;
 
 	private final String LIST_NAME = "NAME";
 	private final String LIST_UUID = "UUID";
@@ -236,7 +239,7 @@ SampleRateFragment.SampleRateListener {
 		bioimpedanceSeries = new SimpleXYSeries("bioimpedance");
 		bioimpedanceSeries.useImplicitXVals();
 
-		bioimpedancePlot.setRangeBoundaries(0, 600, BoundaryMode.FIXED);
+		bioimpedancePlot.setRangeBoundaries(-100, 600, BoundaryMode.FIXED);
 		bioimpedancePlot.setDomainBoundaries(0, 360, BoundaryMode.FIXED);
 
 		bioimpedancePlot.addSeries(accelXseries, new LineAndPointFormatter(Color.CYAN, null, null, null));
@@ -333,6 +336,9 @@ SampleRateFragment.SampleRateListener {
 		case R.id.set_sample_rate:
 			setSampleRate();
 			return true;
+		case R.id.set_frequency_sweep:
+			setFrequencySweep();
+			return true;			
 		}
 		return super.onOptionsItemSelected(item);
 	}
@@ -391,11 +397,7 @@ SampleRateFragment.SampleRateListener {
 					mNotifyCharacteristic = characteristic;
 				}
 				if ((charaProp & BluetoothGattCharacteristic.PROPERTY_WRITE) > 0) {
-					//mBluetoothLeService.writeCharacteristic(characteristic, 12);
-					mWriteCharacteristic = characteristic;
-					Log.i(TAG, String.valueOf(characteristic.getProperties()));
-					Log.i(TAG, String.valueOf(characteristic.getPermissions()));
-					Log.i(TAG, String.valueOf(characteristic.getInstanceId()));
+					//Log.i(TAG, characteristic.getUuid().toString());
 				}
 				return true;
 			}
@@ -417,7 +419,7 @@ SampleRateFragment.SampleRateListener {
 			buttons.setVisibility(View.VISIBLE);
 
 			mBluetoothLeService.removeCharacteristicNotification(mNotifyCharacteristic, false);
-			mNotifyCharacteristic = null;
+			//mNotifyCharacteristic = null;
 			mBluetoothLeService.stopForeground(true);
 		}
 
@@ -520,6 +522,24 @@ SampleRateFragment.SampleRateListener {
 		}
 	}
 
+	private boolean findCharacteristic(String characteristicUUID, String referenceUUID) {
+		byte[]characteristic;
+		byte[] reference;
+		boolean check = false;
+		characteristic = characteristicUUID.getBytes();
+		reference = referenceUUID.getBytes();
+		for(int i = 0; i< characteristic.length; i++) {
+			if(characteristic[i] == reference[i]) {
+				check = true;
+			}
+			else {
+				check = false;
+				i = characteristic.length;
+			}
+		}
+		return check;
+	}
+
 
 	// Demonstrates how to iterate through the supported GATT Services/Characteristics.
 	// In this sample, we populate the data structure that is bound to the ExpandableListView
@@ -531,36 +551,47 @@ SampleRateFragment.SampleRateListener {
 		String unknownServiceString = getResources().getString(R.string.unknown_service);
 		String unknownCharaString = getResources().getString(R.string.unknown_characteristic);
 		ArrayList<HashMap<String, String>> gattServiceData = new ArrayList<HashMap<String, String>>();
-		
+
 		ArrayList<ArrayList<HashMap<String, String>>> gattCharacteristicData
 		= new ArrayList<ArrayList<HashMap<String, String>>>();
-		
+
 		mGattCharacteristics = new ArrayList<ArrayList<BluetoothGattCharacteristic>>();
 
 		// Loops through available GATT Services.
 		for (BluetoothGattService gattService : gattServices) {
 			HashMap<String, String> currentServiceData = new HashMap<String, String>();
 			uuid = gattService.getUuid().toString();
-			
+
 			currentServiceData.put(
 					LIST_NAME, SampleGattAttributes.lookup(uuid, unknownServiceString));
-			
+
 			currentServiceData.put(LIST_UUID, uuid);
 			gattServiceData.add(currentServiceData);
 
 			ArrayList<HashMap<String, String>> gattCharacteristicGroupData =
 					new ArrayList<HashMap<String, String>>();
-			
+
 			List<BluetoothGattCharacteristic> gattCharacteristics =
 					gattService.getCharacteristics();
-			
+
 			ArrayList<BluetoothGattCharacteristic> charas =
 					new ArrayList<BluetoothGattCharacteristic>();
 
 			// Loops through available Characteristics.
 			for (BluetoothGattCharacteristic gattCharacteristic : gattCharacteristics) {
 				if ((gattCharacteristic.getProperties() & BluetoothGattCharacteristic.PROPERTY_WRITE) > 0) {
-					mWriteCharacteristic = gattCharacteristic;
+
+					if(findCharacteristic(gattCharacteristic.getUuid().toString(), 
+							SampleGattAttributes.SAMPLE_RATE)) {
+						mSampleRateCharacteristic = gattCharacteristic;
+						Log.i(TAG, "Found sample rate.");
+					}
+					if(findCharacteristic(gattCharacteristic.getUuid().toString(), 
+							SampleGattAttributes.AC_FREQ)) {
+						mACFrequencyCharacteristic = gattCharacteristic;
+						Log.i(TAG, "Found Ac frequency.");
+					}
+
 				}
 				charas.add(gattCharacteristic);
 				HashMap<String, String> currentCharaData = new HashMap<String, String>();
@@ -626,21 +657,72 @@ SampleRateFragment.SampleRateListener {
 		}
 	}
 
-	// The dialog fragment receives a reference to this Activity through the
-	// Fragment.onAttach() callback, which it uses to call the following methods
-	// defined by the NoticeDialogFragment.NoticeDialogListener interface
 	@Override
 	public void onDialogPositiveClickSampleRate(DialogFragment dialog) {
 		// User touched the dialog's positive button
 		// Set Value
-		sampleRate = Integer.parseInt(sampleRateDialog.getValue());
-		Toast.makeText(this, "New frequency: " + sampleRateDialog.getValue(), Toast.LENGTH_SHORT).show();
-		mBluetoothLeService.writeCharacteristic(mWriteCharacteristic, sampleRate);
+		try {
+			sampleRate = Integer.parseInt(sampleRateDialog.getValue());
+			Toast.makeText(this, "New frequency: " + sampleRateDialog.getValue(), Toast.LENGTH_SHORT).show();
+			mBluetoothLeService.writeCharacteristic(mSampleRateCharacteristic, sampleRate);
+		}
+		catch (Exception e) {
+			Toast.makeText(this, R.string.set_fail, Toast.LENGTH_SHORT).show();
+		}
 	}
 
 	@Override
 	public void onDialogNegativeClickSampleRate(DialogFragment dialog) {
 		// User touched the dialog's negative button
+	}
+
+	public void setFrequencySweep() {
+		// Create an instance of the dialog fragment and show it
+		Switch enableNotifications = (Switch) findViewById(R.id.enable_notifications);
+		if(!enableNotifications.isChecked()) {
+			Toast.makeText(this, "Notifications are not enabled.", Toast.LENGTH_SHORT).show();
+		}	
+		else {
+			frequencySweepDialog = new FrequencySweepFragment();
+			frequencySweepDialog.show(getFragmentManager(), "FrequencySweepFragment");
+		}
+	}
+
+	@Override
+	public void onDialogPositiveClickFrequencySweep(DialogFragment dialog) {
+		// User touched the dialog's positive button
+		// Set Value
+		String[] freqValuesString;
+		freqValuesString = frequencySweepDialog.getValue();
+		try {
+			upperFreq = (byte) (Integer.parseInt(freqValuesString[0]));
+			stepSize = (byte) (Integer.parseInt(freqValuesString[1]));
+			lowerFreq = (byte) (Integer.parseInt(freqValuesString[2]));
+			byte[] freqValuesByte = {upperFreq, stepSize, lowerFreq}; 
+			Toast.makeText(this, R.string.freq_sweep_enabled, Toast.LENGTH_SHORT).show();
+			mBluetoothLeService.writeCharacteristicArray(mACFrequencyCharacteristic, freqValuesByte);
+		}
+		catch (Exception e) {
+			Toast.makeText(this, R.string.set_fail, Toast.LENGTH_SHORT).show();
+		}
+	}
+
+	@Override
+	public void onDialogNegativeClickFrequencySweep(DialogFragment dialog) {
+		// User touched the dialog's negative button
+		String[] freqValuesString;
+		freqValuesString = frequencySweepDialog.getValue();
+		try {
+			upperFreq = (byte) (Integer.parseInt(freqValuesString[0]));
+			stepSize = (byte) (Integer.parseInt(freqValuesString[1]));
+			lowerFreq = (byte) (Integer.parseInt(freqValuesString[2]));
+			byte[] freqValuesByte = {upperFreq, stepSize, lowerFreq}; 
+			Toast.makeText(this, R.string.freq_sweep_disabled, Toast.LENGTH_SHORT).show();
+			mBluetoothLeService.writeCharacteristicArray(mACFrequencyCharacteristic, freqValuesByte);
+		}
+		catch (Exception e) {
+			Toast.makeText(this, R.string.set_fail, Toast.LENGTH_SHORT).show();
+		}
 	}
 
 	/* Checks if external storage is available for read and write */
