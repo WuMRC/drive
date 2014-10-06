@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <color name="appbasetheme_color">#006bb2</color>
+    <color name="white">#ffffff</color>
+
+    <!-- <color name="mimeThemeBackgroundColor">#2D2E30</color> -->
+
+</resources>

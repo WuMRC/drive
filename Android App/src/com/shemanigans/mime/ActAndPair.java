@@ -80,9 +80,9 @@ public class ActAndPair extends Activity {
 
 			TextView pairText = (TextView) findViewById(R.id.pairing_prompt);
 			Button pairButton = (Button) findViewById(R.id.button_pair);
-			pairButton.setVisibility(0); // Correct to VISIBLE sometime
-			pairText.setVisibility(0); // Correct to VISIBLE sometime
-			bluetoothAttempt.setVisibility(8); // Correct to GONE sometime
+			pairButton.setVisibility(View.VISIBLE); // Correct to VISIBLE sometime
+			pairText.setVisibility(View.VISIBLE); // Correct to VISIBLE sometime
+			bluetoothAttempt.setVisibility(View.GONE); // Correct to GONE sometime
 		}
 
 		else if (requestCode == 2 && resultCode == 10) {
@@ -93,9 +93,11 @@ public class ActAndPair extends Activity {
 
 			TextView pairText = (TextView) findViewById(R.id.pairing_prompt);
 			Button pairButton = (Button) findViewById(R.id.button_pair);
-			pairButton.setVisibility(0); // Correct to VISIBLE sometime
-			pairText.setVisibility(0); // Correct to VISIBLE sometime
-			bluetoothAttempt.setVisibility(8); // Correct to GONE sometime
+			View divider = (View ) findViewById(R.id.divider);
+			divider.setVisibility(View.VISIBLE);
+			pairButton.setVisibility(View.VISIBLE); // Correct to VISIBLE sometime
+			pairText.setVisibility(View.VISIBLE); // Correct to VISIBLE sometime
+			bluetoothAttempt.setVisibility(View.GONE); // Correct to GONE sometime
 		}
 
 		else {

@@ -60,54 +60,64 @@
 
     <com.androidplot.xy.XYPlot
         android:id="@+id/bioimpedancePlot2"
-        android:layout_width="300dp"
-        android:layout_height="185dp"
-        android:layout_marginLeft="10dp"
-        android:layout_marginRight="10dp"
+        android:layout_width="330dp"
+        android:layout_height="200dp"
+        android:layout_marginLeft="0dp"
+        android:layout_marginRight="0dp"
         title="Bioimpedance Data"
         android:visibility="visible" />
-   
+
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="48dp"
-        android:layout_alignParentBottom="true">
+        android:layout_alignParentBottom="true" >
+
         <View
             android:layout_width="match_parent"
             android:layout_height="1dip"
+            android:layout_alignParentTop="true"
             android:layout_marginLeft="4dip"
             android:layout_marginRight="4dip"
-            android:background="?android:attr/dividerVertical"
-            android:layout_alignParentTop="true"/>
+            android:background="?android:attr/dividerVertical" />
+
         <View
             android:id="@+id/ViewColorPickerHelper"
             android:layout_width="1dip"
             android:layout_height="wrap_content"
-            android:layout_alignParentTop="true"
             android:layout_alignParentBottom="true"
+            android:layout_alignParentTop="true"
+            android:layout_centerHorizontal="true"
             android:layout_marginBottom="4dip"
             android:layout_marginTop="4dip"
-            android:background="?android:attr/dividerVertical" 
-            android:layout_centerHorizontal="true"/>
+            android:background="?android:attr/dividerVertical" />
+
         <Button
             android:id="@+id/export_to_text_frag"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
             android:layout_alignParentLeft="true"
             android:layout_alignParentTop="true"
             android:layout_toLeftOf="@id/ViewColorPickerHelper"
             android:background="?android:attr/selectableItemBackground"
             android:text="@string/exportToText"
-            android:layout_alignParentBottom="true"/>
+            android:textColor="@color/appbasetheme_color"
+            android:textSize="24sp"
+            android:textStyle="bold|italic" />
+
         <Button
-             android:id="@+id/clear_text_file_frag"
+            android:id="@+id/clear_text_file_frag"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
+            android:layout_alignParentBottom="true"
             android:layout_alignParentRight="true"
             android:layout_alignParentTop="true"
+            android:layout_toRightOf="@id/ViewColorPickerHelper"
             android:background="?android:attr/selectableItemBackground"
             android:text="@string/clearTextFile"
-            android:layout_alignParentBottom="true" 
-            android:layout_toRightOf="@id/ViewColorPickerHelper"/>
+            android:textColor="@color/appbasetheme_color"
+            android:textSize="24sp"
+            android:textStyle="bold|italic" />
     </RelativeLayout>
 
 </RelativeLayout>

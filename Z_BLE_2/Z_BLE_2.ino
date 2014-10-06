@@ -55,7 +55,6 @@
 #include <Math.h>
 #include "BGLib.h" // BGLib C library for BGAPI communication.
 #include "AD5933.h" //Library for AD5933 functions (must be installed)
-#include "MemoryFree.h";
 #include <AltSoftSerial.h>
 
 
@@ -123,8 +122,8 @@ uint8_t ble_bonding = 0xFF; // 0xFF = no bonding, otherwise = bonding handle
 
 #define LED_PIN         13  // Arduino Uno LED pin
 
-#define GATT_HANDLE_C_RX_DATA   17  // 0x11, supports "write" operation
-#define GATT_HANDLE_C_TX_DATA   20  // 0x14, supports "read" and "indicate" operations
+#define GATT_HANDLE_C_RX_DATA   21  // 0x11, supports "write" operation
+#define GATT_HANDLE_C_TX_DATA   17  // 0x14, supports "read" and "indicate" operations
 
 //#define BLE_WAKEUP_PIN 5 // BLE Wake up pin
 
@@ -153,7 +152,6 @@ void setup() {
 
   TWBR=1;  
   Wire.begin();
-  //Serial.begin(38400);  
 
   // For Z_Logger
   // ===================================================

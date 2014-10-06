@@ -56,15 +56,29 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="30dp"
-        android:orientation="horizontal" >
+        android:orientation="vertical" >
+
+        <View
+            android:id="@+id/divider"
+            android:layout_width="match_parent"
+            android:layout_height="1dip"
+            android:layout_marginLeft="4dip"
+            android:layout_marginRight="4dip"
+            android:background="?android:attr/dividerVertical"
+            android:visibility="invisible" />
 
         <Button
             android:id="@+id/button_pair"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
             android:layout_weight="1"
+            android:background="?android:attr/selectableItemBackground"
+            android:gravity="center"
             android:onClick="bluetoothScan"
             android:text="@string/button_scan"
+            android:textColor="@color/appbasetheme_color"
+            android:textSize="24sp"
+            android:textStyle="bold|italic"
             android:visibility="invisible" />
     </LinearLayout>
 

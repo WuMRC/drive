@@ -42,7 +42,6 @@
             android:layout_weight="1"
             android:gravity="left"
             android:text="@string/main_splash_screen"
-            android:textColor="#FFFFFF"
             android:textIsSelectable="true"
             android:textSize="20sp" />
     </LinearLayout>
@@ -51,21 +50,49 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="30dp"
-        android:orientation="horizontal" >
+        android:orientation="vertical" >
 
-        <Button
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:onClick="buttonYes"
-            android:text="@string/button_yes" />
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dip"
+            android:layout_marginLeft="4dip"
+            android:layout_marginRight="4dip"
+            android:background="?android:attr/dividerVertical" />
 
-        <Button
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:onClick="buttonNo"
-            android:text="@string/button_no" />
+            android:orientation="horizontal" >
+
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="?android:attr/selectableItemBackground"
+                android:onClick="buttonYes"
+                android:text="@string/button_yes"
+                android:textColor="@color/appbasetheme_color"
+                android:textSize="24sp"
+                android:textStyle="bold|italic" />
+
+            <View
+                android:layout_width="1dip"
+                android:layout_height="match_parent"
+                android:layout_marginBottom="4dip"
+                android:layout_marginTop="4dip"
+                android:background="?android:attr/dividerVertical" />
+
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:background="?android:attr/selectableItemBackground"
+                android:onClick="buttonNo"
+                android:text="@string/button_no"
+                android:textColor="@color/appbasetheme_color"
+                android:textSize="24sp"
+                android:textStyle="bold|italic" />
+        </LinearLayout>
     </LinearLayout>
 
     <LinearLayout
@@ -79,6 +106,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:adjustViewBounds="true"
+            android:contentDescription="@string/desc"
             android:src="@drawable/mime_app_logo" />
     </LinearLayout>
 

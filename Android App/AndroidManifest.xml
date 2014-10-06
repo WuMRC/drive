@@ -20,8 +20,8 @@
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
-        android:logo="@drawable/ic_action_name"
-        android:theme="@style/MimeTheme" >
+        android:logo="@drawable/ic_notification"
+        android:theme="@style/AppTheme" >
         <activity
             android:name="com.shemanigans.mime.MainActivity"
             android:label="@string/app_name" >

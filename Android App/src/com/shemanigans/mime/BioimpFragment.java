@@ -3,6 +3,7 @@ package com.shemanigans.mime;
 import android.app.Activity;
 import android.app.Fragment;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -79,29 +80,76 @@ public class BioimpFragment extends Fragment{
 			deviceAddress.setText(mDeviceAddress);
 
 			bioimpedancePlot = (XYPlot) rootView.findViewById(R.id.bioimpedancePlot2);
+			
+			Paint bgPaint = new Paint();
+			bgPaint.setColor(Color.parseColor("#d8d8d8"));
+			bgPaint.setStyle(Paint.Style.FILL);
 
-			accelXseries = new SimpleXYSeries("AccelX");
+			accelXseries = new SimpleXYSeries("X");
 			accelXseries.useImplicitXVals();
-			accelYseries = new SimpleXYSeries("AccelY");
+			accelYseries = new SimpleXYSeries("Y");
 			accelYseries.useImplicitXVals();
-			accelZseries = new SimpleXYSeries("AccelZ");
+			accelZseries = new SimpleXYSeries("Z");
 			accelZseries.useImplicitXVals();
-			bioimpedanceSeries = new SimpleXYSeries("bioimpedance");
+			bioimpedanceSeries = new SimpleXYSeries("½");
 			bioimpedanceSeries.useImplicitXVals();
 
 			bioimpedancePlot.setRangeBoundaries(-100, 600, BoundaryMode.FIXED);
 			bioimpedancePlot.setDomainBoundaries(0, 360, BoundaryMode.FIXED);
 
-			bioimpedancePlot.addSeries(accelXseries, new LineAndPointFormatter(Color.CYAN, null, null, null));
-			bioimpedancePlot.addSeries(accelYseries, new LineAndPointFormatter(Color.GREEN, null, null, null));
-			bioimpedancePlot.addSeries(accelZseries, new LineAndPointFormatter(Color.MAGENTA, null, null, null));
-			bioimpedancePlot.addSeries(bioimpedanceSeries, new LineAndPointFormatter(Color.YELLOW, null, null, null));
+			// Format general area
+			bioimpedancePlot.setBackgroundColor(Color.WHITE);
+			bioimpedancePlot.getBackgroundPaint().set(bgPaint);
+			bioimpedancePlot.getBackgroundPaint().setColor(Color.parseColor("#d8d8d8"));
+			bioimpedancePlot.getGraphWidget().getBackgroundPaint().setColor(Color.parseColor("#d8d8d8"));
+			bioimpedancePlot.getGraphWidget().setGridBackgroundPaint(null);
+			bioimpedancePlot.setBorderStyle(XYPlot.BorderStyle.SQUARE, null, null);
+			bioimpedancePlot.getGraphWidget().setPadding(12, 12, 12, 12);
+			bioimpedancePlot.getTitleWidget().setText("");
+
+			bioimpedancePlot.setBorderPaint(bgPaint);
+			//bioimpedancePlot.getGraphWidget().getBorderPaint().setColor(Color.TRANSPARENT);
+
+
+			// Format domain
+			bioimpedancePlot.getDomainLabelWidget().getLabelPaint().setColor(Color.parseColor("#006bb2"));
+			bioimpedancePlot.getDomainLabelWidget().getLabelPaint().setTextSize(20);
+			bioimpedancePlot.getGraphWidget().getDomainLabelPaint().setColor(Color.BLACK);
+			bioimpedancePlot.getGraphWidget().getDomainLabelPaint().setTextSize(20);
+			bioimpedancePlot.getGraphWidget().getDomainOriginLabelPaint().setColor(Color.BLACK);
+			bioimpedancePlot.getGraphWidget().getDomainOriginLinePaint().setColor(Color.BLACK);
+			bioimpedancePlot.getGraphWidget().getDomainGridLinePaint().setColor(Color.TRANSPARENT);
 			bioimpedancePlot.setDomainStepValue(5);
-			bioimpedancePlot.setTicksPerRangeLabel(3);
 			bioimpedancePlot.setDomainLabel("Sample Index");
 			bioimpedancePlot.getDomainLabelWidget().pack();
+
+
+			// Format range
+			bioimpedancePlot.getRangeLabelWidget().getLabelPaint().setColor(Color.parseColor("#006bb2"));
+			bioimpedancePlot.getRangeLabelWidget().getLabelPaint().setTextSize(20);
+			bioimpedancePlot.getGraphWidget().getRangeLabelPaint().setColor(Color.BLACK);
+			bioimpedancePlot.getGraphWidget().getRangeLabelPaint().setTextSize(20);
+			bioimpedancePlot.getGraphWidget().getRangeOriginLabelPaint().setColor(Color.BLACK);
+			bioimpedancePlot.getGraphWidget().getRangeOriginLinePaint().setColor(Color.BLACK);
+			bioimpedancePlot.getGraphWidget().getRangeGridLinePaint().setColor(Color.TRANSPARENT);
+			bioimpedancePlot.getGraphWidget().getRangeSubGridLinePaint().setColor(Color.TRANSPARENT);
 			bioimpedancePlot.setRangeLabel("Data");
-			bioimpedancePlot.getRangeLabelWidget().pack(); 
+			bioimpedancePlot.setTicksPerRangeLabel(3);
+			bioimpedancePlot.getRangeLabelWidget().pack();
+			
+			// Format legend
+			
+			bioimpedancePlot.getLegendWidget().getTextPaint().setColor(Color.parseColor("#006bb2"));
+			bioimpedancePlot.getLegendWidget().getTextPaint().setTextSize(20);
+			bioimpedancePlot.getLegendWidget().setPaddingBottom(10);
+
+			// Add series
+			bioimpedancePlot.addSeries(accelXseries, new LineAndPointFormatter(Color.parseColor("#008b8b"), null, null, null));
+			bioimpedancePlot.addSeries(accelYseries, new LineAndPointFormatter(Color.parseColor("#8b008b"), null, null, null));
+			bioimpedancePlot.addSeries(accelZseries, new LineAndPointFormatter(Color.parseColor("#8b8b00"), null, null, null));
+			bioimpedancePlot.addSeries(bioimpedanceSeries, new LineAndPointFormatter(Color.parseColor("#006bb2"), null, null, null));
+			
+			bioimpedancePlot.getBackgroundPaint().set(bgPaint);
 			break;
 		case 2:
 			rootView = inflater.inflate(R.layout.fragment_placeholder, container, false);

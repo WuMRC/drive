@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">Mime</string>
+    <string name="app_name">Bio-Imp</string>
     <string name="action_settings">Settings</string>
     <string name="hello_world">Hello world!</string>
     <string name="edit_message">Enter a message</string>
@@ -27,7 +27,7 @@
     <string name="enableNotifications">Notifications</string>
     <string name="ok">OK</string>
     <string name="cancel">Cancel</string>
-    <string name="sampling_data">Mime is sampling data.</string>
+    <string name="sampling_data">Sampling data.</string>
     <string name="monitor">Tap to monitor data.</string>
     <string name="showMain">Main</string>
     <string name="showGraph">Graph</string>

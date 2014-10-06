@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:animateLayoutChanges="true"
     android:orientation="vertical"
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
@@ -67,9 +68,9 @@
         android:onClick="enableNotifications"
         android:text="@string/enableNotifications"
         android:textSize="20sp"
-        android:thumb="@drawable/mimetheme_switch_inner_holo_dark"
-        android:track="@drawable/mimetheme_switch_track_holo_dark"
         android:visibility="gone" />
+    <!-- android:thumb="@drawable/mimetheme_switch_inner_holo_dark" -->
+    <!-- android:track="@drawable/mimetheme_switch_track_holo_dark" -->
 
     <HorizontalScrollView
         android:id="@+id/hscrollview"
@@ -84,9 +85,9 @@
 
             <com.androidplot.xy.XYPlot
                 android:id="@+id/bioimpedancePlot"
-                android:layout_width="300dp"
-                android:layout_height="185dp"
-                android:layout_marginLeft="10dp"
+                android:layout_width="325dp"
+                android:layout_height="200dp"
+                android:layout_marginLeft="0dp"
                 android:layout_marginRight="10dp"
                 title="Bioimpedance Data"
                 android:visibility="gone" />
@@ -156,7 +157,10 @@
             android:layout_toLeftOf="@id/ViewColorPickerHelper"
             android:background="?android:attr/selectableItemBackground"
             android:onClick="exportToText"
-            android:text="@string/exportToText" />
+            android:text="@string/exportToText"
+            android:textColor="@color/appbasetheme_color"
+            android:textSize="24sp"
+            android:textStyle="bold|italic" />
 
         <Button
             android:id="@+id/clear_text_file"
@@ -168,7 +172,10 @@
             android:layout_toRightOf="@id/ViewColorPickerHelper"
             android:background="?android:attr/selectableItemBackground"
             android:onClick="clearTextFile"
-            android:text="@string/clearTextFile" />
+            android:text="@string/clearTextFile"
+            android:textColor="@color/appbasetheme_color"
+            android:textSize="24sp"
+            android:textStyle="bold|italic" />
     </RelativeLayout>
 
 </RelativeLayout>
