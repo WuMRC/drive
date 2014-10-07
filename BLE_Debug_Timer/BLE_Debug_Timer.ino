@@ -68,7 +68,7 @@ uint8_t A[6] = {
 int count = 0;
 long sampleRate = 0; // Android app sample Rate
 uint8_t upperFreq = 0; // Upper value for frequency sweep, or single value of frequency
-                       // when frequency sweep is off.
+// when frequency sweep is off.
 uint8_t stepSize = 0;  // frequency step size between upp and lower values.
 uint8_t lowerFreq = 0;  // Lower value of frequency sweep.
 
@@ -193,19 +193,19 @@ void loop() {
   }   
   // Check if GATT Client (Smartphone) is subscribed to notifications.
 
-// Put Z value here. Place holder pseudo signal.
- x = x + 0.02;
-    if(x >= 180) {
-      x = -180;
-    }
+  // Put Z value here. Place holder pseudo signal.
+  x = x + 0.02;
+  if(x >= 180) {
+    x = -180;
+  }
 
 
   if (writer == true) { 
     //Write notification to characteristic on ble112. Causes notification to be sent.   
-      A[0] = (100 * sin((x*3.14)/180));
-      A[1] = (100 * cos((x*3.14)/180));
-      A[2] = (0);
-      //A[3] = fabs((x * 0.66));
+    A[0] = (100 * sin((x*3.14)/180));
+    A[1] = (100 * cos((x*3.14)/180));
+    A[2] = (0);
+    //A[3] = fabs((x * 0.66));
     ble112.ble_cmd_attributes_write(GATT_HANDLE_C_BIOIMPEDANCE_DATA, 0, 6 , A);
     //Serial.println("Attributes written.");
     writer = false;
@@ -439,10 +439,10 @@ void my_ble_evt_connection_disconnect(const struct ble_msg_connection_disconnect
   // clear "encrypted" and "bonding" info
   ble_encrypted = 0;
   ble_bonding = 0xFF;
-  
+
   // reset frequency to default
   MsTimer2::set(20, notify);
-   MsTimer2::start();
+  MsTimer2::start();
 }
 
 void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *msg) {
@@ -487,20 +487,20 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
   }
   // check for data written to "c_ac_freq" handle  
   if (msg -> handle == GATT_HANDLE_C_AC_FREQ && msg -> value.len > 0) {
-  upperFreq = msg -> value.data[0];
-  stepSize = msg -> value.data[1];  
-  lowerFreq = msg -> value.data[2];  
-  Serial.print("Sucessful write attempt to c_ac_freq.");
-  Serial.println();      
-  Serial.print("Upper Frequency (KHz): ");  
-  Serial.print(upperFreq);
-  Serial.println();    
-  Serial.print("Step size (KHz): ");    
-  Serial.print(stepSize);
-  Serial.println();    
-  Serial.print("Lower Frequency (KHz): ");    
-  Serial.print(lowerFreq);  
-  Serial.println();    
+    upperFreq = msg -> value.data[0];
+    stepSize = msg -> value.data[1];  
+    lowerFreq = msg -> value.data[2];  
+    Serial.print("Sucessful write attempt to c_ac_freq.");
+    Serial.println();      
+    Serial.print("Upper Frequency (KHz): ");  
+    Serial.print(upperFreq);
+    Serial.println();    
+    Serial.print("Step size (KHz): ");    
+    Serial.print(stepSize);
+    Serial.println();    
+    Serial.print("Lower Frequency (KHz): ");    
+    Serial.print(lowerFreq);  
+    Serial.println();    
   }
 }
 void my_ble_evt_attclient_indicated(const struct ble_msg_attclient_indicated_evt_t *msg) {
@@ -531,4 +531,5 @@ void my_ble_evt_attributes_status (const struct ble_msg_attributes_status_evt_t 
     notifier = false;
   }
 }  
+
 

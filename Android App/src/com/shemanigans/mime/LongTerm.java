@@ -299,9 +299,6 @@ FrequencySweepFragment.FrequencySweepListener{
 			Log.i(TAG, "Attempted disconnect.");
 			//mBluetoothLeService.close();
 			return true;
-		case android.R.id.home:
-			onBackPressed();
-			return true;
 		case R.id.name_text_file:
 			showTextFileDialog();
 			Log.i(TAG, "Attempted text file naming.");

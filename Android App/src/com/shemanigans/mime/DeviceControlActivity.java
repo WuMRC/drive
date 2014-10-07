@@ -30,6 +30,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ExpandableListView;
 import android.widget.RelativeLayout;
 import android.widget.SimpleExpandableListAdapter;
@@ -173,7 +174,7 @@ FrequencySweepFragment.FrequencySweepListener{
 						+ fixedLengthString("X", 6)
 						+ fixedLengthString("Y", 6)
 						+ fixedLengthString("Z", 6)
-						+ fixedLengthString("I", 6)
+						+ fixedLengthString("½", 6)
 						+ "\n"												
 						+ intent.getStringExtra(BluetoothLeService.EXTRA_DATA_BIOIMPEDANCE_STRING));
 				textFile.add(intent.getStringExtra(BluetoothLeService.EXTRA_DATA_BIOIMPEDANCE_STRING));
@@ -507,6 +508,41 @@ FrequencySweepFragment.FrequencySweepListener{
 		}
 	}
 
+	public void startSampling(View view) {
+		Switch enableNotifications = (Switch) findViewById(R.id.enable_notifications);
+		enableNotifications.setVisibility(View.VISIBLE);
+		enableNotifications.setChecked(true);
+		
+		Button start = (Button) findViewById(R.id.begin);
+		start.setVisibility(View.GONE);
+		View start_bar = (View) findViewById(R.id.begin_bar);
+		start_bar.setVisibility(View.GONE);
+
+
+		
+		Intent intent = new Intent(this, ServiceBinder.class);
+		intent.putExtra(EXTRA_DEVICE_ADDRESS_BINDER, mDeviceAddress);
+		intent.putExtra(EXTRA_DEVICE_NAME_BINDER, mDeviceName);
+		startService(intent);
+
+		Notification notification = new Notification(R.drawable.ic_notification, getText(R.string.sampling_data),System.currentTimeMillis());
+		Intent notificationIntent = new Intent(this, LongTerm.class);
+		notificationIntent.putExtra(EXTRA_DEVICE_ADDRESS_BINDER, mDeviceAddress);
+		notificationIntent.putExtra(EXTRA_DEVICE_NAME_BINDER, mDeviceName);
+		PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_CANCEL_CURRENT);
+		notification.setLatestEventInfo(this, getText(R.string.sampling_data), getText(R.string.connected), pendingIntent);
+
+		mBluetoothLeService.startForeground(ONGOING_NOTIFICATION_ID, notification);
+
+		com.androidplot.xy.XYPlot data = (com.androidplot.xy.XYPlot) findViewById(R.id.bioimpedancePlot);
+		data.setVisibility(View.VISIBLE);
+
+		RelativeLayout buttons = (RelativeLayout) findViewById(R.id.buttons);
+		buttons.setVisibility(View.VISIBLE);
+
+		mBluetoothLeService.setCharacteristicNotification(mNotifyCharacteristic, true);		
+	}
+	
 	public void exportToText(View view) {
 		// write on SD card file data in the text box
 		try {
@@ -537,7 +573,7 @@ FrequencySweepFragment.FrequencySweepListener{
 					fixedLengthString("X", 6) 
 					+ fixedLengthString("Y", 6)
 					+ fixedLengthString("Z", 6)
-					+ fixedLengthString("I", 7)
+					+ fixedLengthString("½", 7)
 					+ "\n");
 
 			for (int i = 0; i < textFile.size(); i++) {
@@ -636,6 +672,10 @@ FrequencySweepFragment.FrequencySweepListener{
 
 			// Loops through available Characteristics.
 			for (BluetoothGattCharacteristic gattCharacteristic : gattCharacteristics) {
+				
+				if ((gattCharacteristic.getProperties() & BluetoothGattCharacteristic.PROPERTY_NOTIFY) > 0) {
+					mNotifyCharacteristic = gattCharacteristic;			
+				}
 				if ((gattCharacteristic.getProperties() & BluetoothGattCharacteristic.PROPERTY_WRITE) > 0) {
 
 					if(findCharacteristic(gattCharacteristic.getUuid().toString(), 

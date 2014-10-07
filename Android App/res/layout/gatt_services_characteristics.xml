@@ -72,16 +72,16 @@
     <!-- android:thumb="@drawable/mimetheme_switch_inner_holo_dark" -->
     <!-- android:track="@drawable/mimetheme_switch_track_holo_dark" -->
 
-    <HorizontalScrollView
+    <ScrollView
         android:id="@+id/hscrollview"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_height="200dp"
         android:layout_below="@id/enable_notifications" >
 
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal" >
+            android:orientation="vertical" >
 
             <com.androidplot.xy.XYPlot
                 android:id="@+id/bioimpedancePlot"
@@ -100,10 +100,6 @@
                 android:textIsSelectable="true"
                 android:textSize="20sp" />
 
-            <Space
-                android:layout_width="5dp"
-                android:layout_height="wrap_content" />
-
             <TextView
                 android:id="@+id/data_value"
                 android:layout_width="wrap_content"
@@ -112,14 +108,36 @@
                 android:textIsSelectable="true"
                 android:textSize="20sp" />
         </LinearLayout>
-    </HorizontalScrollView>
+    </ScrollView>
+
+    <Button
+        android:id="@+id/begin"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:background="?android:attr/selectableItemBackground"
+        android:onClick="startSampling"
+        android:text="@string/start"
+        android:textColor="@color/appbasetheme_color"
+        android:textSize="24sp"
+        android:textStyle="bold|italic" />
+
+    <View
+        android:id="@+id/begin_bar"
+        android:layout_width="match_parent"
+        android:layout_height="1dip"
+        android:layout_above="@id/begin"
+        android:layout_marginLeft="4dip"
+        android:layout_marginRight="4dip"
+        android:background="?android:attr/dividerVertical" />
 
     <ExpandableListView
         android:id="@+id/gatt_services_list"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_above="@+id/buttons"
-        android:layout_below="@id/hscrollview" />
+        android:layout_below="@id/hscrollview"
+        android:visibility="gone" />
 
     <RelativeLayout
         android:id="@+id/buttons"
