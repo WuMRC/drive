@@ -1,22 +1,3 @@
-/*
---------------------------------------------------------------------------------
-Z_Logger
-
-Goal for this version:
-Configure and execute single impedance measurement command, report the result,
-and repeat, at a sample rate of 20 times/second. (Future TODO: 200Hz)
-
-Current functionalty:
-1.) Initialize the AD5933.
-2.) Calculate a gain factor, using a calibration resistance.
-3.) Take an impedance measurement and report through the serial monitor.
-4.) Repeat #3
-5.) Optional verbose output for debugging.
-
-*/
-
-//--- Hard-coded inputs for the sketch:
-
 #define TWI_FREQ 400000L // Setting TWI/I2C Frequency to 400MHz to speed up.
 
 #define VERBOSE 0 //Toggles verbose debugging output via the serial monitor.
@@ -52,8 +33,6 @@ Current functionalty:
 
 double gain_factor = 0;
 
-
-
 #include <Wire.h> //Library for I2C communications
 #include "AD5933.h" //Library for AD5933 functions (must be installed)
 //#include <AltSoftSerial.h>
@@ -67,12 +46,7 @@ void setup()
   Serial.println("Program start!");
   delay(100);
   #endif
-  
-  //TWBR=1;
-  //cbi(TWSR, TWPS0);
-  //cbi(TWSR, TWPS1);
   Wire.begin();
-  //TWBR=1;
   cbi(TWSR, TWPS0);
   cbi(TWSR, TWPS1);
   delay(100);
@@ -120,7 +94,6 @@ void setup()
   }
   //End [A.1]
 
-
   //[A.2] Set a number of settling time cycles
   if (AD5933.setSettlingCycles(cycles_base, cycles_multiplier) == true)
   {
@@ -140,8 +113,11 @@ void setup()
   }
   //End [A.2]
   
-  AD5933.setIncrementinHex(1);
-  AD5933.setNumofIncrement(2);
+  int num_Inc = 10;
+  long incrFreq = 1000;
+  
+  AD5933.setIncrement(incrFreq);
+  AD5933.setNumofIncrement(num_Inc);
   AD5933.setVolPGA(0,1);
   
   double temp = AD5933.getTemperature();

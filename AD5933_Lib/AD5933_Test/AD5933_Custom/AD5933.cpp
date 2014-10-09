@@ -579,13 +579,16 @@ double AD5933_Class::getMagValue()
 double AD5933_Class::getMagOnce()
 // Wrapper Function of getMagValue. It waits until the ADC completes the conversion.
 {
-  while((getStatusReg() & 0x02) != 0x02) // wait until ADC conversion is complete.
+  while(!isValueReady()) // wait until ADC conversion is complete.
   {
     //delay(delayTimeInit);
     ;
   }
   return getMagValue();  
 }
+
+
+
 
 bool AD5933_Class::blockRead(int address, int num2Read, byte *toSave)
 {
@@ -619,9 +622,36 @@ bool AD5933_Class::blockRead(int address, int num2Read, byte *toSave)
 	return true;
 }
 
+bool AD5933_Class::isValueReady()
+{
+	if( (getStatusReg() & 0x02) == 0x02 )
+		return true;
+	else
+		return false;	
+}
 
-/*
 int AD5933_Class::getRealComp()
+{
+	while(!isValueReady()) // wait until ADC conversion is complete.
+	{
+    //delay(delayTimeInit);
+		;
+	}
+	return getRealCompP(); 
+}
+
+int AD5933_Class::getImagComp()
+{
+	while(!isValueReady()) // wait until ADC conversion is complete.
+	{
+    //delay(delayTimeInit);
+		;
+	}
+	return getImagCompP(); 
+}
+
+
+int AD5933_Class::getRealCompP()
 // Function to get real component.
 {
   int mReal, lReal;
@@ -643,7 +673,7 @@ int AD5933_Class::getRealComp()
   return result;
 }
 
-int AD5933_Class::getImagComp()
+int AD5933_Class::getImagCompP()
 // Function to get imaginary component.
 {
   int mImag, lImag;
@@ -664,4 +694,3 @@ int AD5933_Class::getImagComp()
 #endif
   return result;
 }
-*/
