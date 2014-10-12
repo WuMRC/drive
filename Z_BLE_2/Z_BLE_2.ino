@@ -88,7 +88,7 @@ boolean notifier = false; // variable to manage notification settings
 uint8_t A[6] = {1, 2, 3, 4, 5, 6}; // integer array to carry accelerometer values
 float Atemp = 100;
 int i = 0;
-AltSoftSerial altSerial;
+//AltSoftSerial altSerial;
 
 //SimpleTimer timer;
 
@@ -158,7 +158,7 @@ void setup() {
 
   AD5933.setExtClock(false);
   AD5933.setSettlingCycles(cycles_base,cycles_multiplier);
-  //AD5933.setVolPGA(0, 1);
+  AD5933.setVolPGA(0, 1);
 
   double temp = AD5933.getTemperature();
 
@@ -263,24 +263,23 @@ void loop() {
     //Simple way of changinging frequency of notifications. see documentation on WuMRC Github or tunji.com/blog for more details on this.
     if (i > 0) {
       //BMA250ReadAccel();
-      A[0] = (420);
-      A[1] = (480);
-      A[2] = (480);
+      A[0] = (-100);
+      A[1] = (0);
+      A[2] = (100);
 
-      if((Z_value - 554.72) > -1.5 && (Z_value - 554.72) < 1.5) {
+      if(((Z_value - 554.72) > -3 && (Z_value - 554.72) < 3) || ((Z_value - 554.72) > 500)) {
         A[3] = 0;
         A[4] = 0;
         A[5] = 0;
       }
-      else if((Z_value - 554.72) > 1000) {
+      else {
+        changeVal(s, A);
+      }      
+      /*if((Z_value - 554.72) > 1000) {
         A[3] = 0;
         A[4] = 0;
         A[5] = 0; 
-      }
-      else {
-        changeVal(s, A);
-      }
-
+      }*/
 
       //Write notification to characteristic on ble112. Causes notification to be sent.
       ble112.ble_cmd_attributes_write(GATT_HANDLE_C_TX_DATA, 0, 6 , A);
