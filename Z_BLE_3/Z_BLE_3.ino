@@ -61,8 +61,10 @@
 // uncomment the following line for debug serial output
 #define DEBUG
 
+// ================================================================
 // For Z_Logger
-// ===================================================
+// ================================================================
+
 double gain_factor = 0;
 
 #define TWI_FREQ 400000L     // Setting TWI/I2C Frequency to 400MHz.
@@ -96,9 +98,15 @@ uint8_t lowerFreq = 0;       // Lower value of frequency sweep.
 
 long rComp;
 
+<<<<<<< HEAD
+// ================================================================
+=======
+boolean dataRead = false;
 
+
+>>>>>>> FETCH_HEAD
 // General variables
-// ===================================================
+// ================================================================
 
 volatile double pseudo = 0; // Pseudo signal to replace cellerometer data.
 
@@ -165,25 +173,33 @@ BGLib ble112((HardwareSerial *)&bleSerialPort, 0, 1);
 
 // initialization sequence
 void setup() {
+<<<<<<< HEAD
+  
+  // ================================================================
+=======
 
   TWBR = 1;
-  
   Wire.begin();
 
+>>>>>>> FETCH_HEAD
   // For Z_Logger
-  // ===================================================
-
+  // ================================================================
+  
+  TWBR = 1;
+  Wire.begin();
   AD5933.setExtClock(false);
   AD5933.resetAD5933();
-  AD5933.setSettlingCycles(cycles_base,cycles_multiplier);
+  AD5933.setStartFreq(start_frequency);
+  AD5933.setSettlingCycles(cycles_base, cycles_multiplier);
   AD5933.setIncrementinHex(1);
-  AD5933.setNumofIncrement(2);  
-  AD5933.setVolPGA(0, 1);
-  double temp = AD5933.getTemperature();
+  AD5933.setNumofIncrement(2);
+  AD5933.setVolPGA(0,1);
+  AD5933.tempUpdate();  
   gain_factor = AD5933.getGainFactor(cal_resistance, cal_samples, false);
-
+  
+  // ================================================================
   // For General elements
-  // ===================================================
+  // ================================================================
 
   // initialize status LED
   pinMode(LED_PIN, OUTPUT);
@@ -238,14 +254,19 @@ void setup() {
 void loop() {
   // keep polling for new data from BLE  
   ble112.checkActivity();
+  Serial.println(millis());
   
   // For Z_Logger
   // =================================================== 
 
   AD5933.tempUpdate();
   AD5933.setCtrMode(REPEAT_FREQ);
-  Z_value = gain_factor/AD5933.getMagOnce();  
-
+  if( dataRead == false && AD5933.isValueReady() == true )
+  {
+    Z_value = gain_factor/AD5933.getMagOnce();
+    dataRead = true;
+    // to add codes for calculating complex components  
+  }
   // For BLE
   // =================================================== 
   
@@ -288,6 +309,7 @@ void loop() {
 
       //Write notification to characteristic on ble112. Causes notification to be sent.
       ble112.ble_cmd_attributes_write(GATT_HANDLE_C_BIOIMPEDANCE_DATA, 0, 6 , A);
+      dataRead = false; // To prevent duplicate data reading to take cycles.
       writer = false;     
   }   
   else {
@@ -552,9 +574,9 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
    // Starting to change the settings of AD5933
     MsTimer2::stop();
     AD5933.resetAD5933();
-    int cycleBase = (int)(477.84 * pow(2.718,-0.017) );
+    int cycleBase = (int)(477.84 * pow(2.718,-0.017*sampleRate) );
     
-    AD5933.setSettlingCycles(cycles_base, cycles_multiplier);
+    AD5933.setSettlingCycles(cycleBase, cycles_multiplier);
     AD5933.tempUpdate();
     AD5933.setCtrMode(INIT_START_FREQ);
     AD5933.setCtrMode(START_FREQ_SWEEP);
@@ -583,6 +605,7 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
     Serial.print("Lower Frequency (KHz): ");    
     Serial.print(lowerFreq);  
     Serial.println();    
+    //TODO: add initialization code for AD5933
   }  
 }
 void my_ble_evt_attclient_indicated(const struct ble_msg_attclient_indicated_evt_t *msg) {
@@ -620,6 +643,17 @@ void notify() {
   }  
 }
 
+
+void changeVal(long value, uint8_t *fVals)
+{
+  fVals[5] = value % 100;
+  value /= 100;
+  fVals[4] = value % 100;
+  value /= 100;
+  fVals[3] = value % 100;
+}
+
+/*
 void changeVal(long val, uint8_t *values) {
   values[3] = ((getNthDigit(val, 10, 6) * 10) + getNthDigit(val, 10, 5));
   values[4] = ((getNthDigit(val, 10, 4) * 10) + getNthDigit(val, 10, 3));
@@ -633,5 +667,6 @@ long getNthDigit(long number, int base, int n) {
   return answer;
 }
 
+*/
 
 

@@ -630,6 +630,31 @@ bool AD5933_Class::isValueReady()
 		return false;	
 }
 
+bool AD5933_Class::getComplexOnce(double gainFactor, double &realComp, double &imagComp, double &ZVal)
+{
+	while( (getStatusReg() & 0x02) != 0x02 )
+		; // Wait until measurement is complete.
+	
+	int rComp, iComp;
+ 
+  	byte impData[4];
+  	blockRead(0x94, 4, impData);
+  	rComp = impData[0]*16*16+impData[1];
+  	iComp = impData[2]*16*16+impData[3];
+  
+  	double magSq = square((double)rComp) + square((double)iComp); 
+	ZVal = gainFactor/sqrt(magSq);
+	double td1=gainFactor/magSq;
+	realComp = abs(rComp)*td1;
+	imagComp = abs(iComp)*td1;	
+  	
+	return true;
+
+}
+
+
+
+/*
 int AD5933_Class::getRealComp()
 {
 	while(!isValueReady()) // wait until ADC conversion is complete.
@@ -650,7 +675,6 @@ int AD5933_Class::getImagComp()
 	return getImagCompP(); 
 }
 
-
 int AD5933_Class::getRealCompP()
 // Function to get real component.
 {
@@ -666,7 +690,7 @@ int AD5933_Class::getRealCompP()
   printer->println(lReal, BIN);
   printer->print("getRealComp - Value: ");
 #endif
-  result = mReal*16*16+lReal;
+  result = (int16_t)(mReal*16*16+lReal);
 #if LOGGING3
   printer->println(result);
 #endif
@@ -688,9 +712,10 @@ int AD5933_Class::getImagCompP()
   printer->println(lImag, BIN);
   printer->print("getImagComp - Value: ");
 #endif
-  result = mImag*16*16+lImag;
+  result = (int16_t)(mImag*16*16+lImag);
 #if LOGGING3
   printer->println(result);
 #endif
   return result;
 }
+*/

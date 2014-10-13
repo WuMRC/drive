@@ -1,4 +1,4 @@
-clear all; close all; clc
+dclear all; close all; clc
 %%
 clear NAMES dZOverall
 [bioimpedanceFile, bioimpedancePath] = uigetfile('*.*','Pick an ACQ file');
@@ -59,8 +59,15 @@ totalData = [bArmSMOOTH, respArmSMOOTH, cardArmSMOOTH, ppg];
 % subplot(2,1,1), plot(time, cardArmSMOOTH)
 % subplot(2,1,2), plot(time, ppg)
 
+figure
+subplot(3,1,1), plot(time,bArmSMOOTH,'LineWidth',2,'Color','k')
+subplot(3,1,2), plot(time,respArmSMOOTH,'LineWidth',2,'Color','b')
+ylabel('Resistance [\Omega]')
+subplot(3,1,3), plot(time,cardArmSMOOTH,'LineWidth',2,'Color','r')
+xlabel('Time [s]')
 
 
-bArmNoise = bArmSMOOTH - bArm;
-plot(time, bArmNoise)
+
+% bArmNoise = bArmSMOOTH - bArm;
+% plot(time, bArmNoise)
 
