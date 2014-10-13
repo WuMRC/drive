@@ -590,6 +590,7 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
     Serial.print("Lower Frequency (KHz): ");    
     Serial.print(lowerFreq);  
     Serial.println();    
+    //TODO: add initialization code for AD5933
   }  
 }
 void my_ble_evt_attclient_indicated(const struct ble_msg_attclient_indicated_evt_t *msg) {
@@ -627,6 +628,17 @@ void notify() {
   }  
 }
 
+
+void changeVal(long value, uint8_t *fVals)
+{
+  fVals[5] = value % 100;
+  value /= 100;
+  fVals[4] = value % 100;
+  value /= 100;
+  fVals[3] = value % 100;
+}
+
+/*
 void changeVal(long val, uint8_t *values) {
   values[3] = ((getNthDigit(val, 10, 6) * 10) + getNthDigit(val, 10, 5));
   values[4] = ((getNthDigit(val, 10, 4) * 10) + getNthDigit(val, 10, 3));
@@ -640,5 +652,6 @@ long getNthDigit(long number, int base, int n) {
   return answer;
 }
 
+*/
 
 
