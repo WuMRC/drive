@@ -99,8 +99,11 @@ uint8_t lowerFreq = 0;       // Lower value of frequency sweep.
 long rComp;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 // ================================================================
 =======
+=======
+>>>>>>> FETCH_HEAD
 boolean dataRead = false;
 
 
@@ -173,15 +176,8 @@ BGLib ble112((HardwareSerial *)&bleSerialPort, 0, 1);
 
 // initialization sequence
 void setup() {
-<<<<<<< HEAD
   
   // ================================================================
-=======
-
-  TWBR = 1;
-  Wire.begin();
-
->>>>>>> FETCH_HEAD
   // For Z_Logger
   // ================================================================
   
