@@ -56,6 +56,7 @@
 #include "BGLib.h" // BGLib C library for BGAPI communication.
 #include <AltSoftSerial.h> // software serial library for input and output to the serial mnitor.
 #include <MsTimer2.h> // timer function for notifications
+#include "AD5933.h"
 
 //uncomment the following line for debug serial output
 #define DEBUG
@@ -120,6 +121,32 @@ BGLib ble112((HardwareSerial *)&bleSerialPort, 0, 1);
 
 #define BGAPI_GET_RESPONSE(v, dType) dType *v = (dType *)ble112.getLastRXPayload()
 
+// AD5933 Specific Declaration Starts
+#define TWI_FREQ 400000L // Setting TWI/I2C Frequency to 400MHz to speed up.
+
+#define cycles_base 300      //First term to set a number of cycles to ignore
+                             //to dissipate transients before a measurement is
+                             //taken. The max value for this is 511.
+
+
+#define cycles_multiplier 1  //Set a multiple for the cycles_base which
+                             //is used to calculate the desired number
+                             //of settling cycles. Values can be 1, 2, or 4.
+                             
+
+#define start_frequency 50000 //Set the start frequency, the only one of
+                              //interest here(50 kHz).
+
+#define cal_resistance 553.91 //Set a calibration resistance for the gain
+                            //factor. This will have to be measured before any
+                            //other measurements are performed.
+                           
+#define cal_samples 10 //Set a number of measurements to take of the calibration
+                       //resistance. These are used to get an average gain
+                       //factor.
+double gain_factor = 0, Z_Value = 99999;
+// AD5933 Specific Declaration Ends
+
 //================================================================
 //ARDUINO APPLICATION SETUP AND LOOP FUNCTIONS
 //================================================================
@@ -157,6 +184,18 @@ void setup() {
   // use 38400 since it works at 8MHz as well as 16MHz
   Serial.begin(38400);
   while (!Serial);
+
+  // Initialize AD5933
+  AD5933.setExtClock(false);
+  AD5933.resetAD5933();
+  AD5933.setStartFreq(start_frequency);
+  AD5933.setSettlingCycles(cycles_base, cycles_multiplier);
+  AD5933.setIncrementinHex(1);
+  AD5933.setNumofIncrement(2);
+  AD5933.setVolPGA(0,1);
+  AD5933.tempUpdate();  
+  gain_factor = AD5933.getGainFactor(cal_resistance, cal_samples, false);
+  // End of Initialization of AD5933
 
   // open BLE software serial port
   bleSerialPort.begin(38400);
@@ -197,6 +236,12 @@ void loop() {
     x = -180;
   }
 
+  // Add for AD5933
+  if( AD5933::isValueReady() == true )
+  {
+  	Z_value = gain_factor/AD5933.getMagOnce();
+  }
+  // End of AD5933 Part
 
   if (writer == true) { 
     //Write notification to characteristic on ble112. Causes notification to be sent.   

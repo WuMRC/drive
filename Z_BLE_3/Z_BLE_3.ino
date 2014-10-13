@@ -96,6 +96,8 @@ uint8_t lowerFreq = 0;       // Lower value of frequency sweep.
 
 long rComp;
 
+boolean dataRead = false;
+
 
 // General variables
 // ===================================================
@@ -167,7 +169,6 @@ BGLib ble112((HardwareSerial *)&bleSerialPort, 0, 1);
 void setup() {
 
   TWBR = 1;
-  
   Wire.begin();
 
   // For Z_Logger
@@ -175,11 +176,12 @@ void setup() {
 
   AD5933.setExtClock(false);
   AD5933.resetAD5933();
-  AD5933.setSettlingCycles(cycles_base,cycles_multiplier);
+  AD5933.setStartFreq(start_frequency);
+  AD5933.setSettlingCycles(cycles_base, cycles_multiplier);
   AD5933.setIncrementinHex(1);
-  AD5933.setNumofIncrement(2);  
-  AD5933.setVolPGA(0, 1);
-  double temp = AD5933.getTemperature();
+  AD5933.setNumofIncrement(2);
+  AD5933.setVolPGA(0,1);
+  AD5933.tempUpdate();  
   gain_factor = AD5933.getGainFactor(cal_resistance, cal_samples, false);
 
   // For General elements
@@ -244,8 +246,12 @@ void loop() {
 
   AD5933.tempUpdate();
   AD5933.setCtrMode(REPEAT_FREQ);
-  Z_value = gain_factor/AD5933.getMagOnce();  
-
+  if( dataRead == false && AD5933.isValueReady() == true )
+  {
+    Z_value = gain_factor/AD5933.getMagOnce();
+    dataRead = true;
+    // to add codes for calculating complex components  
+  }
   // For BLE
   // =================================================== 
   
@@ -288,6 +294,7 @@ void loop() {
 
       //Write notification to characteristic on ble112. Causes notification to be sent.
       ble112.ble_cmd_attributes_write(GATT_HANDLE_C_BIOIMPEDANCE_DATA, 0, 6 , A);
+      dataRead = false; // To prevent duplicate data reading to take cycles.
       writer = false;     
   }   
   else {
@@ -552,9 +559,9 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
    // Starting to change the settings of AD5933
     MsTimer2::stop();
     AD5933.resetAD5933();
-    int cycleBase = (int)(477.84 * pow(2.718,-0.017) );
+    int cycleBase = (int)(477.84 * pow(2.718,-0.017*sampleRate) );
     
-    AD5933.setSettlingCycles(cycles_base, cycles_multiplier);
+    AD5933.setSettlingCycles(cycleBase, cycles_multiplier);
     AD5933.tempUpdate();
     AD5933.setCtrMode(INIT_START_FREQ);
     AD5933.setCtrMode(START_FREQ_SWEEP);

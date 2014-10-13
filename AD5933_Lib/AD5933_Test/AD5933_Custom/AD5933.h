@@ -64,15 +64,17 @@ public: // The detailed instruction will be on Wiki or ".cpp" file
 	int getByte(int);
 	bool setByte(int, int);
 	bool isValueReady();
-	int getRealComp();
-	int getImagComp();
+	//int getRealComp();
+	//int getImagComp();
+	bool getComplexOnce(double , double &, double &, double &);
+	
 
 private:
 	
 	static const byte Address_Ptr = 0xB0; // Address Pointer to read register values.
 	double opClock;
-	int getRealCompP();
-	int getImagCompP();
+	//int getRealCompP();
+	//int getImagCompP();
 	double getMagValue();
 	inline byte getStatusReg()
 	{
