@@ -17,14 +17,14 @@ bool AD5933_Class::performFreqSweep(double gainFactor, double *arrSave)
 // If not, hidden error will be occur.
 {
   int ctrReg = getByte(0x80); // Get the content of Control Register and put it into ctrReg
-  if(setCtrMode(STAND_BY) == false)
+  if(setCtrMode(STAND_BY, ctrReg) == false)
   {
 #if LOGGING1
     printer->println("performFreqSweep - Failed to setting Stand By Status!");
 #endif
     return false;
   }
-  if(setCtrMode(INIT_START_FREQ) == false)
+  if(setCtrMode(INIT_START_FREQ, ctrReg) == false)
   {
 #if LOGGING1
     printer->println("performFreqSweep - Failed to setting initialization with starting frequency!");
@@ -32,7 +32,7 @@ bool AD5933_Class::performFreqSweep(double gainFactor, double *arrSave)
     return false;
   }
   //delay(delayTimeInit);
-  if(setCtrMode(START_FREQ_SWEEP) == false)
+  if(setCtrMode(START_FREQ_SWEEP, ctrReg) == false)
   {
 #if LOGGING1
     printer->println("performFreqSweep - Failed to set to start frequency sweeping!");
@@ -51,7 +51,7 @@ bool AD5933_Class::performFreqSweep(double gainFactor, double *arrSave)
     printer->print("] = ");
     printer->println(arrSave[t1]);  
 #endif
-    if(setCtrMode(INCR_FREQ) == false)
+    if(setCtrMode(INCR_FREQ, ctrReg) == false)
     {
 #if LOGGING1
       printer->println("performFreqSweep - Failed to set for increasing frequency!");
@@ -61,7 +61,7 @@ bool AD5933_Class::performFreqSweep(double gainFactor, double *arrSave)
     t1++;
     //getByte(0x80);
   }
-  if(setCtrMode(POWER_DOWN) == false)
+  if(setCtrMode(POWER_DOWN, ctrReg) == false)
   {
 #if LOGGING1
     printer->println("performFreqSweep - Completed sweep, but failed to power down");
@@ -69,6 +69,40 @@ bool AD5933_Class::performFreqSweep(double gainFactor, double *arrSave)
     return false;
   }
   return true; // Succeed!
+}
+
+bool AD5933_Class::compFreqSweep(double gainFactor, double *arrReal, double *arrImag)
+{
+  int ctrReg = getByte(0x80); // Get the content of Control Register and put it into ctrReg
+  if(setCtrMode(STAND_BY, ctrReg) == false)
+  {
+    return false;
+  }
+  if(setCtrMode(INIT_START_FREQ, ctrReg) == false)
+  {
+    return false;
+  }
+  if(setCtrMode(START_FREQ_SWEEP, ctrReg) == false)
+  {
+    return false;
+  }
+  
+  int t1=0;
+  while( (getStatusReg() & 0x04) != 0x04 ) // Loop while if the entire sweep in not complete
+  {
+    getComplexOnce(gainFactor, arrReal[t1], arrImag[t1]); // Only for real and Imag components. 
+    if(setCtrMode(INCR_FREQ, ctrReg) == false)
+    {
+      return false;
+    }
+    t1++;
+  }
+  if(setCtrMode(POWER_DOWN, ctrReg) == false)
+  {
+    return false;
+  }
+  return true; // Succeed!
+
 }
 
 double AD5933_Class::getGainFactor(double cResistance, int avgNum, bool retStandBy)
@@ -587,9 +621,6 @@ double AD5933_Class::getMagOnce()
   return getMagValue();  
 }
 
-
-
-
 bool AD5933_Class::blockRead(int address, int num2Read, byte *toSave)
 {
 	if( !AD5933.setByte(Address_Ptr, address) )
@@ -649,9 +680,28 @@ bool AD5933_Class::getComplexOnce(double gainFactor, double &realComp, double &i
 	imagComp = abs(iComp)*td1;	
   	
 	return true;
-
 }
 
+bool AD5933_Class::getComplexOnce(double gainFactor, double &realComp, double &imagComp)
+{
+	while( (getStatusReg() & 0x02) != 0x02 )
+		; // Wait until measurement is complete.
+	
+	int rComp, iComp;
+ 
+  	byte impData[4];
+  	blockRead(0x94, 4, impData);
+  	rComp = impData[0]*16*16+impData[1];
+  	iComp = impData[2]*16*16+impData[3];
+  
+  	double magSq = square((double)rComp) + square((double)iComp); 
+	double td1=gainFactor/magSq;
+	realComp = abs(rComp)*td1;
+	imagComp = abs(iComp)*td1;	
+  	
+	return true;
+
+}
 
 
 /*

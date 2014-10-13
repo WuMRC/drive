@@ -96,7 +96,7 @@ uint8_t stepSize = 0;        // frequency step size between upp and lower values
 
 uint8_t lowerFreq = 0;       // Lower value of frequency sweep.
 
-long rComp;
+long rComp, rReal;
 
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -259,14 +259,13 @@ void loop() {
   AD5933.setCtrMode(REPEAT_FREQ);
   if( dataRead == false && AD5933.isValueReady() == true )
   {
-    Z_value = gain_factor/AD5933.getMagOnce();
+    AD5933.getComplexOnce(gain_factor, rReal, rComp, Z_value);
     dataRead = true;
-    // to add codes for calculating complex components  
   }
   // For BLE
   // =================================================== 
   
-  rComp = (long)((Z_value * 1000) + 0.5);
+  //rComp = (long)((Z_value * 1000) + 0.5);
   /*
   // check for input from the user
   if (Serial.available()) {

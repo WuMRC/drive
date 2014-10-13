@@ -67,6 +67,8 @@ public: // The detailed instruction will be on Wiki or ".cpp" file
 	//int getRealComp();
 	//int getImagComp();
 	bool getComplexOnce(double , double &, double &, double &);
+	bool getComplexOnce(double , double &, double &);
+	bool compFreqSweep(double, double *, double *);
 	
 
 private:
