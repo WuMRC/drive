@@ -70,11 +70,11 @@ FrequencySweepFragment.FrequencySweepListener{
 	private String mDeviceName;
 	private String mDeviceAddress;
 	private boolean mConnected = true;
-	
+
 	private int sampleRate = 0;
-	private byte upperFreq = 0;
+	private byte startFreq = 0;
 	private byte stepSize = 0;
-	private byte lowerFreq = 0;
+	private byte numOfIncrements = 0;
 
 	// Code to manage Service lifecycle.
 	private final ServiceConnection mServiceConnectionBLE = new ServiceConnection() {
@@ -321,7 +321,7 @@ FrequencySweepFragment.FrequencySweepListener{
 	}
 
 	public void readText() {
-		File DataDir = new File(Environment.getExternalStorageDirectory() + "/Mime/");
+		File DataDir = new File(Environment.getExternalStorageDirectory() + "/Biohm/");
 
 		//Get the text file
 		File duodecimalMinute = new File(DataDir, "duodecimalMinute.txt");
@@ -340,7 +340,7 @@ FrequencySweepFragment.FrequencySweepListener{
 			br.close();
 		}
 		catch (IOException e) {
-			//You'll need to add proper error handling here
+			//TODO need to add proper error handling here
 		}
 
 	}
@@ -381,9 +381,9 @@ FrequencySweepFragment.FrequencySweepListener{
 					fixedLengthString("X", 6) 
 					+ fixedLengthString("Y", 6)
 					+ fixedLengthString("Z", 6)
-					+ fixedLengthString("I", 7)
+					+ fixedLengthString("Ω", 7)
+					+ fixedLengthString("θ", 6)
 					+ "\n");
-
 			for (int i = 0; i < textFile.size(); i++) {
 				myOutWriter.append(textFile.get(i));
 				myOutWriter.append("\n");
@@ -454,11 +454,11 @@ FrequencySweepFragment.FrequencySweepListener{
 	public void onDialogNegativeClickSampleRate(DialogFragment dialog) {
 		// User touched the dialog's negative button
 	}
-	
+
 	public void setFrequencySweep() {
 		// Create an instance of the dialog fragment and show it
-			frequencySweepDialog = new FrequencySweepFragment();
-			frequencySweepDialog.show(getFragmentManager(), "FrequencySweepFragment");
+		frequencySweepDialog = new FrequencySweepFragment();
+		frequencySweepDialog.show(getFragmentManager(), "FrequencySweepFragment");
 	}
 
 	@Override
@@ -468,16 +468,29 @@ FrequencySweepFragment.FrequencySweepListener{
 		String[] freqValuesString;
 		freqValuesString = frequencySweepDialog.getValue();
 		try {
-			upperFreq = (byte) (Integer.parseInt(freqValuesString[0]));
+			startFreq = (byte) (Integer.parseInt(freqValuesString[0]));
 			stepSize = (byte) (Integer.parseInt(freqValuesString[1]));
-			lowerFreq = (byte) (Integer.parseInt(freqValuesString[2]));
-			byte[] freqValuesByte = {upperFreq, stepSize, lowerFreq}; 
+			numOfIncrements = (byte) (Integer.parseInt(freqValuesString[2]));
+			if(startFreq + (stepSize * numOfIncrements) > 100) {
+				throw new IllegalArgumentException();
+			}
+			byte[] freqValuesByte = {startFreq, stepSize, numOfIncrements}; 
 			Toast.makeText(this, R.string.freq_sweep_enabled, Toast.LENGTH_SHORT).show();
 			mServiceBinder.writeFrequencySweepCharacteristic(freqValuesByte);
 		}
 		catch (Exception e) {
-			Toast.makeText(this, R.string.set_fail, Toast.LENGTH_SHORT).show();
+			if(e instanceof IllegalArgumentException) {
+				Toast.makeText(this, R.string.check_value, Toast.LENGTH_SHORT).show();
+			}
+			else {
+				Toast.makeText(this, R.string.set_fail, Toast.LENGTH_SHORT).show();
+			}
 		}
+	}
+
+	@Override
+	public void onDialogNeutralClickFrequencySweep(DialogFragment dialog) {
+		Toast.makeText(this, R.string.cancelled, Toast.LENGTH_SHORT).show();
 	}
 
 	@Override
@@ -486,15 +499,23 @@ FrequencySweepFragment.FrequencySweepListener{
 		String[] freqValuesString;
 		freqValuesString = frequencySweepDialog.getValue();
 		try {
-			upperFreq = (byte) (Integer.parseInt(freqValuesString[0]));
+			startFreq = (byte) (Integer.parseInt(freqValuesString[0]));
 			stepSize = (byte) (Integer.parseInt(freqValuesString[1]));
-			lowerFreq = (byte) (Integer.parseInt(freqValuesString[2]));
-			byte[] freqValuesByte = {upperFreq, stepSize, lowerFreq}; 
+			numOfIncrements = (byte) (Integer.parseInt(freqValuesString[2]));
+			if(startFreq == 0) {
+				throw new IllegalArgumentException();
+			}
+			byte[] freqValuesByte = {startFreq, stepSize, numOfIncrements}; 
 			Toast.makeText(this, R.string.freq_sweep_disabled, Toast.LENGTH_SHORT).show();
 			mServiceBinder.writeFrequencySweepCharacteristic(freqValuesByte);
 		}
 		catch (Exception e) {
-			Toast.makeText(this, R.string.set_fail, Toast.LENGTH_SHORT).show();
+			if(e instanceof IllegalArgumentException) {
+				Toast.makeText(this, R.string.no_zero, Toast.LENGTH_SHORT).show();
+			}
+			else {
+				Toast.makeText(this, R.string.set_fail, Toast.LENGTH_SHORT).show();
+			}
 		}
 	}
 
@@ -508,6 +529,5 @@ FrequencySweepFragment.FrequencySweepListener{
 		intentFilter.addAction(BluetoothLeService.ACTION_DATA_AVAILABLE_BIOIMPEDANCE);
 		return intentFilter;
 	}
-
 
 }

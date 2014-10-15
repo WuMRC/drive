@@ -28,6 +28,7 @@
     <string name="enableNotifications">Notifications</string>
     <string name="ok">OK</string>
     <string name="cancel">Cancel</string>
+    <string name="cancelled">Cancelled</string>
     <string name="sampling_data">Sampling data.</string>
     <string name="monitor">Tap to monitor data.</string>
     <string name="showMain">Main</string>
@@ -39,14 +40,16 @@
     <string name="sample_rate_options">Hertz. Must be between 1 and 90.</string>
     <string name="set_frequency_sweep">Set Frequency Sweep</string>
     <string name="enable_frequency_sweep">Enable Frequency Sweep</string>
-    <string name="set_upper_freq">Single or Upper Frequency in KHz.</string>
+    <string name="set_start_freq">Start frequency in KHz.</string>
     <string name="set_step_size">Step size in Khz.</string>
-    <string name="set_lower_freq">Lower Frequency in Khz.</string>
+    <string name="set_num_of_increments">Number of frequency increments.</string>
     <string name="enable">Enable</string>
     <string name="disable">Disable</string>
     <string name="set_fail">Failed: Empty fields or invalid characters</string>
     <string name="freq_sweep_enabled">Freequency sweep enabled</string>
     <string name="freq_sweep_disabled">Frequency sweep disabled</string>
+    <string name="check_value">Failed: Check your frquency, step size, or number of steps </string>
+    <string name="no_zero">Failed: Cannot set a frequency of "0" </string>
     <string name="start">Start</string>
 
     <string-array name="LongTermOptionsArray">

@@ -80,19 +80,15 @@ FrequencySweepFragment.FrequencySweepListener{
 	private BluetoothGattCharacteristic mSampleRateCharacteristic;
 	private BluetoothGattCharacteristic mACFrequencyCharacteristic;
 
-
-	// Variables created by me
-
 	public ArrayList<String> textFile = new ArrayList<String>();	
 	private String textFileName = "AccelData";	
 	private Calendar c = Calendar.getInstance();
 	private boolean checkNamedTextFile = false;
+	private double[] imp = {1, 2, 3, 4};
 	private int sampleRate = 0;
-	private byte upperFreq = 0;
+	private byte startFreq = 0;
 	private byte stepSize = 0;
-	private byte lowerFreq = 0;
-
-
+	private byte numOfIncrements = 0;
 
 	// Graph variables
 
@@ -149,6 +145,8 @@ FrequencySweepFragment.FrequencySweepListener{
 			if (BluetoothLeService.ACTION_GATT_CONNECTED.equals(action)) {
 				mConnected = true;
 				updateConnectionState(R.string.connected);
+				Switch enableNotifications = (Switch) findViewById(R.id.enable_notifications);
+				enableNotifications.setClickable(true);
 				invalidateOptionsMenu();
 			} 
 			else if (BluetoothLeService.ACTION_GATT_CONNECTING.equals(action)) {
@@ -159,6 +157,9 @@ FrequencySweepFragment.FrequencySweepListener{
 			else if (BluetoothLeService.ACTION_GATT_DISCONNECTED.equals(action)) {
 				mConnected = false;
 				updateConnectionState(R.string.disconnected);
+				Switch enableNotifications = (Switch) findViewById(R.id.enable_notifications);
+				enableNotifications.setChecked(false);
+				enableNotifications.setClickable(false);
 				invalidateOptionsMenu();
 				clearUI();
 			} 
@@ -174,12 +175,12 @@ FrequencySweepFragment.FrequencySweepListener{
 						+ fixedLengthString("X", 6)
 						+ fixedLengthString("Y", 6)
 						+ fixedLengthString("Z", 6)
-						+ fixedLengthString("½", 6)
+						+ fixedLengthString("Î©", 7)
+						+ fixedLengthString("Î¸", 6)
 						+ "\n"												
 						+ intent.getStringExtra(BluetoothLeService.EXTRA_DATA_BIOIMPEDANCE_STRING));
-				textFile.add(intent.getStringExtra(BluetoothLeService.EXTRA_DATA_BIOIMPEDANCE_STRING));
 
-				double[] imp = {1, 2, 3, 4};
+				textFile.add(intent.getStringExtra(BluetoothLeService.EXTRA_DATA_BIOIMPEDANCE_STRING));
 				imp = intent.getDoubleArrayExtra(BluetoothLeService.EXTRA_DATA_BIOIMPEDANCE_DOUBLE);
 
 				// update instantaneous data:
@@ -242,7 +243,7 @@ FrequencySweepFragment.FrequencySweepListener{
 		accelYseries.useImplicitXVals();
 		accelZseries = new SimpleXYSeries("Z");
 		accelZseries.useImplicitXVals();
-		bioimpedanceSeries = new SimpleXYSeries("½");
+		bioimpedanceSeries = new SimpleXYSeries("Î©");
 		bioimpedanceSeries.useImplicitXVals();
 
 		bioimpedancePlot.setRangeBoundaries(-100, 600, BoundaryMode.FIXED);
@@ -379,8 +380,6 @@ FrequencySweepFragment.FrequencySweepListener{
 			mBluetoothLeService.connect(mDeviceAddress);
 			return true;
 		case R.id.menu_disconnect:
-			Switch enableNotifications = (Switch) findViewById(R.id.enable_notifications);
-			enableNotifications.setChecked(false);
 			mBluetoothLeService.stopForeground(true);
 			mBluetoothLeService.disconnect();
 			//mBluetoothLeService.close();
@@ -512,14 +511,12 @@ FrequencySweepFragment.FrequencySweepListener{
 		Switch enableNotifications = (Switch) findViewById(R.id.enable_notifications);
 		enableNotifications.setVisibility(View.VISIBLE);
 		enableNotifications.setChecked(true);
-		
+
 		Button start = (Button) findViewById(R.id.begin);
 		start.setVisibility(View.GONE);
 		View start_bar = (View) findViewById(R.id.begin_bar);
 		start_bar.setVisibility(View.GONE);
 
-
-		
 		Intent intent = new Intent(this, ServiceBinder.class);
 		intent.putExtra(EXTRA_DEVICE_ADDRESS_BINDER, mDeviceAddress);
 		intent.putExtra(EXTRA_DEVICE_NAME_BINDER, mDeviceName);
@@ -542,7 +539,7 @@ FrequencySweepFragment.FrequencySweepListener{
 
 		mBluetoothLeService.setCharacteristicNotification(mNotifyCharacteristic, true);		
 	}
-	
+
 	public void exportToText(View view) {
 		// write on SD card file data in the text box
 		try {
@@ -559,7 +556,7 @@ FrequencySweepFragment.FrequencySweepListener{
 			// set checkNamedTextFile back to false to revert back to default naming scheme.
 			checkNamedTextFile = false;
 
-			File accelDataDir = new File(Environment.getExternalStorageDirectory() + "/Mime/");	
+			File accelDataDir = new File(Environment.getExternalStorageDirectory() + "/Biohm/");	
 
 			accelDataDir.mkdirs();			
 
@@ -573,9 +570,9 @@ FrequencySweepFragment.FrequencySweepListener{
 					fixedLengthString("X", 6) 
 					+ fixedLengthString("Y", 6)
 					+ fixedLengthString("Z", 6)
-					+ fixedLengthString("½", 7)
+					+ fixedLengthString("Î©", 7)
+					+ fixedLengthString("Î˜", 6)
 					+ "\n");
-
 			for (int i = 0; i < textFile.size(); i++) {
 				myOutWriter.append(textFile.get(i));
 				myOutWriter.append("\n");
@@ -672,7 +669,7 @@ FrequencySweepFragment.FrequencySweepListener{
 
 			// Loops through available Characteristics.
 			for (BluetoothGattCharacteristic gattCharacteristic : gattCharacteristics) {
-				
+
 				if ((gattCharacteristic.getProperties() & BluetoothGattCharacteristic.PROPERTY_NOTIFY) > 0) {
 					mNotifyCharacteristic = gattCharacteristic;			
 				}
@@ -792,16 +789,29 @@ FrequencySweepFragment.FrequencySweepListener{
 		String[] freqValuesString;
 		freqValuesString = frequencySweepDialog.getValue();
 		try {
-			upperFreq = (byte) (Integer.parseInt(freqValuesString[0]));
+			startFreq = (byte) (Integer.parseInt(freqValuesString[0]));
 			stepSize = (byte) (Integer.parseInt(freqValuesString[1]));
-			lowerFreq = (byte) (Integer.parseInt(freqValuesString[2]));
-			byte[] freqValuesByte = {upperFreq, stepSize, lowerFreq}; 
+			numOfIncrements = (byte) (Integer.parseInt(freqValuesString[2]));
+			if(startFreq + (stepSize * numOfIncrements) > 100) {
+				throw new IllegalArgumentException();
+			}
+			byte[] freqValuesByte = {startFreq, stepSize, numOfIncrements}; 
 			Toast.makeText(this, R.string.freq_sweep_enabled, Toast.LENGTH_SHORT).show();
 			mBluetoothLeService.writeCharacteristicArray(mACFrequencyCharacteristic, freqValuesByte);
 		}
 		catch (Exception e) {
-			Toast.makeText(this, R.string.set_fail, Toast.LENGTH_SHORT).show();
+			if(e instanceof IllegalArgumentException){
+				Toast.makeText(this, R.string.check_value, Toast.LENGTH_SHORT).show();
+			}
+			else {
+				Toast.makeText(this, R.string.set_fail, Toast.LENGTH_SHORT).show();
+			}
 		}
+	}
+
+	@Override
+	public void onDialogNeutralClickFrequencySweep(DialogFragment dialog) {
+		Toast.makeText(this, R.string.cancelled, Toast.LENGTH_SHORT).show();
 	}
 
 	@Override
@@ -810,16 +820,25 @@ FrequencySweepFragment.FrequencySweepListener{
 		String[] freqValuesString;
 		freqValuesString = frequencySweepDialog.getValue();
 		try {
-			upperFreq = (byte) (Integer.parseInt(freqValuesString[0]));
+			startFreq = (byte) (Integer.parseInt(freqValuesString[0]));
 			stepSize = (byte) (Integer.parseInt(freqValuesString[1]));
-			lowerFreq = (byte) (Integer.parseInt(freqValuesString[2]));
-			byte[] freqValuesByte = {upperFreq, stepSize, lowerFreq}; 
+			numOfIncrements = (byte) (Integer.parseInt(freqValuesString[2]));
+			if(startFreq == 0) {
+				throw new IllegalArgumentException();
+			}
+			byte[] freqValuesByte = {startFreq, stepSize, numOfIncrements}; 
 			Toast.makeText(this, R.string.freq_sweep_disabled, Toast.LENGTH_SHORT).show();
 			mBluetoothLeService.writeCharacteristicArray(mACFrequencyCharacteristic, freqValuesByte);
 		}
 		catch (Exception e) {
-			Toast.makeText(this, R.string.set_fail, Toast.LENGTH_SHORT).show();
+			if(e instanceof IllegalArgumentException) {
+				Toast.makeText(this, R.string.no_zero, Toast.LENGTH_SHORT).show();
+			}
+			else {
+				Toast.makeText(this, R.string.set_fail, Toast.LENGTH_SHORT).show();
+			}
 		}
+
 	}
 
 	/* Checks if external storage is available for read and write */

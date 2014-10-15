@@ -16,9 +16,9 @@ public class FrequencySweepFragment extends DialogFragment{
 
 	public boolean selection = false;
 	public String[] value = {"0", "0", "0"};
-	EditText upperFreq;
-	EditText lowerFreq;
+	EditText startFreq;
 	EditText stepSize;
+	EditText numOfIncrements;
 
 
 	@Override
@@ -30,13 +30,13 @@ public class FrequencySweepFragment extends DialogFragment{
 		LayoutInflater inflater = getActivity().getLayoutInflater();
 		View view = inflater.inflate(R.layout.set_frequency_sweep, null);
 
-		upperFreq = (EditText) view.findViewById(R.id.set_upper_freq);
+		startFreq = (EditText) view.findViewById(R.id.set_upper_freq);
 		stepSize = (EditText) view.findViewById(R.id.set_step_size);
-		lowerFreq = (EditText) view.findViewById(R.id.set_lower_freq);
+		numOfIncrements = (EditText) view.findViewById(R.id.set_lower_freq);
 
-		value[0] = upperFreq.getText().toString();
+		value[0] = startFreq.getText().toString();
 		value[1] = stepSize.getText().toString();
-		value[2] = lowerFreq.getText().toString();
+		value[2] = numOfIncrements.getText().toString();
 
 
 		// Inflate and set the layout for the dialog
@@ -49,16 +49,23 @@ public class FrequencySweepFragment extends DialogFragment{
 			public void onClick(DialogInterface dialog, int id) {
 				// Get new value for sample rate
 
-				value[0] = upperFreq.getText().toString();
+				value[0] = startFreq.getText().toString();
 				value[1] = stepSize.getText().toString();
-				value[2] = lowerFreq.getText().toString();			
+				value[2] = numOfIncrements.getText().toString();			
 				selection = true;
 				mListener.onDialogPositiveClickFrequencySweep(FrequencySweepFragment.this);
 			}
 		})
+		.setNeutralButton(R.string.cancel, new DialogInterface.OnClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int id) {			
+				selection = true;
+				mListener.onDialogNeutralClickFrequencySweep(FrequencySweepFragment.this);
+			}
+		})
 		.setNegativeButton(R.string.disable, new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int id) {
-				value[0] = upperFreq.getText().toString();
+				value[0] = startFreq.getText().toString();
 				value[1] = "0";
 				value[2] = "0";
 				mListener.onDialogNegativeClickFrequencySweep(FrequencySweepFragment.this);
@@ -72,6 +79,7 @@ public class FrequencySweepFragment extends DialogFragment{
 	public interface FrequencySweepListener {
 		public void onDialogPositiveClickFrequencySweep(DialogFragment dialog);
 		public void onDialogNegativeClickFrequencySweep(DialogFragment dialog);
+		public void onDialogNeutralClickFrequencySweep(DialogFragment dialog);
 	}
 
 	// Use this instance of the interface to deliver action events

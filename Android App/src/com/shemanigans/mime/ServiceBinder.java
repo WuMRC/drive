@@ -39,7 +39,7 @@ public class ServiceBinder extends Service {
 	private int j = 0;
 	private int k = 0;
 	Calendar c = Calendar.getInstance();
-	private File DataDir = new File(Environment.getExternalStorageDirectory() + "/Mime/");
+	private File DataDir = new File(Environment.getExternalStorageDirectory() + "/Biohm/");
 	private File duodecimalMinute = new File(DataDir, "duodecimalMinute.txt");
 	private File monoHour  = new File(DataDir, "monoHour.txt");
 
@@ -47,10 +47,10 @@ public class ServiceBinder extends Service {
 	private final String LIST_UUID = "UUID";
 
 	private BluetoothLeService mBluetoothLeService;
-	
+
 	private ArrayList<ArrayList<BluetoothGattCharacteristic>> mGattCharacteristics =
 			new ArrayList<ArrayList<BluetoothGattCharacteristic>>();
-	
+
 	private BluetoothGattCharacteristic mSampleRateCharacteristic;
 	private BluetoothGattCharacteristic mACFrequencyCharacteristic;
 
@@ -77,12 +77,12 @@ public class ServiceBinder extends Service {
 		@Override
 		public void onReceive(Context context, Intent intent) {
 			final String action = intent.getAction();
-			
+
 			if (BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED.equals(action)) {
 				// Show all the supported services and characteristics on the user interface.
 				getGattServices(mBluetoothLeService.getSupportedGattServices());
 			} 
-			
+
 			else if (BluetoothLeService.ACTION_DATA_AVAILABLE_BIOIMPEDANCE.equals(action)) {
 				values = intent.getDoubleArrayExtra(BluetoothLeService.EXTRA_DATA_BIOIMPEDANCE_DOUBLE);
 				data = intent.getStringExtra(BluetoothLeService.EXTRA_DATA_BIOIMPEDANCE_STRING);
@@ -311,7 +311,8 @@ public class ServiceBinder extends Service {
 		return 	fixedLengthString("X", 6) 
 				+ fixedLengthString("Y", 6)
 				+ fixedLengthString("Z", 6)
-				+ fixedLengthString("Imp.", 7)
+				+ fixedLengthString("Ω", 7)
+				+ fixedLengthString("θ", 6)
 				+ "\n";
 	}
 
@@ -322,11 +323,11 @@ public class ServiceBinder extends Service {
 	public void writeSampleRateCharacteristic(int value) {
 		mBluetoothLeService.writeCharacteristic(mSampleRateCharacteristic, value);
 	}
-	
+
 	public void writeFrequencySweepCharacteristic(byte[] values) {
 		mBluetoothLeService.writeCharacteristicArray(mACFrequencyCharacteristic, values);
 	}
-	
+
 	private boolean findCharacteristic(String characteristicUUID, String referenceUUID) {
 		byte[]characteristic;
 		byte[] reference;
@@ -344,7 +345,7 @@ public class ServiceBinder extends Service {
 		}
 		return check;
 	}
-	
+
 	private void getGattServices(List<BluetoothGattService> gattServices) {
 		if (gattServices == null) return;
 		String uuid = null;

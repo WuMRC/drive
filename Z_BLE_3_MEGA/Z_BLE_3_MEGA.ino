@@ -102,7 +102,7 @@ volatile boolean writer = false;  // Variable that toggles notifications to phon
 
 boolean notifier = false; // Variable to manage sample rate. Managed from interrupt context.
 
-uint8_t A[8] = {1, 2, 3, 4, 5, 6, 7, 8}; // Unsigned integer array to carry data to phone
+uint8_t A[9] = {1, 2, 3, 4, 5, 6, 7, 8, 9}; // Unsigned integer array to carry data to phone
 
 long sampleRate = 0; // Android app sample Rate
 
@@ -243,12 +243,6 @@ void loop() {
   AD5933.getComplexOnce(gain_factor, rComp, iComp, Z_Value);
   phaseAngle = atan2(iComp, rComp);
     
-  /*Serial.print(phaseAngle);
-  Serial.print("\t");
-  Serial.print("\t");
-  Serial.print(Z_Value);
-  Serial.println();*/    
-
   // For BLE
   // =================================================== 
   
@@ -258,7 +252,6 @@ void loop() {
   }  
   // Check if GATT Client (Smartphone) is subscribed to notifications.
   if (writer == true) {  
-    //Simple way of changinging frequency of notifications. see documentation on WuMRC Github or tunji.com/blog for more details on this.
     A[0] = (100 * sin((pseudo*3.14)/180));
     A[1] = (100 * cos((pseudo*3.14)/180));
     A[2] = (0);
@@ -267,14 +260,23 @@ void loop() {
         A[3] = 0;
         A[4] = 0;
         A[5] = 0;
+        A[6] = 0;
+        A[7] = 0;
       }
       else {
         Z_Value *= 1000;
-        changeZ_Value((long) Z_Value, phaseAngle, A);
-      }      
+        phaseAngle *= 100;
+        changeZ_Value((long) Z_Value, (long) phaseAngle, A);
+        /*Serial.print(A[6]);
+        Serial.print("\t");
+        Serial.print(A[7]);
+        Serial.print("\t");
+        Serial.print(phaseAngle);
+        Serial.println();*/
+      }     
 
       //Write notification to characteristic on ble112. Causes notification to be sent.
-      ble112.ble_cmd_attributes_write(GATT_HANDLE_C_BIOIMPEDANCE_DATA, 0, 6 , A);
+      ble112.ble_cmd_attributes_write(GATT_HANDLE_C_BIOIMPEDANCE_DATA, 0, 8 , A);
       writer = false;     
   }   
   else {
@@ -609,12 +611,21 @@ void notify() {
   }  
 }
 
-void changeZ_Value(long magnitude, double phaseAng, uint8_t *values) {
+void changeZ_Value(long magnitude, long phaseAng, uint8_t *values) {
   //values[3] = ((getNthDigit(val, 10, 6) * 10) + getNthDigit(val, 10, 5));
   //values[4] = ((getNthDigit(val, 10, 4) * 10) + getNthDigit(val, 10, 3));
   //values[5] = ((getNthDigit(val, 10, 2) * 10) + getNthDigit(val, 10, 1));
-  values[7] = ((int) (phaseAng * 100)) % 100;
-  values[6] = (int) phaseAng;
+  if(phaseAng > 0) {
+  values[7] = phaseAng % 100;
+  phaseAng /= 100;
+  values[6] = phaseAng;
+  }
+  else {
+  phaseAng *= -1;
+  values[7] = -1 * (phaseAng % 100);
+  phaseAng /= 100;
+  values[6] = phaseAng;  
+  }  
   values[5] = magnitude % 100;
   magnitude /= 100;
   values[4] = magnitude % 100;

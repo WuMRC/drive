@@ -161,40 +161,52 @@ public class BluetoothLeService extends Service {
 			if (data != null && data.length > 0) {
 				final StringBuilder stringBuilder = new StringBuilder(data.length);
 				final StringBuilder impVal = new StringBuilder(data.length);
+				final StringBuilder freq = new StringBuilder(data.length);
+				int phaseAngleUnit = 0;
+				int phaseAngleDecimal = 0;
+				double phaseAngleWhole = 0;
 				int c = 0;
 				for(byte byteChar : data) {
 
 					if(c <= 2) {
-						Z_BLE[c] = Integer.parseInt(String.valueOf(byteChar));
+						Z_BLE[c] = byteChar;
 						stringBuilder.append(fixedLengthString(String.valueOf(byteChar), 6));
-						//stringBuilder.append(String.format("%1$6s", String.valueOf(byteChar)));
 					}
-					else {
-						if(c == 3) {
-							//stringBuilder.append(String.format("%1$3s", "|"));
-							if(String.valueOf(byteChar).length() == 1) {
-								impVal.append("0" + String.valueOf(byteChar));
-							}
-							else {
-								impVal.append(String.valueOf(byteChar));
-							}						
+					if(c > 2 && c <= 5) {
+						if(String.valueOf(byteChar).length() == 1) {
+							impVal.append("0" + String.valueOf(byteChar));
 						}
 						else {
-							if(String.valueOf(byteChar).length() == 1) {
-								impVal.append("0" + String.valueOf(byteChar));
-							}
-							else {
-								impVal.append(String.valueOf(byteChar));
-							}
-						}
+							impVal.append(String.valueOf(byteChar));
+						}							
+					}
+					if(c == 6) {
+						phaseAngleUnit = byteChar;
+					}
+					if(c == 7) {
+						phaseAngleDecimal = byteChar;
+					}
+					if(c > 7) {
+						freq.append(String.valueOf(byteChar));
 					}
 					c++;
 				}
 				c = 0;
+				if(phaseAngleDecimal > 0) {
+					phaseAngleWhole = (phaseAngleUnit * 100);
+					phaseAngleWhole += phaseAngleDecimal;
+					phaseAngleWhole /= 100;
+				}
+				else {
+					phaseAngleWhole = (phaseAngleUnit * 100);
+					phaseAngleWhole += Math.abs(phaseAngleDecimal);
+					phaseAngleWhole /= -100;
+				}
 				double actualVal = Double.parseDouble(impVal.toString());
 				actualVal = actualVal / 1000;
 				Z_BLE[3] = actualVal;
 				stringBuilder.append(fixedLengthString(String.valueOf(actualVal), 7));
+				stringBuilder.append(fixedLengthString(String.valueOf(phaseAngleWhole), 6));
 				intent.putExtra(EXTRA_DATA_BIOIMPEDANCE_STRING, new String(stringBuilder.toString()));
 				intent.putExtra(EXTRA_DATA_BIOIMPEDANCE_DOUBLE, Z_BLE);
 			}
@@ -347,7 +359,7 @@ public class BluetoothLeService extends Service {
 		}
 		mBluetoothGatt.readCharacteristic(characteristic);
 	}
-	
+
 	public void writeCharacteristic(BluetoothGattCharacteristic characteristic, int value) {
 		if (mBluetoothAdapter == null || mBluetoothGatt == null) {
 			Log.w(TAG, "BluetoothAdapter not initialized");
@@ -356,7 +368,7 @@ public class BluetoothLeService extends Service {
 		characteristic.setValue(value, BluetoothGattCharacteristic.FORMAT_UINT8, 0);
 		mBluetoothGatt.writeCharacteristic(characteristic);
 	}
-	
+
 	public void writeCharacteristicArray(BluetoothGattCharacteristic characteristic, byte[] values) {
 		if (mBluetoothAdapter == null || mBluetoothGatt == null) {
 			Log.w(TAG, "BluetoothAdapter not initialized");
