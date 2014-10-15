@@ -219,7 +219,7 @@ void loop() {
 
   double Z_value = gain_factor/AD5933.getMagOnce();
   
-  s = (long)((Z_value * 100000) + 0.5);
+  //s = (long)((Z_value * 100000) + 0.5);
 
 
   // For BLE

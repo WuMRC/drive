@@ -1,14 +1,7 @@
-// Accelerometer demo sketch for TinyDuino
 // Based onBluegiga BGLib Arduino interface library slave device stub sketch
-// and accelerometer demo from TinyCitcuits 
-// 2013-06-30 by Ken Burns, TinyCircuits http://Tiny-Circuits.com
 // 2014-02-12 by Jeff Rowberg <jeff@rowberg.net>
 // 2014-07-13 modified by Adetunji Dahunsi <tunjid.com>
-// Updates should (hopefully) always be available at https://github.com/jrowberg/bglib
-// 
-
-// Changelog:
-//      2014-06-13 - Initial release
+// Updates should (hopefully) always be available at https://github.com/WuMRC
 
 /* ============================================
  !!!!!!!!!!!!!!!!!
@@ -85,16 +78,19 @@ double gain_factor = 0;
                              //resistance. These are used to get an average gain
                              //factor.
                              
-double Z_value = 0;          // Initialize impedance magnitude
+double Z_Value = 0;          // Initialize impedance magnitude
 
-uint8_t upperFreq = 0;       // Upper value for frequency sweep, or single value of frequency
-                             // when frequency sweep is off.
+double rComp = 0;            // Initialize real component value
+
+double iComp = 0;            // Initialize imaginary component value
+
+double phaseAngle = 0;       // Initialize phase angle value
+
+uint8_t startFreq = 0;       // Start frequency
                        
-uint8_t stepSize = 0;        // frequency step size between upp and lower values.
+uint8_t stepSize = 0;        // frequency step size between consecutive values.
 
-uint8_t lowerFreq = 0;       // Lower value of frequency sweep.
-
-long rComp;
+uint8_t numOfIncrements = 0;       // Number of frequency increments.
 
 // ================================================================
 // General variables
@@ -106,7 +102,7 @@ volatile boolean writer = false;  // Variable that toggles notifications to phon
 
 boolean notifier = false; // Variable to manage sample rate. Managed from interrupt context.
 
-uint8_t A[6] = {1, 2, 3, 4, 5, 6}; // Unsigned integer array to carry data to phone
+uint8_t A[8] = {1, 2, 3, 4, 5, 6, 7, 8}; // Unsigned integer array to carry data to phone
 
 long sampleRate = 0; // Android app sample Rate
 
@@ -238,35 +234,24 @@ void setup() {
 void loop() {
   // keep polling for new data from BLE  
   ble112.checkActivity();
-  //Serial.println(millis());
   
   // For Z_Logger
   // =================================================== 
 
   AD5933.tempUpdate();
   AD5933.setCtrMode(REPEAT_FREQ);
-  Z_value = gain_factor/AD5933.getMagOnce();  
+  AD5933.getComplexOnce(gain_factor, rComp, iComp, Z_Value);
+  phaseAngle = atan2(iComp, rComp);
+    
+  /*Serial.print(phaseAngle);
+  Serial.print("\t");
+  Serial.print("\t");
+  Serial.print(Z_Value);
+  Serial.println();*/    
 
   // For BLE
   // =================================================== 
   
-  rComp = (long)((Z_value * 1000) + 0.5);
-  /*
-  // check for input from the user
-  if (Serial.available()) {
-    uint8_t ch = Serial.read();
-    uint8_t status;
-    if (ch == '0') {
-      // Reset BLE112 module
-      Serial.println("-->\tsystem_reset: { boot_in_dfu: 0 }");
-      ble112.ble_cmd_system_reset(0);
-      while ((status = ble112.checkActivity(1000)));
-      // system_reset doesn't have a response, but this BGLib
-      // implementation allows the system_boot event specially to
-      // set the "busy" flag to false for this particular case
-    }
-  } */
-
   pseudo = pseudo + 1;
   if(pseudo >= 180) {
     pseudo = -180;
@@ -278,13 +263,14 @@ void loop() {
     A[1] = (100 * cos((pseudo*3.14)/180));
     A[2] = (0);
 
-      if(((Z_value - 554.72) > -3 && (Z_value - 554.72) < 3) || ((Z_value - 554.72) > 500)) {
+      if(((Z_Value - 554.72) > -3 && (Z_Value - 554.72) < 3) || ((Z_Value - 554.72) > 500)) {
         A[3] = 0;
         A[4] = 0;
         A[5] = 0;
       }
       else {
-        changeVal(rComp, A);
+        Z_Value *= 1000;
+        changeZ_Value((long) Z_Value, phaseAngle, A);
       }      
 
       //Write notification to characteristic on ble112. Causes notification to be sent.
@@ -572,19 +558,19 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
   }
   // check for data written to "c_ac_freq" handle  
   if (msg -> handle == GATT_HANDLE_C_AC_FREQ && msg -> value.len > 0) {
-    upperFreq = msg -> value.data[0];
+    startFreq = msg -> value.data[0];
     stepSize = msg -> value.data[1];  
-    lowerFreq = msg -> value.data[2];  
+    numOfIncrements = msg -> value.data[2];  
     Serial.print("Sucessful write attempt to c_ac_freq.");
     Serial.println();      
-    Serial.print("Upper Frequency (KHz): ");  
-    Serial.print(upperFreq);
+    Serial.print("Start Frequency (KHz): ");  
+    Serial.print(startFreq);
     Serial.println();    
     Serial.print("Step size (KHz): ");    
     Serial.print(stepSize);
     Serial.println();    
-    Serial.print("Lower Frequency (KHz): ");    
-    Serial.print(lowerFreq);  
+    Serial.print("Number of Increments: ");    
+    Serial.print(numOfIncrements);  
     Serial.println();    
   }  
 }
@@ -623,18 +609,25 @@ void notify() {
   }  
 }
 
-void changeVal(long val, uint8_t *values) {
-  values[3] = ((getNthDigit(val, 10, 6) * 10) + getNthDigit(val, 10, 5));
-  values[4] = ((getNthDigit(val, 10, 4) * 10) + getNthDigit(val, 10, 3));
-  values[5] = ((getNthDigit(val, 10, 2) * 10) + getNthDigit(val, 10, 1));
+void changeZ_Value(long magnitude, double phaseAng, uint8_t *values) {
+  //values[3] = ((getNthDigit(val, 10, 6) * 10) + getNthDigit(val, 10, 5));
+  //values[4] = ((getNthDigit(val, 10, 4) * 10) + getNthDigit(val, 10, 3));
+  //values[5] = ((getNthDigit(val, 10, 2) * 10) + getNthDigit(val, 10, 1));
+  values[7] = ((int) (phaseAng * 100)) % 100;
+  values[6] = (int) phaseAng;
+  values[5] = magnitude % 100;
+  magnitude /= 100;
+  values[4] = magnitude % 100;
+  magnitude /= 100;
+  values[3] = magnitude % 100;
 }
 
-long getNthDigit(long number, int base, int n) {
+/*long getNthDigit(long number, int base, int n) {
   long answer = 0;
   answer = (long) (number / pow(base, n - 1));
   answer = answer % base;
   return answer;
-}
+}*/
 
 
 
