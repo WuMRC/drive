@@ -56,38 +56,51 @@
 // For Z_Logger
 // ================================================================
 
-double gain_factor = 0;
-
 #define TWI_FREQ 400000L     // Setting TWI/I2C Frequency to 400MHz.
 
 #define cycles_base 300      //First term to set a number of cycles to ignore
-                             //to dissipate transients before a measurement is
-                             //taken. The max value for this is 511.   
-                             
+//to dissipate transients before a measurement is
+//taken. The max value for this is 511.   
+
 #define cycles_multiplier 1  //Set a multiple for the cycles_base which
-                             //is used to calculate the desired number
-                             //of settling cycles. Values can be 1, 2, or 4.
-                             
+//is used to calculate the desired number
+//of settling cycles. Values can be 1, 2, or 4.
+
 #define start_frequency 50000 //Set the initial AC current frequency (KHz).
 
 #define cal_resistance 554.72 //Set a calibration resistance for the gain
-                              //factor. This will have to be measured before any
-                              //other measurements are performed.  
-                              
+//factor. This will have to be measured before any
+//other measurements are performed.  
+
 #define cal_samples 10       //Set a number of measurements to take of the calibration
-                             //resistance. These are used to get an average gain
-                             //factor.
-                             
+//resistance. These are used to get an average gain
+//factor.
+
+#define M_PI 3.14159265358979323846	// pi
+
+#define M_PI_2 1.57079632679489661923	// pi/2 
+
+#ifndef cbi
+#define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
+#endif
+#ifndef sbi
+#define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
+#endif 
+
+double gain_factor = 0;      // Initialize Gain factor
+
 double Z_Value = 0;          // Initialize impedance magnitude
 
 double rComp = 0;            // Initialize real component value
 
 double iComp = 0;            // Initialize imaginary component value
 
+double systemPhaseShift = 0;       // Initialize system phase shift value
+
 double phaseAngle = 0;       // Initialize phase angle value
 
 uint8_t startFreq = 0;       // Start frequency
-                       
+
 uint8_t stepSize = 0;        // frequency step size between consecutive values.
 
 uint8_t numOfIncrements = 0;       // Number of frequency increments.
@@ -102,7 +115,8 @@ volatile boolean writer = false;  // Variable that toggles notifications to phon
 
 boolean notifier = false; // Variable to manage sample rate. Managed from interrupt context.
 
-uint8_t A[9] = {1, 2, 3, 4, 5, 6, 7, 8, 9}; // Unsigned integer array to carry data to phone
+uint8_t A[9] = {
+  1, 2, 3, 4, 5, 6, 7, 8, 9}; // Unsigned integer array to carry data to phone
 
 long sampleRate = 0; // Android app sample Rate
 
@@ -144,7 +158,7 @@ uint8_t ble_bonding = 0xFF; // 0xFF = no bonding, otherwise = bonding handle
 // use SoftwareSerial on pins D8/D8 for RX/TX (Arduino side)
 
 //Serial1 bleSerialPort(19, 18); // change this to 3, 4 when using TinyDuino as pins cannot be changed to use
-                                   // AltSoftSerial
+// AltSoftSerial
 
 // create BGLib object:
 //  - use SoftwareSerial por for module comms
@@ -165,9 +179,11 @@ void setup() {
   // ================================================================
   // For Z_Logger
   // ================================================================
-  
-  TWBR = 1; 
+
+  //TWBR = 1; 
   Wire.begin();
+  cbi(TWSR, TWPS0);
+  cbi(TWSR, TWPS1);
   AD5933.setExtClock(false);
   AD5933.resetAD5933();
   AD5933.setSettlingCycles(cycles_base,cycles_multiplier);
@@ -176,7 +192,7 @@ void setup() {
   AD5933.setVolPGA(0, 1);
   double temp = AD5933.getTemperature();
   gain_factor = AD5933.getGainFactor(cal_resistance, cal_samples, false);
-  
+
   // ================================================================
   // For General elements
   // ================================================================
@@ -184,7 +200,7 @@ void setup() {
   // initialize status LED
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, LOW);
-  
+
   // initialize BLE reset pin (active-low)
   pinMode(BLE_RESET_PIN, OUTPUT);
   digitalWrite(BLE_RESET_PIN, HIGH);
@@ -216,12 +232,17 @@ void setup() {
   Serial1.begin(38400);
 
   my_ble_evt_system_boot(NULL);
-  
+
   // reset module (maybe not necessary for your application)
   digitalWrite(BLE_RESET_PIN, LOW);
   delay(5); // wait 5ms
   digitalWrite(BLE_RESET_PIN, HIGH);
-  
+
+  AD5933.getComplexOnce(gain_factor, rComp, iComp, Z_Value);
+  systemPhaseShift = returnStandardPhaseAngle(atan2(iComp, rComp));
+    Serial.print(systemPhaseShift);
+  Serial.println();
+
   // Start with sampling rate of 50 hertz
   MsTimer2::set(20, notify); // 20 millisecond period -> 50 hertz frequency
   MsTimer2::start();
@@ -234,18 +255,27 @@ void setup() {
 void loop() {
   // keep polling for new data from BLE  
   ble112.checkActivity();
-  
+
   // For Z_Logger
   // =================================================== 
 
   AD5933.tempUpdate();
   AD5933.setCtrMode(REPEAT_FREQ);
   AD5933.getComplexOnce(gain_factor, rComp, iComp, Z_Value);
-  phaseAngle = atan2(iComp, rComp);
-    
+  phaseAngle = returnStandardPhaseAngle((atan2(iComp, rComp))) - systemPhaseShift;
+
+  Serial.print(rComp);
+  Serial.print("\t");
+  Serial.print(iComp);
+  Serial.print("\t");
+  Serial.print(Z_Value);
+  Serial.print("\t");
+  Serial.print(phaseAngle);
+  Serial.println();
+
   // For BLE
   // =================================================== 
-  
+
   pseudo = pseudo + 1;
   if(pseudo >= 180) {
     pseudo = -180;
@@ -256,28 +286,28 @@ void loop() {
     A[1] = (100 * cos((pseudo*3.14)/180));
     A[2] = (0);
 
-      if(((Z_Value - 554.72) > -3 && (Z_Value - 554.72) < 3) || ((Z_Value - 554.72) > 500)) {
-        A[3] = 0;
-        A[4] = 0;
-        A[5] = 0;
-        A[6] = 0;
-        A[7] = 0;
-      }
-      else {
-        Z_Value *= 1000;
-        phaseAngle *= 100;
-        changeZ_Value((long) Z_Value, (long) phaseAngle, A);
-        /*Serial.print(A[6]);
-        Serial.print("\t");
-        Serial.print(A[7]);
-        Serial.print("\t");
-        Serial.print(phaseAngle);
-        Serial.println();*/
-      }     
+    if(((Z_Value - 554.72) > -3 && (Z_Value - 554.72) < 3) || ((Z_Value - 554.72) > 500)) {        
+      A[3] = 0;
+      A[4] = 0;
+      A[5] = 0;
+      A[6] = 0;
+      A[7] = 0;
+    }
+    else {
+      Z_Value *= 1000;
+      phaseAngle *= 100;
+      changeZ_Value((long) Z_Value, (long) phaseAngle, A);
+      /*Serial.print(A[6]);
+       Serial.print("\t");
+       Serial.print(A[7]);
+       Serial.print("\t");
+       Serial.print(phaseAngle);
+       Serial.println();*/
+    }     
 
-      //Write notification to characteristic on ble112. Causes notification to be sent.
-      ble112.ble_cmd_attributes_write(GATT_HANDLE_C_BIOIMPEDANCE_DATA, 0, 8 , A);
-      writer = false;     
+    //Write notification to characteristic on ble112. Causes notification to be sent.
+    ble112.ble_cmd_attributes_write(GATT_HANDLE_C_BIOIMPEDANCE_DATA, 0, 8 , A);
+    writer = false;     
   }   
   else {
     // Do zilch, zip, nada, nothing if notifications are not enabled.
@@ -539,21 +569,21 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
     Serial.print(" / ");         
     Serial.print(sampleRate);
     Serial.print(" milliseconds.");   
-   
-   // Starting to change the settings of AD5933
+
+    // Starting to change the settings of AD5933
     MsTimer2::stop();
     AD5933.resetAD5933();
     int cycleBase = (int)(477.84 * pow(2.718,-0.017) );
-    
+
     AD5933.setSettlingCycles(cycles_base, cycles_multiplier);
     AD5933.tempUpdate();
     AD5933.setCtrMode(INIT_START_FREQ);
     AD5933.setCtrMode(START_FREQ_SWEEP);
     //gain_factor = AD5933.getGainFactor(cal_resistance, cal_samples, false);
     //AD5933.setCtrMode(REPEAT_FREQ);
-    
+
     // End changing process.
-    
+
     MsTimer2::set(sampleRate, notify);
     MsTimer2::start();
     Serial.println();
@@ -611,20 +641,35 @@ void notify() {
   }  
 }
 
+double returnStandardPhaseAngle(double angle) {
+
+  if(angle >= 0 && angle < M_PI_2) {    // 1st quadrant
+    angle = angle;
+  }
+  else if(angle >= M_PI_2 && angle < M_PI) {      // 2nd quadrant
+    angle = M_PI - angle;
+  }
+  else if(angle <= -1 * M_PI_2 && angle > -1 * M_PI) {      // 3rd quadrant
+    angle = angle + M_PI;
+  }
+  else if(angle <= 0 && angle > -1 * M_PI_2) {         // 4th quadrant
+    angle *=  -1;
+  }
+  return angle;
+}
+
 void changeZ_Value(long magnitude, long phaseAng, uint8_t *values) {
-  //values[3] = ((getNthDigit(val, 10, 6) * 10) + getNthDigit(val, 10, 5));
-  //values[4] = ((getNthDigit(val, 10, 4) * 10) + getNthDigit(val, 10, 3));
-  //values[5] = ((getNthDigit(val, 10, 2) * 10) + getNthDigit(val, 10, 1));
+
   if(phaseAng > 0) {
-  values[7] = phaseAng % 100;
-  phaseAng /= 100;
-  values[6] = phaseAng;
+    values[7] = phaseAng % 100;
+    phaseAng /= 100;
+    values[6] = phaseAng;
   }
   else {
-  phaseAng *= -1;
-  values[7] = -1 * (phaseAng % 100);
-  phaseAng /= 100;
-  values[6] = phaseAng;  
+    phaseAng *= -1;
+    values[7] = -1 * (phaseAng % 100);
+    phaseAng /= 100;
+    values[6] = phaseAng;  
   }  
   values[5] = magnitude % 100;
   magnitude /= 100;
@@ -634,11 +679,14 @@ void changeZ_Value(long magnitude, long phaseAng, uint8_t *values) {
 }
 
 /*long getNthDigit(long number, int base, int n) {
-  long answer = 0;
-  answer = (long) (number / pow(base, n - 1));
-  answer = answer % base;
-  return answer;
-}*/
+ long answer = 0;
+ answer = (long) (number / pow(base, n - 1));
+ answer = answer % base;
+ return answer;
+ }*/
 
+//values[3] = ((getNthDigit(val, 10, 6) * 10) + getNthDigit(val, 10, 5));
+//values[4] = ((getNthDigit(val, 10, 4) * 10) + getNthDigit(val, 10, 3));
+//values[5] = ((getNthDigit(val, 10, 2) * 10) + getNthDigit(val, 10, 1));
 
 
