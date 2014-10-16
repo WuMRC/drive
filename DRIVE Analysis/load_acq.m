@@ -85,7 +85,7 @@ function acq = load_acq(filename, chan_by_chan)
       end
    end
 
-   fprintf('Loading %s ', filename);
+%    fprintf('Loading %s ', filename);
 
    %  read header
    %
@@ -103,7 +103,7 @@ function acq = load_acq(filename, chan_by_chan)
 
    fclose(fid);
 
-   fprintf(' Done!\n');
+%    fprintf(' Done!\n');
 
    return;					% load_acq
 
@@ -387,9 +387,9 @@ function data = read_acq(fid, hdr, chan_by_chan)
 
       half_chan = round(hdr.graph.num_channels/2);
 
-      for i = 1:half_chan
-         fprintf('.');
-      end
+%       for i = 1:half_chan
+%          fprintf('.');
+%       end
 
       if hdr.per_chan_type(i).type == 1			% double
 
@@ -402,9 +402,9 @@ function data = read_acq(fid, hdr, chan_by_chan)
 		    + ones(min_len,1)*[hdr.per_chan_data.ampl_offset];
       end
 
-      for i = 1:(hdr.graph.num_channels-half_chan)
-         fprintf('.');
-      end
+%       for i = 1:(hdr.graph.num_channels-half_chan)
+%          fprintf('.');
+%       end
 
    else				% if we have to do it chan_by_chan
 
@@ -424,7 +424,7 @@ function data = read_acq(fid, hdr, chan_by_chan)
 
          for i = 1:hdr.graph.num_channels
 
-            fprintf('.');
+%             fprintf('.');
             fseek(fid, start_real_chan, 'bof');
 
             %  First jump to the start point of the right channel
@@ -472,9 +472,9 @@ function data = read_acq(fid, hdr, chan_by_chan)
 
          for i = 1:min_len
 
-            if mod(i-1, ceil(min_len/hdr.graph.num_channels))==0
-               fprintf('.');
-            end
+%             if mod(i-1, ceil(min_len/hdr.graph.num_channels))==0
+%                fprintf('.');
+%             end
 
             for j = 1:hdr.graph.num_channels
                if mask(i,j) | sample_divider(j)==1
