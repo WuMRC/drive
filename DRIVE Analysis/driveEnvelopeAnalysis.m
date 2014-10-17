@@ -22,14 +22,15 @@ for indMarker = 5%:size(timeMarkerBioimpedance,2)-1;
     armRespROI = totalData(tBegin:tEnd,5);
     armCardROI = totalData(tBegin:tEnd,6);
     
-    interval = 200;
+    interval = 300;
+    interp = 'spline';
     
-    armROIEnv_top = envelope(time, armROI, 'top', interval);
-    armROIEnv_bot = envelope(time, armROI, 'bottom', interval);
-    armRespROIEnv_top = envelope(time, armRespROI, 'top', interval);
-    armRespROIEnv_bot = envelope(time, armRespROI, 'bottom', interval);
-    armCardROIEnv_top = envelope(time, armCardROI, 'top', interval);
-    armCardROIEnv_bot = envelope(time, armCardROI, 'bottom', interval);
+    armROIEnv_top = envelope(time, armROI, 'top', interval, interp);
+    armROIEnv_bot = envelope(time, armROI, 'bottom', interval, interp);
+    armRespROIEnv_top = envelope(time, armRespROI, 'top', interval, interp);
+    armRespROIEnv_bot = envelope(time, armRespROI, 'bottom', interval, interp);
+    armCardROIEnv_top = envelope(time, armCardROI, 'top', interval, interp);
+    armCardROIEnv_bot = envelope(time, armCardROI, 'bottom', interval, interp);
 
     
     figure
@@ -46,8 +47,30 @@ for indMarker = 5%:size(timeMarkerBioimpedance,2)-1;
 end
 
     
+%%
 
+for indMarker = 5%:size(timeMarkerBioimpedance,2)-1;    
+    % The time of the region of interest
+    tBegin = timeMarkers(indMarker)+Fs*offset;
+    tEnd = timeMarkers(indMarker)+Fs*totalTime;
+    
+    armROI = totalData(tBegin:tEnd,4);
+    armRespROI = totalData(tBegin:tEnd,5);
+    armCardROI = totalData(tBegin:tEnd,6);
+    
+    interval = 200;
+    
+%     armROIEnv_top = envelope(time, armROI, 'top', interval);
 
+    figure
+    plot(abs(hilbert(armCardROI)),'k')
+    hold on, plot(armCardROI,'r')
+    
+    figure
+    plot(abs(hilbert(armRespROI)),'k')
+    hold on, plot(armRespROI,'b')
+    
+end
 
     
 
