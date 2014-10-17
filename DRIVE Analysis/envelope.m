@@ -1,4 +1,4 @@
-function [dataEnv] = envelope(dataX, dataY, side, nPoints) 
+function [dataEnv] = envelope(dataX, dataY, side, nPoints, interp) 
 %ENVELOPE   Gets the envelope of a signal from a chosen side (top or bottom)
 %
 %   [dataEnv] = envelope(dataX, dataY, side, nPoints) returns the top or
@@ -36,4 +36,4 @@ while ind < dataLength;
     yNew = [yNew dataY(ind)];
 end;
 
-dataEnv = interp1( xNew, yNew, dataX, 'linear', 'extrap');
+dataEnv = interp1( xNew, yNew, dataX, interp, 'extrap');
