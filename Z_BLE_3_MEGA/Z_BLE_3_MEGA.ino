@@ -56,23 +56,23 @@
 // For Z_Logger
 // ================================================================
 
-#define TWI_FREQ 400000L     // Setting TWI/I2C Frequency to 400MHz.
+#define TWI_FREQ 400000L      // Setting TWI/I2C Frequency to 400MHz.
 
-#define cycles_base 300      //First term to set a number of cycles to ignore
+#define cycles_base 300       //First term to set a number of cycles to ignore
 //to dissipate transients before a measurement is
 //taken. The max value for this is 511.   
 
-#define cycles_multiplier 1  //Set a multiple for the cycles_base which
+#define cycles_multiplier 1    //Set a multiple for the cycles_base which
 //is used to calculate the desired number
 //of settling cycles. Values can be 1, 2, or 4.
 
-#define start_frequency 50000 //Set the initial AC current frequency (KHz).
+#define start_frequency 50000   //Set the initial AC current frequency (KHz).
 
-#define cal_resistance 554.72 //Set a calibration resistance for the gain
+#define cal_resistance 554.72  //Set a calibration resistance for the gain
 //factor. This will have to be measured before any
 //other measurements are performed.  
 
-#define cal_samples 10       //Set a number of measurements to take of the calibration
+#define cal_samples 10         //Set a number of measurements to take of the calibration
 //resistance. These are used to get an average gain
 //factor.
 
@@ -104,6 +104,7 @@ uint8_t startFreq = 0;       // Start frequency
 uint8_t stepSize = 0;        // frequency step size between consecutive values.
 
 uint8_t numOfIncrements = 0;       // Number of frequency increments.
+
 
 // ================================================================
 // General variables
@@ -240,7 +241,7 @@ void setup() {
 
   AD5933.getComplexOnce(gain_factor, rComp, iComp, Z_Value);
   systemPhaseShift = returnStandardPhaseAngle(atan2(iComp, rComp));
-    Serial.print(systemPhaseShift);
+  Serial.print(systemPhaseShift);
   Serial.println();
 
   // Start with sampling rate of 50 hertz
@@ -264,14 +265,14 @@ void loop() {
   AD5933.getComplexOnce(gain_factor, rComp, iComp, Z_Value);
   phaseAngle = returnStandardPhaseAngle((atan2(iComp, rComp))) - systemPhaseShift;
 
-  Serial.print(rComp);
-  Serial.print("\t");
-  Serial.print(iComp);
-  Serial.print("\t");
-  Serial.print(Z_Value);
-  Serial.print("\t");
-  Serial.print(phaseAngle);
-  Serial.println();
+  /*Serial.print(rComp);
+   Serial.print("\t");
+   Serial.print(iComp);
+   Serial.print("\t");
+   Serial.print(Z_Value);
+   Serial.print("\t");
+   Serial.print(phaseAngle);
+   Serial.println();*/
 
   // For BLE
   // =================================================== 
@@ -688,5 +689,6 @@ void changeZ_Value(long magnitude, long phaseAng, uint8_t *values) {
 //values[3] = ((getNthDigit(val, 10, 6) * 10) + getNthDigit(val, 10, 5));
 //values[4] = ((getNthDigit(val, 10, 4) * 10) + getNthDigit(val, 10, 3));
 //values[5] = ((getNthDigit(val, 10, 2) * 10) + getNthDigit(val, 10, 1));
+
 
 
