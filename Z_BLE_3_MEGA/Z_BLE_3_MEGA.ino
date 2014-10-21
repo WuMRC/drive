@@ -47,7 +47,7 @@
 #include <Math.h>
 #include "BGLib.h" // BGLib C library for BGAPI communication.
 #include "AD5933.h" //Library for AD5933 functions (must be installed)
-#include <MsTimer2.h> // Timer function for notifications
+#include <Micro40Timer.h> // Timer function for notifications
 
 // uncomment the following line for debug serial output
 #define DEBUG
@@ -245,8 +245,8 @@ void setup() {
   Serial.println();
 
   // Start with sampling rate of 50 hertz
-  MsTimer2::set(20, notify); // 20 millisecond period -> 50 hertz frequency
-  MsTimer2::start();
+  Micro40Timer::set(20000, notify); // 20000 microsecond period -> 50 hertz frequency
+  Micro40Timer::start();
 
 }
 
@@ -561,18 +561,18 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
   Serial.println(" }");
 #endif
 
-  // check for data written to "c_rx_data" handle
+  // check for data written to "c_sample_rate" handle
   if (msg -> handle == GATT_HANDLE_C_SAMPLE_RATE && msg -> value.len > 0) {
-    sampleRate = (long) (1000 / (msg -> value.data[0])); 
+    sampleRate = (long) (1000000 / (msg -> value.data[0])); 
     Serial.print("Sucessful write attempt; new frequency / period: ");
     Serial.print(msg -> value.data[0]);
     Serial.print(" hertz");
     Serial.print(" / ");         
     Serial.print(sampleRate);
-    Serial.print(" milliseconds.");   
+    Serial.print(" microseconds.");   
 
     // Starting to change the settings of AD5933
-    MsTimer2::stop();
+    Micro40Timer::stop();
     AD5933.resetAD5933();
     int cycleBase = (int)(477.84 * pow(2.718,-0.017) );
 
@@ -585,8 +585,8 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
 
     // End changing process.
 
-    MsTimer2::set(sampleRate, notify);
-    MsTimer2::start();
+    Micro40Timer::set(sampleRate, notify);
+    Micro40Timer::start();
     Serial.println();
   }
   // check for data written to "c_ac_freq" handle  
