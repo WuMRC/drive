@@ -71,7 +71,7 @@ FrequencySweepFragment.FrequencySweepListener{
 	private String mDeviceAddress;
 	private boolean mConnected = true;
 
-	private int sampleRate = 0;
+	private int sampleRate = 70;
 	private byte startFreq = 0;
 	private byte stepSize = 0;
 	private byte numOfIncrements = 0;
@@ -116,7 +116,6 @@ FrequencySweepFragment.FrequencySweepListener{
 				invalidateOptionsMenu();
 			} 
 			else if (BluetoothLeService.ACTION_DATA_AVAILABLE_BIOIMPEDANCE.equals(action)) {
-				//Log.i(TAG, intent.getStringExtra(BluetoothLeService.EXTRA_DATA_BIOIMPEDANCE_STRING));
 				values = intent.getDoubleArrayExtra(BluetoothLeService.EXTRA_DATA_BIOIMPEDANCE_DOUBLE);
 				textFile.add(intent.getStringExtra(BluetoothLeService.EXTRA_DATA_BIOIMPEDANCE_STRING));
 
@@ -125,7 +124,6 @@ FrequencySweepFragment.FrequencySweepListener{
 						getFragmentManager().findFragmentByTag(LIVE_DATA_TAG);
 				if (bioimpFragment != null) {
 					bioimpFragment.updatePlot(values);
-					//Log.i(TAG, String.valueOf(values[3]));
 				}
 			}
 		}
@@ -136,8 +134,13 @@ FrequencySweepFragment.FrequencySweepListener{
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_long_term);
 		Intent intent = getIntent();
+
 		mDeviceAddress = intent.getStringExtra(DeviceControlActivity.EXTRA_DEVICE_ADDRESS_BINDER);
 		mDeviceName = intent.getStringExtra(DeviceControlActivity.EXTRA_DEVICE_NAME_BINDER);
+		sampleRate = intent.getIntExtra(DeviceControlActivity.EXTRA_SAMPLE_RATE_BINDER, 10);
+		startFreq = intent.getByteExtra(DeviceControlActivity.EXTRA_START_FREQ_BINDER, (byte) 10);
+		stepSize = intent.getByteExtra(DeviceControlActivity.EXTRA_STEP_SIZE_BINDER, (byte) 10);
+		numOfIncrements = intent.getByteExtra(DeviceControlActivity.EXTRA_NUM_OF_INCREMENTS_BINDER, (byte) 10);
 
 		Intent BLE_Intent = new Intent(this, BluetoothLeService.class);
 		Intent ServiceBinderIntent = new Intent(this, ServiceBinder.class);
@@ -172,7 +175,6 @@ FrequencySweepFragment.FrequencySweepListener{
 
 	@Override
 	public void onNavigationDrawerItemSelected(int position) {
-		Log.i(TAG, String.valueOf(position));
 		// update the main content by replacing fragments
 		FragmentManager fragmentManager = getFragmentManager();
 		FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
@@ -432,6 +434,10 @@ FrequencySweepFragment.FrequencySweepListener{
 	public void setSampleRate() {
 		// Create an instance of the dialog fragment and show it
 		sampleRateDialog = new SampleRateFragment();
+		Bundle args = new Bundle();
+		args.putInt(DeviceControlActivity.EXTRA_SAMPLE_RATE_BINDER, sampleRate);
+		Log.i(TAG, "Sample rate passed to dialog: " + String.valueOf(sampleRate));
+		sampleRateDialog.setArguments(args);
 		sampleRateDialog.show(getFragmentManager(), "SampleRateFragment");
 	}
 
@@ -458,6 +464,11 @@ FrequencySweepFragment.FrequencySweepListener{
 	public void setFrequencySweep() {
 		// Create an instance of the dialog fragment and show it
 		frequencySweepDialog = new FrequencySweepFragment();
+		Bundle args = new Bundle();
+		args.putString(DeviceControlActivity.EXTRA_START_FREQ_BINDER, Byte.toString(startFreq));
+		args.putString(DeviceControlActivity.EXTRA_STEP_SIZE_BINDER, Byte.toString(stepSize));
+		args.putString(DeviceControlActivity.EXTRA_NUM_OF_INCREMENTS_BINDER, Byte.toString(numOfIncrements));
+		frequencySweepDialog.setArguments(args);
 		frequencySweepDialog.show(getFragmentManager(), "FrequencySweepFragment");
 	}
 

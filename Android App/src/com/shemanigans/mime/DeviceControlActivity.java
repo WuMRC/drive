@@ -63,8 +63,12 @@ FrequencySweepFragment.FrequencySweepListener{
 	public static final String EXTRAS_DEVICE_NAME = "DEVICE_NAME";
 	public static final String EXTRAS_DEVICE_ADDRESS = "DEVICE_ADDRESS";
 
-	public static final String EXTRA_DEVICE_NAME_BINDER = "com.example.bluetooth.le.EXTRA_DEVICE_NAME_BINDER";
-	public static final String EXTRA_DEVICE_ADDRESS_BINDER = "com.example.bluetooth.le.EXTRA_DEVICE_ADDRESS_BINDER";
+	public static final String EXTRA_DEVICE_NAME_BINDER = "DEVICE_NAME_BINDER";
+	public static final String EXTRA_DEVICE_ADDRESS_BINDER = "DEVICE_ADDRESS_BINDER";
+	public static final String EXTRA_SAMPLE_RATE_BINDER = "SAMPLE_RATE_BINDER";
+	public static final String EXTRA_START_FREQ_BINDER = "START_FREQ_BINDER";
+	public static final String EXTRA_STEP_SIZE_BINDER = "STEP_SIZE_BINDER";
+	public static final String EXTRA_NUM_OF_INCREMENTS_BINDER = "NUM_OF_INCREMENTS_BINDER";
 	//public final static String EXTRA_MESSAGE = "EXPORT_TO_TEXT";
 
 	private TextView mConnectionState;
@@ -85,10 +89,15 @@ FrequencySweepFragment.FrequencySweepListener{
 	private Calendar c = Calendar.getInstance();
 	private boolean checkNamedTextFile = false;
 	private double[] imp = {1, 2, 3, 4};
-	private int sampleRate = 0;
+	private int sampleRate = 50;
 	private byte startFreq = 0;
 	private byte stepSize = 0;
 	private byte numOfIncrements = 0;
+
+	private Intent serviceIntent; 
+	private Intent activityIntent;
+	private PendingIntent activityPendingIntent;
+	private Notification notification;
 
 	// Graph variables
 
@@ -160,6 +169,7 @@ FrequencySweepFragment.FrequencySweepListener{
 				Switch enableNotifications = (Switch) findViewById(R.id.enable_notifications);
 				enableNotifications.setChecked(false);
 				enableNotifications.setClickable(false);
+				mBluetoothLeService.stopForeground(true);
 				invalidateOptionsMenu();
 				clearUI();
 			} 
@@ -483,27 +493,7 @@ FrequencySweepFragment.FrequencySweepListener{
 		// Turn on notifications.
 		else {
 			//ic_action_name.png
-			Intent intent = new Intent(this, ServiceBinder.class);
-			intent.putExtra(EXTRA_DEVICE_ADDRESS_BINDER, mDeviceAddress);
-			intent.putExtra(EXTRA_DEVICE_NAME_BINDER, mDeviceName);
-			startService(intent);
-
-			Notification notification = new Notification(R.drawable.ic_notification, getText(R.string.sampling_data),System.currentTimeMillis());
-			Intent notificationIntent = new Intent(this, LongTerm.class);
-			notificationIntent.putExtra(EXTRA_DEVICE_ADDRESS_BINDER, mDeviceAddress);
-			notificationIntent.putExtra(EXTRA_DEVICE_NAME_BINDER, mDeviceName);
-			PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_CANCEL_CURRENT);
-			notification.setLatestEventInfo(this, getText(R.string.sampling_data), getText(R.string.connected), pendingIntent);
-
-			mBluetoothLeService.startForeground(ONGOING_NOTIFICATION_ID, notification);
-
-			com.androidplot.xy.XYPlot data = (com.androidplot.xy.XYPlot) findViewById(R.id.bioimpedancePlot);
-			data.setVisibility(View.VISIBLE);
-
-			RelativeLayout buttons = (RelativeLayout) findViewById(R.id.buttons);
-			buttons.setVisibility(View.VISIBLE);
-
-			mBluetoothLeService.setCharacteristicNotification(mNotifyCharacteristic, true);			
+			updateNotifications(serviceIntent, activityIntent, activityPendingIntent, notification);		
 		}
 	}
 
@@ -517,27 +507,7 @@ FrequencySweepFragment.FrequencySweepListener{
 		View start_bar = (View) findViewById(R.id.begin_bar);
 		start_bar.setVisibility(View.GONE);
 
-		Intent intent = new Intent(this, ServiceBinder.class);
-		intent.putExtra(EXTRA_DEVICE_ADDRESS_BINDER, mDeviceAddress);
-		intent.putExtra(EXTRA_DEVICE_NAME_BINDER, mDeviceName);
-		startService(intent);
-
-		Notification notification = new Notification(R.drawable.ic_notification, getText(R.string.sampling_data),System.currentTimeMillis());
-		Intent notificationIntent = new Intent(this, LongTerm.class);
-		notificationIntent.putExtra(EXTRA_DEVICE_ADDRESS_BINDER, mDeviceAddress);
-		notificationIntent.putExtra(EXTRA_DEVICE_NAME_BINDER, mDeviceName);
-		PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_CANCEL_CURRENT);
-		notification.setLatestEventInfo(this, getText(R.string.sampling_data), getText(R.string.connected), pendingIntent);
-
-		mBluetoothLeService.startForeground(ONGOING_NOTIFICATION_ID, notification);
-
-		com.androidplot.xy.XYPlot data = (com.androidplot.xy.XYPlot) findViewById(R.id.bioimpedancePlot);
-		data.setVisibility(View.VISIBLE);
-
-		RelativeLayout buttons = (RelativeLayout) findViewById(R.id.buttons);
-		buttons.setVisibility(View.VISIBLE);
-
-		mBluetoothLeService.setCharacteristicNotification(mNotifyCharacteristic, true);		
+		updateNotifications(serviceIntent, activityIntent, activityPendingIntent, notification);	
 	}
 
 	public void exportToText(View view) {
@@ -678,12 +648,10 @@ FrequencySweepFragment.FrequencySweepListener{
 					if(findCharacteristic(gattCharacteristic.getUuid().toString(), 
 							SampleGattAttributes.SAMPLE_RATE)) {
 						mSampleRateCharacteristic = gattCharacteristic;
-						Log.i(TAG, "Found sample rate.");
 					}
 					if(findCharacteristic(gattCharacteristic.getUuid().toString(), 
 							SampleGattAttributes.AC_FREQ)) {
 						mACFrequencyCharacteristic = gattCharacteristic;
-						Log.i(TAG, "Found Ac frequency.");
 					}
 
 				}
@@ -747,6 +715,9 @@ FrequencySweepFragment.FrequencySweepListener{
 		}	
 		else {
 			sampleRateDialog = new SampleRateFragment();
+			Bundle args = new Bundle();
+			args.putInt(DeviceControlActivity.EXTRA_SAMPLE_RATE_BINDER, sampleRate);
+			sampleRateDialog.setArguments(args);
 			sampleRateDialog.show(getFragmentManager(), "SampleRateFragment");
 		}
 	}
@@ -757,8 +728,10 @@ FrequencySweepFragment.FrequencySweepListener{
 		// Set Value
 		try {
 			sampleRate = Integer.parseInt(sampleRateDialog.getValue());
+			Log.i(TAG, "This value was passed back: " + String.valueOf(sampleRate));
 			Toast.makeText(this, "New frequency: " + sampleRateDialog.getValue(), Toast.LENGTH_SHORT).show();
 			mBluetoothLeService.writeCharacteristic(mSampleRateCharacteristic, sampleRate);
+			updateNotifications(serviceIntent, activityIntent, activityPendingIntent, notification);		
 		}
 		catch (Exception e) {
 			Toast.makeText(this, R.string.set_fail, Toast.LENGTH_SHORT).show();
@@ -778,6 +751,11 @@ FrequencySweepFragment.FrequencySweepListener{
 		}	
 		else {
 			frequencySweepDialog = new FrequencySweepFragment();
+			Bundle args = new Bundle();
+			args.putString(DeviceControlActivity.EXTRA_START_FREQ_BINDER, Byte.toString(startFreq));
+			args.putString(DeviceControlActivity.EXTRA_STEP_SIZE_BINDER, Byte.toString(stepSize));
+			args.putString(DeviceControlActivity.EXTRA_NUM_OF_INCREMENTS_BINDER, Byte.toString(numOfIncrements));
+			frequencySweepDialog.setArguments(args);
 			frequencySweepDialog.show(getFragmentManager(), "FrequencySweepFragment");
 		}
 	}
@@ -798,6 +776,7 @@ FrequencySweepFragment.FrequencySweepListener{
 			byte[] freqValuesByte = {startFreq, stepSize, numOfIncrements}; 
 			Toast.makeText(this, R.string.freq_sweep_enabled, Toast.LENGTH_SHORT).show();
 			mBluetoothLeService.writeCharacteristicArray(mACFrequencyCharacteristic, freqValuesByte);
+			updateNotifications(serviceIntent, activityIntent, activityPendingIntent, notification);		
 		}
 		catch (Exception e) {
 			if(e instanceof IllegalArgumentException){
@@ -829,6 +808,7 @@ FrequencySweepFragment.FrequencySweepListener{
 			byte[] freqValuesByte = {startFreq, stepSize, numOfIncrements}; 
 			Toast.makeText(this, R.string.freq_sweep_disabled, Toast.LENGTH_SHORT).show();
 			mBluetoothLeService.writeCharacteristicArray(mACFrequencyCharacteristic, freqValuesByte);
+			updateNotifications(serviceIntent, activityIntent, activityPendingIntent, notification);		
 		}
 		catch (Exception e) {
 			if(e instanceof IllegalArgumentException) {
@@ -850,6 +830,42 @@ FrequencySweepFragment.FrequencySweepListener{
 		return false;
 	}
 
+	public void updateNotifications(
+			Intent serviceIntent, 
+			Intent activityIntent,
+			PendingIntent activityPendingIntent,
+			Notification notification) {
+
+		serviceIntent = new Intent(this, ServiceBinder.class);
+		serviceIntent.putExtra(EXTRA_DEVICE_ADDRESS_BINDER, mDeviceAddress);
+		serviceIntent.putExtra(EXTRA_DEVICE_NAME_BINDER, mDeviceName);
+		startService(serviceIntent);
+
+		notification = new Notification(R.drawable.ic_notification, getText(R.string.sampling_data),System.currentTimeMillis());
+		activityIntent = new Intent(this, LongTerm.class);
+
+		activityIntent.putExtra(EXTRA_DEVICE_ADDRESS_BINDER, mDeviceAddress);
+		activityIntent.putExtra(EXTRA_DEVICE_NAME_BINDER, mDeviceName);
+		activityIntent.putExtra(EXTRA_SAMPLE_RATE_BINDER, sampleRate);
+		activityIntent.putExtra(EXTRA_START_FREQ_BINDER, startFreq);
+		activityIntent.putExtra(EXTRA_STEP_SIZE_BINDER, stepSize);
+		activityIntent.putExtra(EXTRA_NUM_OF_INCREMENTS_BINDER, numOfIncrements);
+
+		activityPendingIntent = PendingIntent.getActivity(this, 0, activityIntent, PendingIntent.FLAG_CANCEL_CURRENT);
+		notification.setLatestEventInfo(this, getText(R.string.sampling_data), getText(R.string.connected), activityPendingIntent);
+
+		mBluetoothLeService.startForeground(ONGOING_NOTIFICATION_ID, notification);
+
+		com.androidplot.xy.XYPlot data = (com.androidplot.xy.XYPlot) findViewById(R.id.bioimpedancePlot);
+		data.setVisibility(View.VISIBLE);
+
+		RelativeLayout buttons = (RelativeLayout) findViewById(R.id.buttons);
+		buttons.setVisibility(View.VISIBLE);
+
+		mBluetoothLeService.setCharacteristicNotification(mNotifyCharacteristic, true);	
+
+	}
+
 	private static IntentFilter makeGattUpdateIntentFilter() {
 		final IntentFilter intentFilter = new IntentFilter();
 		intentFilter.addAction(BluetoothLeService.ACTION_GATT_CONNECTED);
@@ -859,4 +875,5 @@ FrequencySweepFragment.FrequencySweepListener{
 		intentFilter.addAction(BluetoothLeService.ACTION_DATA_AVAILABLE_BIOIMPEDANCE);
 		return intentFilter;
 	}
+
 }

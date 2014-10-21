@@ -29,7 +29,6 @@ import android.util.Log;
 public class ServiceBinder extends Service {
 
 	private final static String TAG = BluetoothLeService.class.getSimpleName();
-	private String mDeviceAddress;
 	public String mDeviceName;
 	private int arraySize = 65000;
 	public double[] values = {1, 2, 3, 4};
@@ -60,9 +59,6 @@ public class ServiceBinder extends Service {
 		public void onServiceConnected(ComponentName componentName, IBinder service) {
 			mBluetoothLeService = ((BluetoothLeService.LocalBinder) service).getService();
 			mBluetoothLeService.clientConnected();
-			Log.i(TAG, "Bound to BLE service. No of clients = " + mBluetoothLeService.getNumberOfBoundClients());
-			//mBluetoothLeService.connect(mDeviceAddress);
-			Log.i(TAG, mDeviceAddress);
 			getGattServices(mBluetoothLeService.getSupportedGattServices());
 		}
 
@@ -93,11 +89,7 @@ public class ServiceBinder extends Service {
 				}
 				else {
 					i = -1;
-					long start = System.nanoTime();
-					Log.i(TAG, "Arrays full.");
 					exportToText(imp, duodecimalMinute);
-					long end = System.nanoTime();
-					Log.i(TAG, String.valueOf(end - start));
 
 					if(fileCheck(monoHour)) {
 						exportToText(imp, monoHour);
@@ -107,7 +99,6 @@ public class ServiceBinder extends Service {
 				}
 
 				if(j >= 5) {
-					Log.i(TAG, "Done");
 					// 12 minutes, 5 times gives an hour of data.
 					// Delete and replace hourly data and copy file to daily as needed.
 					j = 0;
@@ -143,7 +134,6 @@ public class ServiceBinder extends Service {
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
-		mDeviceAddress = intent.getStringExtra(DeviceControlActivity.EXTRA_DEVICE_ADDRESS_BINDER);
 		mDeviceName = intent.getStringExtra(DeviceControlActivity.EXTRA_DEVICE_NAME_BINDER);
 		DataDir.mkdir();
 		if(fileCheck(duodecimalMinute)) {
@@ -246,8 +236,6 @@ public class ServiceBinder extends Service {
 			myOutWriter.append(tableTitle());
 			myOutWriter.close();
 			fOutHourly.close();
-			Log.i(TAG, "Hourly file created");
-
 		} 
 		catch (Exception e) {
 			Log.i(TAG, e.getMessage());
@@ -385,12 +373,10 @@ public class ServiceBinder extends Service {
 					if(findCharacteristic(gattCharacteristic.getUuid().toString(), 
 							SampleGattAttributes.SAMPLE_RATE)) {
 						mSampleRateCharacteristic = gattCharacteristic;
-						Log.i(TAG, "Found sample rate.");
 					}
 					if(findCharacteristic(gattCharacteristic.getUuid().toString(), 
 							SampleGattAttributes.AC_FREQ)) {
 						mACFrequencyCharacteristic = gattCharacteristic;
-						Log.i(TAG, "Found Ac frequency.");
 					}
 				}
 				charas.add(gattCharacteristic);

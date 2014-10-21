@@ -37,7 +37,7 @@
     <string name="desc">Under Construction.</string>
     <string name="mime_options">Biohm Options</string>
     <string name="set_sample_rate">Set Sample Rate</string>
-    <string name="sample_rate_options">Hertz. Must be between 1 and 90.</string>
+    <string name="sample_rate_options">Hertz. Values are between 5 and 90.</string>
     <string name="set_frequency_sweep">Set Frequency Sweep</string>
     <string name="enable_frequency_sweep">Enable Frequency Sweep</string>
     <string name="set_start_freq">Start frequency in KHz.</string>

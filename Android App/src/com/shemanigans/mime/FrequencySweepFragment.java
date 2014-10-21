@@ -1,5 +1,8 @@
 package com.shemanigans.mime;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -7,6 +10,7 @@ import android.app.Dialog;
 import android.app.DialogFragment;
 import android.content.DialogInterface;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.EditText;
@@ -19,7 +23,7 @@ public class FrequencySweepFragment extends DialogFragment{
 	EditText startFreq;
 	EditText stepSize;
 	EditText numOfIncrements;
-
+	private final static String TAG = FrequencySweepFragment.class.getSimpleName();
 
 	@Override
 	public Dialog onCreateDialog(Bundle savedInstanceState) {
@@ -32,12 +36,24 @@ public class FrequencySweepFragment extends DialogFragment{
 
 		startFreq = (EditText) view.findViewById(R.id.set_upper_freq);
 		stepSize = (EditText) view.findViewById(R.id.set_step_size);
-		numOfIncrements = (EditText) view.findViewById(R.id.set_lower_freq);
+		numOfIncrements = (EditText) view.findViewById(R.id.set_lower_freq);	
 
-		value[0] = startFreq.getText().toString();
-		value[1] = stepSize.getText().toString();
-		value[2] = numOfIncrements.getText().toString();
-
+		try { // For activity long term, arguments may have not been set.
+			value[0] = getArguments().getString(DeviceControlActivity.EXTRA_START_FREQ_BINDER);
+			value[1] = getArguments().getString(DeviceControlActivity.EXTRA_STEP_SIZE_BINDER);
+			value[2] = getArguments().getString(DeviceControlActivity.EXTRA_NUM_OF_INCREMENTS_BINDER);
+		}
+		catch (Exception e) {
+			value[0] = "0";
+			value[1] = "0";
+			value[2] = "0";
+			Log.i(TAG, getStackTrace(e));
+		}
+		if(Integer.parseInt(value[0]) != 0) {
+			startFreq.setText(value[0]);
+			stepSize.setText(value[1]);
+			numOfIncrements.setText(value[2]);
+		}
 
 		// Inflate and set the layout for the dialog
 		// Pass null as the parent view because its going in the dialog layout
@@ -107,5 +123,11 @@ public class FrequencySweepFragment extends DialogFragment{
 	public String[] getValue() {
 		return this.value;
 	}
-
+	
+	public static String getStackTrace(final Throwable throwable) {
+	     final StringWriter sw = new StringWriter();
+	     final PrintWriter pw = new PrintWriter(sw, true);
+	     throwable.printStackTrace(pw);
+	     return sw.getBuffer().toString();
+	}
 }

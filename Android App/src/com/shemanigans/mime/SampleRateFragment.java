@@ -9,14 +9,18 @@ import android.content.DialogInterface;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.EditText;
+import android.widget.SeekBar;
+import android.widget.SeekBar.OnSeekBarChangeListener;
+import android.widget.TextView;
 
 @SuppressLint("InflateParams")
 public class SampleRateFragment extends DialogFragment {
 
-	public boolean selection = false;
-	public String value;
-	EditText editText;
+	private boolean selection = false;
+	private String value;
+	private TextView sampleRatetext;
+	private SeekBar seekBar;
+	private int sampleRate = 0;	  
 
 	@Override
 	public Dialog onCreateDialog(Bundle savedInstanceState) {
@@ -26,9 +30,30 @@ public class SampleRateFragment extends DialogFragment {
 		// Get the layout inflater
 		LayoutInflater inflater = getActivity().getLayoutInflater();
 		View view = inflater.inflate(R.layout.set_sample_rate, null);
+		
+		sampleRatetext = (TextView) view.findViewById(R.id.current_frequency);
+		seekBar = (SeekBar) view.findViewById(R.id.set_sample_rate);
+		
+		sampleRate = getArguments().getInt(DeviceControlActivity.EXTRA_SAMPLE_RATE_BINDER);
+		
+		seekBar.setProgress((sampleRate / 5) - 1);
+		sampleRatetext.setText(Integer.toString(sampleRate)); 
 
-		editText = (EditText) view.findViewById(R.id.set_sample_rate);
-		value = editText.getText().toString();
+		seekBar.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
+			@Override
+			public void onProgressChanged(SeekBar seekBar, int progressValue, boolean fromUser) {
+				sampleRate = progressValue;
+				sampleRatetext.setText(Integer.toString((sampleRate + 1) * 5)); // Make values go from 5 to 90 in increments of 5	  
+			}
+
+			@Override
+			public void onStartTrackingTouch(SeekBar seekBar) {
+			}
+
+			@Override
+			public void onStopTrackingTouch(SeekBar seekBar) {
+			}
+		});
 
 
 		// Inflate and set the layout for the dialog
@@ -40,10 +65,10 @@ public class SampleRateFragment extends DialogFragment {
 			@Override
 			public void onClick(DialogInterface dialog, int id) {
 				// Get new value for sample rate
-				
-				value = editText.getText().toString();
+
+				value = sampleRatetext.getText().toString();
 				selection = true;
-				
+
 				mListener.onDialogPositiveClickSampleRate(SampleRateFragment.this);
 			}
 		})
