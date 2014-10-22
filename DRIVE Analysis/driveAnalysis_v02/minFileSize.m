@@ -1,6 +1,11 @@
 function [ fileArrayNew ] = minFileSize( directory, fileArray, fileSize )
-%UNTITLED7 Summary of this function goes here
-%   Detailed explanation goes here
+%MINFILESIZE Finds files within a directory that are above a certain size
+%
+%   DIRECTORY   - the directory containing the fileArray
+%   FILEARRAY   - the list of the names of the files whose size to check
+%   FILESIZE    - threshold size (in MB) to look for
+%
+%   FILEARRAYNEW - the list of file name larger than the threshold size
 
 fileCheckArray = zeros(1,length(fileArray));
 
@@ -13,7 +18,7 @@ for file = 1:length(fileArray)
     end
 end
 
-% Remove all nonrelavent ultrasound images
+% Remove all files below the threshold
 fileCheckArray = logical(fileCheckArray);
 fileArrayNew = fileArray(fileCheckArray);
 
