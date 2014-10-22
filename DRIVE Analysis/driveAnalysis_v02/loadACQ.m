@@ -46,7 +46,7 @@
 %	- proper handling of var_sampling_rate = 0, as produced by the
 %	Biopac software in occasions.
 %
-function acq = load_acq(filename, chan_by_chan)
+function acq = loadACQ(filename, chan_by_chan)
 
    if ~exist('chan_by_chan','var')
       chan_by_chan = 1;
