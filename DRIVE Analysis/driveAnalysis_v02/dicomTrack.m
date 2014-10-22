@@ -1,4 +1,4 @@
-function [ultrasound] = dicomTrack( filename )
+function [data] = dicomTrack( filename )
 %DICOMTRACK Track points on a DICOM
 %   Eventual expansion to multiple different ways to track
 %
@@ -30,8 +30,8 @@ end
 
 
 % Get region of interest
-framenum = 1;
-objectFrame = dicomFile(:,:,framenum);
+indFrame = 1;
+objectFrame = dicomFile(:,:,indFrame);
 
 imshow(objectFrame)
 title('Select 2 points along the edge of the vessel, then hit "Enter"')
@@ -43,7 +43,7 @@ poiX = round(poiX);     poiY = round(poiY);
 nPoints = size(poiX,1);
 pointLog = zeros(nPoints, 2, dicomFrames);
 points = [poiX, poiY];
-pointImage = insertMarker(objectFrame, points, '+', 'Color', 'white');
+% pointImage = insertMarker(objectFrame, points, '+', 'Color', 'white');
 
 pointDist = zeros(dicomFrames,1);
 newDicom = dicomFile;
@@ -55,48 +55,47 @@ tracker = vision.PointTracker('MaxBidirectionalError', 1);
 initialize(tracker, points(:,:,1), objectFrame);
 
 
-while framenum <= dicomFrames
+while indFrame <= dicomFrames
        %Track the points     
-      frame = dicomFile(:,:,framenum);
+      frame = dicomFile(:,:,indFrame);
       [points, validity] = step(tracker, frame);
-      pointLog(:,:,framenum) = points;
+      pointLog(:,:,indFrame) = points;
       out = insertMarker(frame, points(validity, :), '+', 'Color', 'white');
-      newDicom(:,:,framenum) = out(:,:,1);
+      newDicom(:,:,indFrame) = out(:,:,1);
       
       %Compute the distance between the 2 points
-      pointDist(framenum) = sqrt ((pointLog(1,1,framenum) - pointLog(2,1,framenum)).^2+(pointLog(1,2,framenum) - pointLog(2,2,framenum)).^2);
+      pointDist(indFrame) = ...
+          sqrt ((pointLog(1,1,indFrame) - pointLog(2,1,indFrame)).^2 ...
+          + (pointLog(1,2,indFrame) - pointLog(2,2,indFrame)).^2);
       
-      framenum = framenum + 1;
+      indFrame = indFrame + 1;
       
 end
 
-%Display figure showing distance between the points
 info = dicominfo(filename);
 dtUS = (info.FrameTime)*0.001;
 FsUS = 1/dtUS;
-% sampFreq = 16;  % Taken from image, though the DICOM should have this
 time = (1:dicomFrames)/FsUS;
-
-
-% Plot the tracked pixel movement
-plot(time, pointDist)
-xlabel('Time [s]'); ylabel('Distance [px]')
-title('Distance between 2 points')
-
+% 
+% % Frequency analysis
+% nPoints = length(pointDist);
+% NFFT = 2^nextpow2(nPoints); % Next power of 2 from length of y
+% Y = fft (pointDist,NFFT)/nPoints;
+% f = FsUS/2*linspace(0,1,NFFT/2+1);
+% 
+% % freq = peakFreq(pointDist,FsUS,'band',[0.6, 2.0]);
+% freq = 0.5;
 % Get envelope of tracked motion
 envTop = envelope(time,pointDist,'top',FsUS,'linear');
 envBot = envelope(time,pointDist,'bottom',FsUS,'linear');
-hold on, plot(time, envTop,'r'), plot(time,envBot,'r')
+% 
+% figure(1), plot(time, pointDist)
+% hold on, plot(time, envTop,'r'), plot(time,envBot,'r')
+% figure(2), plot(f,2*abs(Y(1:NFFT/2+1)))
 
-figure, plot(time(11:93),envTop(11:93)-envBot(11:93))
-xlabel('Time [s]'); ylabel('Diameter [px]')
-title('Distance between 2 points')
-
-%Show tracked points in the image
-implay(newDicom(:,:,:,1))
-
-ultrasound.data.pointDist = pointDist;
-ultrasound.data.envelope = [envTop, envBottom];
+data.pointLog = pointLog;
+data.pointDist = pointDist;
+data.envelope = [envTop; envBot];
 
 
 end
