@@ -1,4 +1,4 @@
-function [ dirPatient, dirUltrasound, fileBioimp, fileArrayUltrasound ] = getDRIVEdata
+function [ bioimp, ultrasound ] = getDRIVEdata
 %UNTITLED3 Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -16,6 +16,8 @@ ultrasoundFileArrayInfo = dir(dirUltrasound);
 fileArrayUltrasound = ultrasoundFileArrayInfo(arrayfun(@(x) x.name(1), ...
     ultrasoundFileArrayInfo) ~= '.');
 
+fileUltrasound = minFileSize(dirUltrasound,fileArrayUltrasound, 50);
+
 % Select the bioimpedance files
 bioimpedanceFileArrayInfo = dir(dirPatient);
 bioimpedanceFileArray = bioimpedanceFileArrayInfo(arrayfun(@(x) x.name(1), ...
@@ -26,6 +28,13 @@ bioimpedanceFileArray = bioimpedanceFileArray(arrayfun(@(x) x.isdir, ...
 for indFile = 1:length(bioimpedanceFileArray)
     fileBioimp{indFile} = bioimpedanceFileArray(indFile).name;
 end
+
+% Put everything into structs
+bioimp.dir = dirPatient;
+ultrasound.dir = dirUltrasound;
+bioimp.files = fileBioimp;
+ultrasound.files = fileUltrasound;
+
 
 end
 
