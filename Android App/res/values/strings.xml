@@ -45,12 +45,15 @@
     <string name="set_num_of_increments">Number of frequency increments.</string>
     <string name="enable">Enable</string>
     <string name="disable">Disable</string>
+    <string name="single_freq">Single</string>
+    <string name="multi_freq">Sweep</string>
     <string name="set_fail">Failed: Empty fields or invalid characters</string>
     <string name="freq_sweep_enabled">Freequency sweep enabled</string>
     <string name="freq_sweep_disabled">Frequency sweep disabled</string>
     <string name="check_value">Failed: Check your frquency, step size, or number of steps </string>
     <string name="no_zero">Failed: Cannot set a frequency of "0" </string>
     <string name="start">Start</string>
+    <string name="back_to_scanning">Going back to scanning&#8230;</string>
 
     <string-array name="LongTermOptionsArray">
         <item>Live Data</item>

@@ -1,12 +1,12 @@
 package com.shemanigans.mime;
 
-import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.NavUtils;
+import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -14,36 +14,23 @@ import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-public class ActAndPair extends Activity {
+public class ActAndPair extends ActionBarActivity {
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_act_and_pair);
 		
-		getActionBar().setTitle("Scan Request");
-
-		// Show the Up button in the action bar.
-		setupActionBar();
-		
+		getSupportActionBar().setTitle("Scan Request");		
 
 		// Get the message from the intent
 		TextView textView = (TextView) findViewById(R.id.bluetooth_prompt);
 		textView.setTextSize(20);
 		textView.setText("Attempting to turn on Bluetooth...");
 
-		/*
-		// Create the text view
-		TextView textView = new TextView(this);
-		textView.setTextSize(40);
-		textView.setText(message);
-
-		setContentView(textView);
-
-		 */
 
 		// Show the Up button in the action bar.
-		setupActionBar();
+	    getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
 		final BluetoothManager bluetoothManager =
 				(BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
@@ -109,16 +96,6 @@ public class ActAndPair extends Activity {
 			bluetoothAttempt.setVisibility(8); // Correct to GONE sometime
 
 		}
-
-	}
-
-	/**
-	 * Set up the {@link android.app.ActionBar}.
-	 */
-
-	private void setupActionBar() {
-
-		getActionBar().setDisplayHomeAsUpEnabled(true);
 
 	}
 

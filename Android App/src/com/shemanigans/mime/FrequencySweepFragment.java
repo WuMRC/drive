@@ -7,7 +7,7 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
-import android.app.DialogFragment;
+import android.support.v4.app.DialogFragment;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.util.Log;
@@ -60,7 +60,7 @@ public class FrequencySweepFragment extends DialogFragment{
 
 		builder.setView(view)
 		// Add action buttons
-		.setPositiveButton(R.string.enable, new DialogInterface.OnClickListener() {
+		.setPositiveButton(R.string.multi_freq, new DialogInterface.OnClickListener() {
 			@Override
 			public void onClick(DialogInterface dialog, int id) {
 				// Get new value for sample rate
@@ -79,7 +79,7 @@ public class FrequencySweepFragment extends DialogFragment{
 				mListener.onDialogNeutralClickFrequencySweep(FrequencySweepFragment.this);
 			}
 		})
-		.setNegativeButton(R.string.disable, new DialogInterface.OnClickListener() {
+		.setNegativeButton(R.string.single_freq, new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog, int id) {
 				value[0] = startFreq.getText().toString();
 				value[1] = "0";

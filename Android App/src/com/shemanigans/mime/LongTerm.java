@@ -10,11 +10,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 
-import android.app.ActionBar;
-import android.app.Activity;
-import android.app.DialogFragment;
-import android.app.FragmentManager;
-import android.app.FragmentTransaction;
+import android.support.v4.app.DialogFragment;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -24,7 +20,11 @@ import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.IBinder;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBar;
+import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -32,7 +32,7 @@ import android.widget.Toast;
 
 public class LongTerm 
 extends 
-Activity
+ActionBarActivity
 implements 
 NavigationDrawerFragment.NavigationDrawerCallbacks, 
 NameTextFileFragment.NameTextFileListener,
@@ -121,7 +121,7 @@ FrequencySweepFragment.FrequencySweepListener{
 
 				// Find fragment hosted in the activity with the specified tag and update the plot
 				BioimpFragment bioimpFragment = (BioimpFragment)
-						getFragmentManager().findFragmentByTag(LIVE_DATA_TAG);
+						getSupportFragmentManager().findFragmentByTag(LIVE_DATA_TAG);
 				if (bioimpFragment != null) {
 					bioimpFragment.updatePlot(values);
 				}
@@ -149,7 +149,7 @@ FrequencySweepFragment.FrequencySweepListener{
 		registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
 
 		mNavigationDrawerFragment = (NavigationDrawerFragment)
-				getFragmentManager().findFragmentById(R.id.navigation_drawer);
+				getSupportFragmentManager().findFragmentById(R.id.navigation_drawer);
 		mTitle = getTitle();
 
 		// Set up the drawer.
@@ -167,7 +167,6 @@ FrequencySweepFragment.FrequencySweepListener{
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
-		Toast.makeText(this, "Long term sampling off", Toast.LENGTH_SHORT).show();
 		unregisterReceiver(mGattUpdateReceiver);
 		unbindService(mServiceConnectionBLE);
 		unbindService(mServiceConnectionBioImp);
@@ -176,7 +175,7 @@ FrequencySweepFragment.FrequencySweepListener{
 	@Override
 	public void onNavigationDrawerItemSelected(int position) {
 		// update the main content by replacing fragments
-		FragmentManager fragmentManager = getFragmentManager();
+		FragmentManager fragmentManager = getSupportFragmentManager();
 		FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
 		switch (position) {
 		// Depending on the item selected in the list, add unique tags / identifiers.
@@ -209,7 +208,7 @@ FrequencySweepFragment.FrequencySweepListener{
 		// When a fragment is attached to the hosting activity, pass the connected device's name.
 		case 1:
 			BioimpFragment bioimpFrag = (BioimpFragment)
-			getFragmentManager().findFragmentByTag(LIVE_DATA_TAG);
+			getSupportFragmentManager().findFragmentByTag(LIVE_DATA_TAG);
 			Log.i(TAG, mDeviceName + ".");
 			bioimpFrag.setDeviceName(mDeviceName);
 			bioimpFrag.setDeviceAddress(mDeviceAddress);
@@ -264,8 +263,8 @@ FrequencySweepFragment.FrequencySweepListener{
 	}
 
 	public void restoreActionBar() {
-		ActionBar actionBar = getActionBar();
-		actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
+		ActionBar actionBar = getSupportActionBar();
+		//actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
 		actionBar.setDisplayShowTitleEnabled(true);
 		actionBar.setTitle(mTitle);
 	}
@@ -412,7 +411,7 @@ FrequencySweepFragment.FrequencySweepListener{
 	public void showTextFileDialog() {
 		// Create an instance of the dialog fragment and show it
 		nameTextFileDialog = new NameTextFileFragment();
-		nameTextFileDialog.show(getFragmentManager(), "NameTextFileFragment");
+		nameTextFileDialog.show(getSupportFragmentManager(), "NameTextFileFragment");
 	}
 
 	// The dialog fragment receives a reference to this Activity through the
@@ -438,7 +437,7 @@ FrequencySweepFragment.FrequencySweepListener{
 		args.putInt(DeviceControlActivity.EXTRA_SAMPLE_RATE_BINDER, sampleRate);
 		Log.i(TAG, "Sample rate passed to dialog: " + String.valueOf(sampleRate));
 		sampleRateDialog.setArguments(args);
-		sampleRateDialog.show(getFragmentManager(), "SampleRateFragment");
+		sampleRateDialog.show(getSupportFragmentManager(), "SampleRateFragment");
 	}
 
 
@@ -469,7 +468,7 @@ FrequencySweepFragment.FrequencySweepListener{
 		args.putString(DeviceControlActivity.EXTRA_STEP_SIZE_BINDER, Byte.toString(stepSize));
 		args.putString(DeviceControlActivity.EXTRA_NUM_OF_INCREMENTS_BINDER, Byte.toString(numOfIncrements));
 		frequencySweepDialog.setArguments(args);
-		frequencySweepDialog.show(getFragmentManager(), "FrequencySweepFragment");
+		frequencySweepDialog.show(getSupportFragmentManager(), "FrequencySweepFragment");
 	}
 
 	@Override

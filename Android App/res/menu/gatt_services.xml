@@ -1,17 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:android="http://schemas.android.com/apk/res/android" >
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:compat="http://schemas.android.com/apk/res-auto" >
 
     <item
         android:id="@+id/action_settings"
         android:orderInCategory="100"
-        android:showAsAction="never"
-        android:title="@string/action_settings"/>
+        android:title="@string/action_settings"
+        compat:showAsAction="never"/>
     <item
         android:id="@+id/menu_refresh"
         android:checkable="false"
         android:orderInCategory="1"
-        android:showAsAction="ifRoom"
-        android:title="@string/menu_refresh"/>
+        android:title="@string/menu_refresh"
+        compat:showAsAction="ifRoom"/>
     <item
         android:id="@+id/menu_connect"
         android:orderInCategory="100"
@@ -20,8 +21,8 @@
     <item
         android:id="@+id/menu_disconnect"
         android:orderInCategory="101"
-        android:showAsAction="ifRoom|withText"
-        android:title="@string/menu_disconnect"/>
+        android:title="@string/menu_disconnect"
+        compat:showAsAction="ifRoom|withText"/>
     <item
         android:id="@+id/name_text_file"
         android:orderInCategory="102"
@@ -30,12 +31,12 @@
     <item
         android:id="@+id/set_sample_rate"
         android:orderInCategory="103"
-        android:showAsAction="never"
-        android:title="@string/set_sample_rate"/>
+        android:title="@string/set_sample_rate"
+        compat:showAsAction="never"/>
     <item
         android:id="@+id/set_frequency_sweep"
         android:orderInCategory="103"
-        android:showAsAction="never"
-        android:title="@string/set_frequency_sweep"/>
+        android:title="@string/set_frequency_sweep"
+        compat:showAsAction="never"/>
 
 </menu>

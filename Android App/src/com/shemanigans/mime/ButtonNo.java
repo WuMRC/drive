@@ -1,12 +1,12 @@
 package com.shemanigans.mime;
 
 import android.os.Bundle;
-import android.app.Activity;
+import android.support.v4.app.NavUtils;
+import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.support.v4.app.NavUtils;
 
-public class ButtonNo extends Activity {
+public class ButtonNo extends ActionBarActivity {
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -20,9 +20,7 @@ public class ButtonNo extends Activity {
 	 * Set up the {@link android.app.ActionBar}.
 	 */
 	private void setupActionBar() {
-
-		getActionBar().setDisplayHomeAsUpEnabled(true);
-
+		getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 	}
 
 	@Override

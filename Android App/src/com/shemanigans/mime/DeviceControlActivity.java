@@ -9,8 +9,7 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
 
-import android.app.Activity;
-import android.app.DialogFragment;
+import android.support.v4.app.DialogFragment;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.bluetooth.BluetoothGattCharacteristic;
@@ -26,6 +25,7 @@ import android.graphics.Paint;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.IBinder;
+import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -50,7 +50,7 @@ import com.androidplot.xy.XYPlot;
  * Bluetooth LE API.
  */
 public class DeviceControlActivity 
-extends Activity 
+extends ActionBarActivity 
 implements 
 NameTextFileFragment.NameTextFileListener,
 SampleRateFragment.SampleRateListener,
@@ -235,9 +235,10 @@ FrequencySweepFragment.FrequencySweepListener{
 		mGattServicesList.setOnChildClickListener(servicesListClickListner);
 		mConnectionState = (TextView) findViewById(R.id.connection_state);
 		mDataField = (TextView) findViewById(R.id.data_value);
+		mDeviceName = mDeviceName.substring(0, mDeviceName.length() - 9);
 
-		getActionBar().setTitle(mDeviceName);
-		getActionBar().setDisplayHomeAsUpEnabled(true);
+		getSupportActionBar().setTitle(mDeviceName);
+		getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
 		// Set up bioimpedance plots
 
@@ -688,7 +689,7 @@ FrequencySweepFragment.FrequencySweepListener{
 	public void setTextFileName() {
 		// Create an instance of the dialog fragment and show it
 		nameTextFileDialog = new NameTextFileFragment();
-		nameTextFileDialog.show(getFragmentManager(), "NameTextFileFragment");
+		nameTextFileDialog.show(getSupportFragmentManager(), "NameTextFileFragment");
 	}
 
 	// The dialog fragment receives a reference to this Activity through the
@@ -718,7 +719,7 @@ FrequencySweepFragment.FrequencySweepListener{
 			Bundle args = new Bundle();
 			args.putInt(DeviceControlActivity.EXTRA_SAMPLE_RATE_BINDER, sampleRate);
 			sampleRateDialog.setArguments(args);
-			sampleRateDialog.show(getFragmentManager(), "SampleRateFragment");
+			sampleRateDialog.show(getSupportFragmentManager(), "SampleRateFragment");
 		}
 	}
 
@@ -756,7 +757,7 @@ FrequencySweepFragment.FrequencySweepListener{
 			args.putString(DeviceControlActivity.EXTRA_STEP_SIZE_BINDER, Byte.toString(stepSize));
 			args.putString(DeviceControlActivity.EXTRA_NUM_OF_INCREMENTS_BINDER, Byte.toString(numOfIncrements));
 			frequencySweepDialog.setArguments(args);
-			frequencySweepDialog.show(getFragmentManager(), "FrequencySweepFragment");
+			frequencySweepDialog.show(getSupportFragmentManager(), "FrequencySweepFragment");
 		}
 	}
 
