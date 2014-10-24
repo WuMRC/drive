@@ -44,13 +44,13 @@
 		</characteristic>
 		<characteristic uuid="5FC569A0-74A9-4FA4-B8B7-8354C86E45A4" id="c_sample_rate">
 			<description>Sample Rate</description>
-			<properties write="true" />
-			<value variable_length="true" length="20" />
+			<properties read="true" write="true" notify="true" />
+			<value type="hex">32</value>
 		</characteristic>
 		<characteristic uuid="07E028EA-218F-4C10-8C83-9FBDCCD25304" id="c_ac_freq">
 			<description>AC Frequency</description>
-			<properties write="true" />
-			<value variable_length="true" length="20" />
+			<properties read="true" write="true" notify="true" />
+			<value type="hex">320101</value>
 		</characteristic>
 	</service>
 </configuration>

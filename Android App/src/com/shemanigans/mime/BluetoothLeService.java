@@ -1,6 +1,8 @@
 package com.shemanigans.mime;
 
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 import java.util.UUID;
 
 import android.app.Service;
@@ -66,6 +68,13 @@ public class BluetoothLeService extends Service {
 			UUID.fromString(SampleGattAttributes.HEART_RATE_MEASUREMENT);
 	public final static UUID UUID_BIOIMPEDANCE_DATA = 
 			UUID.fromString(SampleGattAttributes.BIOIMPEDANCE_DATA);
+	public final static UUID UUID_SAMPLE_RATE = 
+			UUID.fromString(SampleGattAttributes.SAMPLE_RATE);
+	public final static UUID UUID_AC_FREQUENCY = 
+			UUID.fromString(SampleGattAttributes.AC_FREQ);
+
+	private Queue<BluetoothGattDescriptor> descriptorWriteQueue = new LinkedList<BluetoothGattDescriptor>();
+	private Queue<BluetoothGattCharacteristic> characteristicReadQueue = new LinkedList<BluetoothGattCharacteristic>();
 
 	// Implements callback methods for GATT events that the app cares about.  For example,
 	// connection change and services discovered.
@@ -110,10 +119,32 @@ public class BluetoothLeService extends Service {
 		public void onCharacteristicRead(BluetoothGatt gatt,
 				BluetoothGattCharacteristic characteristic,
 				int status) {
+			characteristicReadQueue.remove();
 			if (status == BluetoothGatt.GATT_SUCCESS) {
 				broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
 			}
+			else {
+				Log.i(TAG, "onCharacteristicRead error: " + status);
+			}
+			if(characteristicReadQueue.size() > 0)
+				mBluetoothGatt.readCharacteristic(characteristicReadQueue.element());
 		}
+
+		@Override
+		public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {         
+			if (status == BluetoothGatt.GATT_SUCCESS) {
+				Log.i(TAG, "Callback: Wrote GATT Descriptor successfully.");           
+			}           
+			else{
+				Log.i(TAG, "Callback: Error writing GATT Descriptor: "+ status);
+			}
+			descriptorWriteQueue.remove();  //pop the item that we just finishing writing
+			//if there is more to write, do it!
+			if(descriptorWriteQueue.size() > 0)
+				mBluetoothGatt.writeDescriptor(descriptorWriteQueue.element());
+			else if(characteristicReadQueue.size() > 0)
+				mBluetoothGatt.readCharacteristic(characteristicReadQueue.element());
+		};
 
 		@Override
 		public void onCharacteristicChanged(BluetoothGatt gatt,
@@ -127,13 +158,13 @@ public class BluetoothLeService extends Service {
 		}
 	};
 
-	private void broadcastUpdate(final String action) {
+	private void broadcastUpdate(final String action) { // used to send broadcasts that don't have attached data
 		final Intent intent = new Intent(action);
 		sendBroadcast(intent);
 	}
 
-	private void broadcastUpdate(final String action,
-			final BluetoothGattCharacteristic characteristic) {
+	private void broadcastUpdate(final String action, // used to send broadcasts that have attached data
+			final BluetoothGattCharacteristic characteristic) { 
 		final Intent intent = new Intent(action);
 
 		// This is special handling for the Heart Rate Measurement profile.  Data parsing is
@@ -155,7 +186,7 @@ public class BluetoothLeService extends Service {
 			intent.putExtra(EXTRA_DATA, String.valueOf(heartRate));
 		} 
 
-		if (UUID_BIOIMPEDANCE_DATA.equals(characteristic.getUuid())) {
+		else if (UUID_BIOIMPEDANCE_DATA.equals(characteristic.getUuid())) {
 			// Formatting for transceiver data
 			final byte[] data = characteristic.getValue();
 			if (data != null && data.length > 0) {
@@ -212,13 +243,30 @@ public class BluetoothLeService extends Service {
 			}
 		} 
 
+		else if (UUID_SAMPLE_RATE.equals(characteristic.getUuid())) {
+			final byte[] data = characteristic.getValue();
+			if (data != null && data.length > 0) {
+				DeviceControlActivity.setSampleRateFromService(data[0]);
+				Log.i(TAG, "Set default sample rate.");
+			}
+		}
+
+		else if (UUID_AC_FREQUENCY.equals(characteristic.getUuid())) {
+			final byte[] data = characteristic.getValue();
+			if (data != null && data.length > 0) {
+				DeviceControlActivity.setFrequencyParamsFromService(data[0], data[1], data[2]);
+				Log.i(TAG, "Set default frequency sweep params.");
+			}
+		}
+
 		else {
-			// For all other profiles, writes the data formatted in HEX.
+			// For all other profiles, writes the data formatted in decimal.
 			final byte[] data = characteristic.getValue();
 			if (data != null && data.length > 0) {
 				final StringBuilder stringBuilder = new StringBuilder(data.length);
 				for(byte byteChar : data) {
-					stringBuilder.append(String.format("%02X ", byteChar));
+					Log.i(TAG, Byte.toString(byteChar) + " and frivolous details");
+					stringBuilder.append(Byte.toString(byteChar) + " ");
 				}
 				intent.putExtra(EXTRA_DATA, new String(data) + "\n" + stringBuilder.toString());
 			}
@@ -357,7 +405,22 @@ public class BluetoothLeService extends Service {
 			Log.w(TAG, "BluetoothAdapter not initialized");
 			return;
 		}
-		mBluetoothGatt.readCharacteristic(characteristic);
+		//put the characteristic into the read queue        
+		characteristicReadQueue.add(characteristic);
+		//if there is only 1 item in the queue, then read it.  If more than 1, we handle asynchronously in the callback above
+		//GIVE PRECEDENCE to descriptor writes.  They must all finish first.
+		if((characteristicReadQueue.size() == 1) && (descriptorWriteQueue.size() == 0))
+			Log.i(TAG, "Attempted read of queue before callback method.");
+		mBluetoothGatt.readCharacteristic(characteristic); 
+	}
+
+	public void writeGattDescriptor(BluetoothGattDescriptor descriptor){
+		//put the descriptor into the write queue
+		descriptorWriteQueue.add(descriptor);
+		//if there is only 1 item in the queue, then write it.  If more than 1, we handle asynchronously in the callback above
+		if(descriptorWriteQueue.size() == 1){   
+			mBluetoothGatt.writeDescriptor(descriptor);      
+		}
 	}
 
 	public void writeCharacteristic(BluetoothGattCharacteristic characteristic, int value) {

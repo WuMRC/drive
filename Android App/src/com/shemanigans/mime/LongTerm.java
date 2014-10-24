@@ -484,6 +484,9 @@ FrequencySweepFragment.FrequencySweepListener{
 			if(startFreq + (stepSize * numOfIncrements) > 100) {
 				throw new IllegalArgumentException();
 			}
+			if(startFreq == 0 || stepSize == 0 || numOfIncrements == 0) {
+				throw new IllegalArgumentException();
+			}
 			byte[] freqValuesByte = {startFreq, stepSize, numOfIncrements}; 
 			Toast.makeText(this, R.string.freq_sweep_enabled, Toast.LENGTH_SHORT).show();
 			mServiceBinder.writeFrequencySweepCharacteristic(freqValuesByte);

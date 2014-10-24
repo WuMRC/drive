@@ -116,8 +116,16 @@ volatile boolean writer = false;  // Variable that toggles notifications to phon
 
 boolean notifier = false; // Variable to manage sample rate. Managed from interrupt context.
 
-uint8_t A[9] = {
+boolean timedOut = false; // Used to identify if the module timed out.
+
+uint8_t bioImpData[9] = {
   1, 2, 3, 4, 5, 6, 7, 8, 9}; // Unsigned integer array to carry data to phone
+
+uint8_t defaultSampleRate[1] = {
+  50}; // Initialize default sample rate value holder
+
+uint8_t defaultFreqSweep[3] = {
+  50, 0 , 0}; // Initialize default frquency sweep value holder
 
 long sampleRate = 0; // Android app sample Rate
 
@@ -132,6 +140,7 @@ long sampleRate = 0; // Android app sample Rate
 #define BLE_STATE_CONNECTING        3
 #define BLE_STATE_CONNECTED_MASTER  4
 #define BLE_STATE_CONNECTED_SLAVE   5
+#define BLE_STATE_TIMED_OUT         6
 
 // BLE state/link status tracker
 uint8_t ble_state = BLE_STATE_STANDBY;
@@ -153,8 +162,8 @@ uint8_t ble_bonding = 0xFF; // 0xFF = no bonding, otherwise = bonding handle
 #define BLE_RESET_PIN   6   // BLE reset pin (active-low)
 
 #define GATT_HANDLE_C_BIOIMPEDANCE_DATA   17  // 0x11, supports "read", "notify" and "indicate" operations
-#define GATT_HANDLE_C_SAMPLE_RATE   21  // 0x15, supports "write" operation
-#define GATT_HANDLE_C_AC_FREQ   24  // 0x18, supports "write" operation
+#define GATT_HANDLE_C_SAMPLE_RATE   21  // 0x15, supports "read" and "write" operation
+#define GATT_HANDLE_C_AC_FREQ   25  // 0x19, supports "read" and "write" operation
 
 // use SoftwareSerial on pins D8/D8 for RX/TX (Arduino side)
 
@@ -223,10 +232,11 @@ void setup() {
   ble112.ble_evt_attributes_value = my_ble_evt_attributes_value;
   ble112.ble_evt_attclient_indicated = my_ble_evt_attclient_indicated;
   ble112.ble_evt_attributes_status = my_ble_evt_attributes_status;
+  ble112.ble_rsp_attributes_write = my_ble_rsp_attributes_write; 
 
-  // open Arduino USB serial (and wait, if we're using Leonardo)
-  // use 38400 since it works at 8MHz as well as 16MHz
-  Serial.begin(38400);
+    // open Arduino USB serial (and wait, if we're using Leonardo)
+    // use 38400 since it works at 8MHz as well as 16MHz
+    Serial.begin(38400);
   while (!Serial);
 
   // open BLE Hardware serial port
@@ -241,8 +251,14 @@ void setup() {
 
   AD5933.getComplexOnce(gain_factor, rComp, iComp, Z_Value);
   systemPhaseShift = returnStandardPhaseAngle(atan2(iComp, rComp));
+  Serial.print("System Phase Shift: ");
   Serial.print(systemPhaseShift);
   Serial.println();
+
+  // Write default values for handles once. 
+  ble112.ble_cmd_attributes_write(GATT_HANDLE_C_SAMPLE_RATE, 0, 1, defaultSampleRate);
+  delay(20); // Wait 20 ms so async callback isn't blocked.
+  ble112.ble_cmd_attributes_write(GATT_HANDLE_C_AC_FREQ, 0, 3, defaultFreqSweep);
 
   // Start with sampling rate of 50 hertz
   Micro40Timer::set(20000, notify); // 20000 microsecond period -> 50 hertz frequency
@@ -254,7 +270,9 @@ void setup() {
 // MAIN APPLICATION LOOP 
 // ================================================================
 void loop() {
-  // keep polling for new data from BLE  
+
+  // keep polling for new data from BLE
+
   ble112.checkActivity();
 
   // For Z_Logger
@@ -283,21 +301,21 @@ void loop() {
   }  
   // Check if GATT Client (Smartphone) is subscribed to notifications.
   if (writer == true) {  
-    A[0] = (100 * sin((pseudo*3.14)/180));
-    A[1] = (100 * cos((pseudo*3.14)/180));
-    A[2] = (0);
+    bioImpData[0] = (100 * sin((pseudo*3.14)/180));
+    bioImpData[1] = (100 * cos((pseudo*3.14)/180));
+    bioImpData[2] = (0);
 
     if(((Z_Value - 554.72) > -3 && (Z_Value - 554.72) < 3) || ((Z_Value - 554.72) > 500)) {        
-      A[3] = 0;
-      A[4] = 0;
-      A[5] = 0;
-      A[6] = 0;
-      A[7] = 0;
+      bioImpData[3] = 0;
+      bioImpData[4] = 0;
+      bioImpData[5] = 0;
+      bioImpData[6] = 0;
+      bioImpData[7] = 0;
     }
     else {
       Z_Value *= 1000;
       phaseAngle *= 100;
-      changeZ_Value((long) Z_Value, (long) phaseAngle, A);
+      changeZ_Value((long) Z_Value, (long) phaseAngle, bioImpData);
       /*Serial.print(A[6]);
        Serial.print("\t");
        Serial.print(A[7]);
@@ -306,8 +324,8 @@ void loop() {
        Serial.println();*/
     }     
 
-    //Write notification to characteristic on ble112. Causes notification to be sent.
-    ble112.ble_cmd_attributes_write(GATT_HANDLE_C_BIOIMPEDANCE_DATA, 0, 8 , A);
+    //Write notification values to characteristic on ble112. Causes notification to be sent.
+    ble112.ble_cmd_attributes_write(GATT_HANDLE_C_BIOIMPEDANCE_DATA, 0, 8, bioImpData);
     writer = false;     
   }   
   else {
@@ -327,6 +345,9 @@ void loop() {
   } 
   if (ble_state == BLE_STATE_ADVERTISING) {
     digitalWrite(LED_PIN, slice < 100);
+  } 
+  if (ble_state == BLE_STATE_TIMED_OUT) {
+    digitalWrite(LED_PIN, LOW);
   } 
   if (ble_state == BLE_STATE_CONNECTED_SLAVE) {    
     if (!ble_encrypted) {
@@ -357,8 +378,11 @@ void onIdle() {
 
 // called when the parser does not read the expected response in the specified time limit
 void onTimeout() {
+  ble_state == BLE_STATE_TIMED_OUT;
+  timedOut = true;
   // reset module (might be a bit drastic for a timeout condition though)
   Serial.println(F("Timed out."));
+  resetBLE();
 
 }
 
@@ -389,6 +413,8 @@ void my_ble_evt_system_boot(const ble_msg_system_boot_evt_t *msg) {
   // system boot means module is in standby state
   //ble_state = BLE_STATE_STANDBY;
   // ^^^ skip above since we're going right back into advertising below
+
+  timedOut = false; // reset time out boolean
 
   // set advertisement interval to 200-300ms, use all advertisement channels
   // (note min/max parameters are in units of 625 uSec)
@@ -450,8 +476,13 @@ void my_ble_evt_system_boot(const ble_msg_system_boot_evt_t *msg) {
   ble112.ble_cmd_gap_set_mode(BGLIB_GAP_USER_DATA, BGLIB_GAP_UNDIRECTED_CONNECTABLE);
   while (ble112.checkActivity(1000));
 
-  // set state to ADVERTISING
-  ble_state = BLE_STATE_ADVERTISING;
+  // set state to ADVERTISING depending on timed out condition
+  if(timedOut == false) {
+    ble_state = BLE_STATE_ADVERTISING;
+  }
+  else {
+    ble_state = BLE_STATE_TIMED_OUT;
+  }
 }
 
 void my_ble_evt_connection_status(const ble_msg_connection_status_evt_t *msg) {
@@ -563,7 +594,8 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
 
   // check for data written to "c_sample_rate" handle
   if (msg -> handle == GATT_HANDLE_C_SAMPLE_RATE && msg -> value.len > 0) {
-    sampleRate = (long) (1000000 / (msg -> value.data[0])); 
+    sampleRate = (long) (1000000 / (msg -> value.data[0]));
+    //currentSampleRate[0] = msg -> value.data[0];
     Serial.print("Sucessful write attempt; new frequency / period: ");
     Serial.print(msg -> value.data[0]);
     Serial.print(" hertz");
@@ -593,7 +625,10 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
   if (msg -> handle == GATT_HANDLE_C_AC_FREQ && msg -> value.len > 0) {
     startFreq = msg -> value.data[0];
     stepSize = msg -> value.data[1];  
-    numOfIncrements = msg -> value.data[2];  
+    numOfIncrements = msg -> value.data[2];
+    //currentFreqSweep[0] = startFreq;
+    //currentFreqSweep[1] = stepSize;
+    //currentFreqSweep[2] = numOfIncrements;
     Serial.print("Sucessful write attempt to c_ac_freq.");
     Serial.println();      
     Serial.print("Start Frequency (KHz): ");  
@@ -615,13 +650,25 @@ void my_ble_evt_attclient_indicated(const struct ble_msg_attclient_indicated_evt
 #endif
 }
 
+void my_ble_rsp_attributes_write(const struct ble_msg_attributes_write_rsp_t * msg) {
+#ifdef DEBUG
+  if(msg -> result == 0) {
+  }
+  else {
+    Serial.print("###\trsp_attributes_write: {");
+    Serial.print("result: "); 
+    Serial.print(msg -> result, DEC);
+    Serial.println("}");
+  }
+#endif  
+}
+
 void my_ble_evt_attributes_status (const struct ble_msg_attributes_status_evt_t *msg) {
 #ifdef DEBUG
   Serial.print("###\tattributes_status: { ");
   Serial.print("nSubscription changed");
   Serial.print(", flags: "); 
   Serial.print(msg -> flags, HEX);
-
   Serial.println(" }");
 #endif
 
@@ -679,6 +726,13 @@ void changeZ_Value(long magnitude, long phaseAng, uint8_t *values) {
   values[3] = magnitude % 100;
 }
 
+void resetBLE() {
+  digitalWrite(BLE_RESET_PIN, LOW);
+  delay(5); // wait 5ms
+  digitalWrite(BLE_RESET_PIN, HIGH);
+  Serial.println("Reset attempt.");
+}
+
 /*long getNthDigit(long number, int base, int n) {
  long answer = 0;
  answer = (long) (number / pow(base, n - 1));
@@ -689,6 +743,14 @@ void changeZ_Value(long magnitude, long phaseAng, uint8_t *values) {
 //values[3] = ((getNthDigit(val, 10, 6) * 10) + getNthDigit(val, 10, 5));
 //values[4] = ((getNthDigit(val, 10, 4) * 10) + getNthDigit(val, 10, 3));
 //values[5] = ((getNthDigit(val, 10, 2) * 10) + getNthDigit(val, 10, 1));
+
+
+
+
+
+
+
+
 
 
 

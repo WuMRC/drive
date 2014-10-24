@@ -8,11 +8,12 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 
-import android.support.v4.app.DialogFragment;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -25,6 +26,7 @@ import android.graphics.Paint;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.IBinder;
+import android.support.v4.app.DialogFragment;
 import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.Menu;
@@ -84,15 +86,20 @@ FrequencySweepFragment.FrequencySweepListener{
 	private BluetoothGattCharacteristic mSampleRateCharacteristic;
 	private BluetoothGattCharacteristic mACFrequencyCharacteristic;
 
+	private BluetoothGattDescriptor clientCharacConfigDesc = 
+			new BluetoothGattDescriptor(
+					UUID.fromString(SampleGattAttributes.CLIENT_CHARACTERISTIC_CONFIG), 
+					BluetoothGattDescriptor.PERMISSION_READ);
+
 	public ArrayList<String> textFile = new ArrayList<String>();	
 	private String textFileName = "AccelData";	
 	private Calendar c = Calendar.getInstance();
 	private boolean checkNamedTextFile = false;
 	private double[] imp = {1, 2, 3, 4};
-	private int sampleRate = 50;
-	private byte startFreq = 0;
-	private byte stepSize = 0;
-	private byte numOfIncrements = 0;
+	private static int sampleRate = 50;
+	private static byte startFreq = 0;
+	private static byte stepSize = 0;
+	private static byte numOfIncrements = 0;
 
 	private Intent serviceIntent; 
 	private Intent activityIntent;
@@ -146,7 +153,8 @@ FrequencySweepFragment.FrequencySweepListener{
 	// ACTION_GATT_DISCONNECTED: disconnected from a GATT server.
 	// ACTION_GATT_SERVICES_DISCOVERED: discovered GATT services.
 	// ACTION_DATA_AVAILABLE: received data from the device.  This can be a result of read
-	//                        or notification operations.
+	// or notification operations.
+
 	private final BroadcastReceiver mGattUpdateReceiver = new BroadcastReceiver() {
 		@Override
 		public void onReceive(Context context, Intent intent) {
@@ -169,7 +177,12 @@ FrequencySweepFragment.FrequencySweepListener{
 				Switch enableNotifications = (Switch) findViewById(R.id.enable_notifications);
 				enableNotifications.setChecked(false);
 				enableNotifications.setClickable(false);
+				Button startButton = (Button) findViewById(R.id.begin);
+				startButton.setVisibility(View.GONE);
+				View startButtonBar = (View) findViewById(R.id.begin_bar);
+				startButtonBar.setVisibility(View.GONE);
 				mBluetoothLeService.stopForeground(true);
+				//mBluetoothLeService.close();
 				invalidateOptionsMenu();
 				clearUI();
 			} 
@@ -237,91 +250,15 @@ FrequencySweepFragment.FrequencySweepListener{
 		mDataField = (TextView) findViewById(R.id.data_value);
 		mDeviceName = mDeviceName.substring(0, mDeviceName.length() - 9);
 
+		bioimpedancePlot = (XYPlot) findViewById(R.id.bioimpedancePlot);
+
+
 		getSupportActionBar().setTitle(mDeviceName);
 		getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
 		// Set up bioimpedance plots
 
-		Paint bgPaint = new Paint();
-		bgPaint.setColor(Color.parseColor("#d8d8d8"));
-		bgPaint.setStyle(Paint.Style.FILL);
-
-		bioimpedancePlot = (XYPlot) findViewById(R.id.bioimpedancePlot);
-
-		accelXseries = new SimpleXYSeries("X");
-		accelXseries.useImplicitXVals();
-		accelYseries = new SimpleXYSeries("Y");
-		accelYseries.useImplicitXVals();
-		accelZseries = new SimpleXYSeries("Z");
-		accelZseries.useImplicitXVals();
-		bioimpedanceSeries = new SimpleXYSeries("Ω");
-		bioimpedanceSeries.useImplicitXVals();
-
-		bioimpedancePlot.setRangeBoundaries(-100, 600, BoundaryMode.FIXED);
-		bioimpedancePlot.setDomainBoundaries(0, 360, BoundaryMode.FIXED);
-
-		// Format general area
-		bioimpedancePlot.setBackgroundColor(Color.WHITE);
-		bioimpedancePlot.getBackgroundPaint().set(bgPaint);
-		bioimpedancePlot.getBackgroundPaint().setColor(Color.parseColor("#d8d8d8"));
-		bioimpedancePlot.getGraphWidget().getBackgroundPaint().setColor(Color.parseColor("#d8d8d8"));
-		bioimpedancePlot.getGraphWidget().setGridBackgroundPaint(null);
-		bioimpedancePlot.setBorderStyle(XYPlot.BorderStyle.SQUARE, null, null);
-		bioimpedancePlot.getGraphWidget().setPadding(12, 12, 12, 12);
-		bioimpedancePlot.getTitleWidget().setText("");
-
-		bioimpedancePlot.setBorderPaint(bgPaint);
-		//bioimpedancePlot.getGraphWidget().getBorderPaint().setColor(Color.TRANSPARENT);
-
-
-		// Format domain
-		bioimpedancePlot.getDomainLabelWidget().getLabelPaint().setColor(Color.parseColor("#006bb2"));
-		bioimpedancePlot.getDomainLabelWidget().getLabelPaint().setTextSize(20);
-		bioimpedancePlot.getGraphWidget().getDomainLabelPaint().setColor(Color.BLACK);
-		bioimpedancePlot.getGraphWidget().getDomainLabelPaint().setTextSize(20);
-		bioimpedancePlot.getGraphWidget().getDomainOriginLabelPaint().setColor(Color.BLACK);
-		bioimpedancePlot.getGraphWidget().getDomainOriginLinePaint().setColor(Color.BLACK);
-		bioimpedancePlot.getGraphWidget().getDomainGridLinePaint().setColor(Color.TRANSPARENT);
-		bioimpedancePlot.setDomainStepValue(5);
-		bioimpedancePlot.setDomainLabel("Sample Index");
-		bioimpedancePlot.getDomainLabelWidget().pack();
-
-
-		// Format range
-		bioimpedancePlot.getRangeLabelWidget().getLabelPaint().setColor(Color.parseColor("#006bb2"));
-		bioimpedancePlot.getRangeLabelWidget().getLabelPaint().setTextSize(20);
-		bioimpedancePlot.getGraphWidget().getRangeLabelPaint().setColor(Color.BLACK);
-		bioimpedancePlot.getGraphWidget().getRangeLabelPaint().setTextSize(20);
-		bioimpedancePlot.getGraphWidget().getRangeOriginLabelPaint().setColor(Color.BLACK);
-		bioimpedancePlot.getGraphWidget().getRangeOriginLinePaint().setColor(Color.BLACK);
-		bioimpedancePlot.getGraphWidget().getRangeGridLinePaint().setColor(Color.TRANSPARENT);
-		bioimpedancePlot.getGraphWidget().getRangeSubGridLinePaint().setColor(Color.TRANSPARENT);
-		bioimpedancePlot.setRangeLabel("Data");
-		bioimpedancePlot.setTicksPerRangeLabel(3);
-		bioimpedancePlot.getRangeLabelWidget().pack();
-
-		// Format legend
-
-		bioimpedancePlot.getLegendWidget().getTextPaint().setColor(Color.parseColor("#006bb2"));
-		bioimpedancePlot.getLegendWidget().getTextPaint().setTextSize(20);
-		bioimpedancePlot.getLegendWidget().setPaddingBottom(10);
-
-		// Add series
-		bioimpedancePlot.addSeries(accelXseries, new LineAndPointFormatter(Color.parseColor("#008b8b"), null, null, null));
-		bioimpedancePlot.addSeries(accelYseries, new LineAndPointFormatter(Color.parseColor("#8b008b"), null, null, null));
-		bioimpedancePlot.addSeries(accelZseries, new LineAndPointFormatter(Color.parseColor("#8b8b00"), null, null, null));
-		bioimpedancePlot.addSeries(bioimpedanceSeries, new LineAndPointFormatter(Color.parseColor("#006bb2"), null, null, null));
-
-		bioimpedancePlot.getBackgroundPaint().set(bgPaint);
-
-		// Debugging reference 
-
-		//bioimpedancePlot.getDomainLabelWidget().getBackgroundPaint().setColor(Color.RED);
-		//bioimpedancePlot.getDomainLabelWidget().getBorderPaint().setColor(Color.BLUE);
-		//bioimpedancePlot.getLegendWidget().setBackgroundPaint(bgPaint);
-		//bioimpedancePlot.getRangeLabelWidget().setBackgroundPaint(bgPaint);
-		//bioimpedancePlot.getDomainLabelWidget().setBackgroundPaint(bgPaint);
-		//bioimpedancePlot.getTitleWidget().setBackgroundPaint(bgPaint);
+		setupPlot();
 	}
 
 	@Override
@@ -449,7 +386,7 @@ FrequencySweepFragment.FrequencySweepListener{
 
 					Switch enableNotifications = (Switch) findViewById(R.id.enable_notifications);
 					enableNotifications.setChecked(false);
-					enableNotifications.setVisibility(View.GONE); //
+					enableNotifications.setVisibility(View.GONE); 
 
 					if (mNotifyCharacteristic != null) {
 						mBluetoothLeService.removeCharacteristicNotification(mNotifyCharacteristic, false);
@@ -493,8 +430,8 @@ FrequencySweepFragment.FrequencySweepListener{
 
 		// Turn on notifications.
 		else {
-			//ic_action_name.png
-			updateNotifications(serviceIntent, activityIntent, activityPendingIntent, notification);		
+			updateNotifications(serviceIntent, activityIntent, activityPendingIntent, notification);	
+			startSampling();
 		}
 	}
 
@@ -508,7 +445,8 @@ FrequencySweepFragment.FrequencySweepListener{
 		View start_bar = (View) findViewById(R.id.begin_bar);
 		start_bar.setVisibility(View.GONE);
 
-		updateNotifications(serviceIntent, activityIntent, activityPendingIntent, notification);	
+		updateNotifications(serviceIntent, activityIntent, activityPendingIntent, notification);
+		startSampling();
 	}
 
 	public void exportToText(View view) {
@@ -640,19 +578,26 @@ FrequencySweepFragment.FrequencySweepListener{
 
 			// Loops through available Characteristics.
 			for (BluetoothGattCharacteristic gattCharacteristic : gattCharacteristics) {
-
+				if ((gattCharacteristic.getProperties() & BluetoothGattCharacteristic.PROPERTY_READ) > 0) {
+					mBluetoothLeService.writeGattDescriptor(clientCharacConfigDesc);
+				}	
 				if ((gattCharacteristic.getProperties() & BluetoothGattCharacteristic.PROPERTY_NOTIFY) > 0) {
-					mNotifyCharacteristic = gattCharacteristic;			
+					if(findCharacteristic(gattCharacteristic.getUuid().toString(), 
+							SampleGattAttributes.BIOIMPEDANCE_DATA)) {
+						mNotifyCharacteristic = gattCharacteristic;	
+					}
 				}
 				if ((gattCharacteristic.getProperties() & BluetoothGattCharacteristic.PROPERTY_WRITE) > 0) {
 
 					if(findCharacteristic(gattCharacteristic.getUuid().toString(), 
 							SampleGattAttributes.SAMPLE_RATE)) {
 						mSampleRateCharacteristic = gattCharacteristic;
+						mBluetoothLeService.readCharacteristic(mSampleRateCharacteristic);
 					}
 					if(findCharacteristic(gattCharacteristic.getUuid().toString(), 
 							SampleGattAttributes.AC_FREQ)) {
 						mACFrequencyCharacteristic = gattCharacteristic;
+						mBluetoothLeService.readCharacteristic(mACFrequencyCharacteristic);
 					}
 
 				}
@@ -708,19 +653,18 @@ FrequencySweepFragment.FrequencySweepListener{
 		checkNamedTextFile = false;
 	}
 
+	public static void setSampleRateFromService(int sampleRateFromService) {
+		sampleRate = sampleRateFromService;
+		Log.i(TAG, "Default sample rate: " + sampleRate);
+	}
+
 	public void setSampleRate() {
 		// Create an instance of the dialog fragment and show it
-		Switch enableNotifications = (Switch) findViewById(R.id.enable_notifications);
-		if(!enableNotifications.isChecked()) {
-			Toast.makeText(this, "Notifications are not enabled.", Toast.LENGTH_SHORT).show();
-		}	
-		else {
-			sampleRateDialog = new SampleRateFragment();
-			Bundle args = new Bundle();
-			args.putInt(DeviceControlActivity.EXTRA_SAMPLE_RATE_BINDER, sampleRate);
-			sampleRateDialog.setArguments(args);
-			sampleRateDialog.show(getSupportFragmentManager(), "SampleRateFragment");
-		}
+		sampleRateDialog = new SampleRateFragment();
+		Bundle args = new Bundle();
+		args.putInt(DeviceControlActivity.EXTRA_SAMPLE_RATE_BINDER, sampleRate);
+		sampleRateDialog.setArguments(args);
+		sampleRateDialog.show(getSupportFragmentManager(), "SampleRateFragment");
 	}
 
 	@Override
@@ -744,21 +688,25 @@ FrequencySweepFragment.FrequencySweepListener{
 		// User touched the dialog's negative button
 	}
 
+	public static void setFrequencyParamsFromService(
+			byte startFreqFromService,
+			byte stepSizeFromService,
+			byte numOfIncrementsFromService) {
+		startFreq = startFreqFromService;
+		stepSize = stepSizeFromService;
+		numOfIncrements = numOfIncrementsFromService;
+		Log.i(TAG, "Default frequency start frequency: " + startFreq);
+	}
+
 	public void setFrequencySweep() {
 		// Create an instance of the dialog fragment and show it
-		Switch enableNotifications = (Switch) findViewById(R.id.enable_notifications);
-		if(!enableNotifications.isChecked()) {
-			Toast.makeText(this, "Notifications are not enabled.", Toast.LENGTH_SHORT).show();
-		}	
-		else {
-			frequencySweepDialog = new FrequencySweepFragment();
-			Bundle args = new Bundle();
-			args.putString(DeviceControlActivity.EXTRA_START_FREQ_BINDER, Byte.toString(startFreq));
-			args.putString(DeviceControlActivity.EXTRA_STEP_SIZE_BINDER, Byte.toString(stepSize));
-			args.putString(DeviceControlActivity.EXTRA_NUM_OF_INCREMENTS_BINDER, Byte.toString(numOfIncrements));
-			frequencySweepDialog.setArguments(args);
-			frequencySweepDialog.show(getSupportFragmentManager(), "FrequencySweepFragment");
-		}
+		frequencySweepDialog = new FrequencySweepFragment();
+		Bundle args = new Bundle();
+		args.putString(DeviceControlActivity.EXTRA_START_FREQ_BINDER, Byte.toString(startFreq));
+		args.putString(DeviceControlActivity.EXTRA_STEP_SIZE_BINDER, Byte.toString(stepSize));
+		args.putString(DeviceControlActivity.EXTRA_NUM_OF_INCREMENTS_BINDER, Byte.toString(numOfIncrements));
+		frequencySweepDialog.setArguments(args);
+		frequencySweepDialog.show(getSupportFragmentManager(), "FrequencySweepFragment");	
 	}
 
 	@Override
@@ -772,6 +720,9 @@ FrequencySweepFragment.FrequencySweepListener{
 			stepSize = (byte) (Integer.parseInt(freqValuesString[1]));
 			numOfIncrements = (byte) (Integer.parseInt(freqValuesString[2]));
 			if(startFreq + (stepSize * numOfIncrements) > 100) {
+				throw new IllegalArgumentException();
+			}
+			if(startFreq == 0 || stepSize == 0 || numOfIncrements == 0) {
 				throw new IllegalArgumentException();
 			}
 			byte[] freqValuesByte = {startFreq, stepSize, numOfIncrements}; 
@@ -831,7 +782,17 @@ FrequencySweepFragment.FrequencySweepListener{
 		return false;
 	}
 
-	public void updateNotifications(
+	public void setUpSampleRateCharacteristic() {
+		sampleRate = mSampleRateCharacteristic.getValue()[0];
+	}
+
+	public void setUpAcFreqCharacteristic() {
+		startFreq = mACFrequencyCharacteristic.getValue()[0];
+		stepSize= mACFrequencyCharacteristic.getValue()[1];
+		numOfIncrements = mACFrequencyCharacteristic.getValue()[2];
+	}
+
+	private void updateNotifications(
 			Intent serviceIntent, 
 			Intent activityIntent,
 			PendingIntent activityPendingIntent,
@@ -854,7 +815,9 @@ FrequencySweepFragment.FrequencySweepListener{
 
 		activityPendingIntent = PendingIntent.getActivity(this, 0, activityIntent, PendingIntent.FLAG_CANCEL_CURRENT);
 		notification.setLatestEventInfo(this, getText(R.string.sampling_data), getText(R.string.connected), activityPendingIntent);
+	}
 
+	private void startSampling() {
 		mBluetoothLeService.startForeground(ONGOING_NOTIFICATION_ID, notification);
 
 		com.androidplot.xy.XYPlot data = (com.androidplot.xy.XYPlot) findViewById(R.id.bioimpedancePlot);
@@ -864,7 +827,86 @@ FrequencySweepFragment.FrequencySweepListener{
 		buttons.setVisibility(View.VISIBLE);
 
 		mBluetoothLeService.setCharacteristicNotification(mNotifyCharacteristic, true);	
+	}
 
+	private void setupPlot() {
+		Paint bgPaint = new Paint();
+		bgPaint.setColor(Color.parseColor("#d8d8d8"));
+		bgPaint.setStyle(Paint.Style.FILL);
+
+		accelXseries = new SimpleXYSeries("X");
+		accelXseries.useImplicitXVals();
+		accelYseries = new SimpleXYSeries("Y");
+		accelYseries.useImplicitXVals();
+		accelZseries = new SimpleXYSeries("Z");
+		accelZseries.useImplicitXVals();
+		bioimpedanceSeries = new SimpleXYSeries("Ω");
+		bioimpedanceSeries.useImplicitXVals();
+
+		bioimpedancePlot.setRangeBoundaries(-100, 600, BoundaryMode.FIXED);
+		bioimpedancePlot.setDomainBoundaries(0, 360, BoundaryMode.FIXED);
+
+		// Format general area
+		bioimpedancePlot.setBackgroundColor(Color.WHITE);
+		bioimpedancePlot.getBackgroundPaint().set(bgPaint);
+		bioimpedancePlot.getBackgroundPaint().setColor(Color.parseColor("#d8d8d8"));
+		bioimpedancePlot.getGraphWidget().getBackgroundPaint().setColor(Color.parseColor("#d8d8d8"));
+		bioimpedancePlot.getGraphWidget().setGridBackgroundPaint(null);
+		bioimpedancePlot.setBorderStyle(XYPlot.BorderStyle.SQUARE, null, null);
+		bioimpedancePlot.getGraphWidget().setPadding(12, 12, 12, 12);
+		bioimpedancePlot.getTitleWidget().setText("");
+
+		bioimpedancePlot.setBorderPaint(bgPaint);
+		//bioimpedancePlot.getGraphWidget().getBorderPaint().setColor(Color.TRANSPARENT);
+
+		// Format domain
+		bioimpedancePlot.getDomainLabelWidget().getLabelPaint().setColor(Color.parseColor("#006bb2"));
+		bioimpedancePlot.getDomainLabelWidget().getLabelPaint().setTextSize(20);
+		bioimpedancePlot.getGraphWidget().getDomainLabelPaint().setColor(Color.BLACK);
+		bioimpedancePlot.getGraphWidget().getDomainLabelPaint().setTextSize(20);
+		bioimpedancePlot.getGraphWidget().getDomainOriginLabelPaint().setColor(Color.BLACK);
+		bioimpedancePlot.getGraphWidget().getDomainOriginLinePaint().setColor(Color.BLACK);
+		bioimpedancePlot.getGraphWidget().getDomainGridLinePaint().setColor(Color.TRANSPARENT);
+		bioimpedancePlot.setDomainStepValue(5);
+		bioimpedancePlot.setDomainLabel("Sample Index");
+		bioimpedancePlot.getDomainLabelWidget().pack();
+
+
+		// Format range
+		bioimpedancePlot.getRangeLabelWidget().getLabelPaint().setColor(Color.parseColor("#006bb2"));
+		bioimpedancePlot.getRangeLabelWidget().getLabelPaint().setTextSize(20);
+		bioimpedancePlot.getGraphWidget().getRangeLabelPaint().setColor(Color.BLACK);
+		bioimpedancePlot.getGraphWidget().getRangeLabelPaint().setTextSize(20);
+		bioimpedancePlot.getGraphWidget().getRangeOriginLabelPaint().setColor(Color.BLACK);
+		bioimpedancePlot.getGraphWidget().getRangeOriginLinePaint().setColor(Color.BLACK);
+		bioimpedancePlot.getGraphWidget().getRangeGridLinePaint().setColor(Color.TRANSPARENT);
+		bioimpedancePlot.getGraphWidget().getRangeSubGridLinePaint().setColor(Color.TRANSPARENT);
+		bioimpedancePlot.setRangeLabel("Data");
+		bioimpedancePlot.setTicksPerRangeLabel(3);
+		bioimpedancePlot.getRangeLabelWidget().pack();
+
+		// Format legend
+
+		bioimpedancePlot.getLegendWidget().getTextPaint().setColor(Color.parseColor("#006bb2"));
+		bioimpedancePlot.getLegendWidget().getTextPaint().setTextSize(20);
+		bioimpedancePlot.getLegendWidget().setPaddingBottom(10);
+
+		// Add series
+		bioimpedancePlot.addSeries(accelXseries, new LineAndPointFormatter(Color.parseColor("#008b8b"), null, null, null));
+		bioimpedancePlot.addSeries(accelYseries, new LineAndPointFormatter(Color.parseColor("#8b008b"), null, null, null));
+		bioimpedancePlot.addSeries(accelZseries, new LineAndPointFormatter(Color.parseColor("#8b8b00"), null, null, null));
+		bioimpedancePlot.addSeries(bioimpedanceSeries, new LineAndPointFormatter(Color.parseColor("#006bb2"), null, null, null));
+
+		bioimpedancePlot.getBackgroundPaint().set(bgPaint);
+
+		// Debugging reference 
+
+		//bioimpedancePlot.getDomainLabelWidget().getBackgroundPaint().setColor(Color.RED);
+		//bioimpedancePlot.getDomainLabelWidget().getBorderPaint().setColor(Color.BLUE);
+		//bioimpedancePlot.getLegendWidget().setBackgroundPaint(bgPaint);
+		//bioimpedancePlot.getRangeLabelWidget().setBackgroundPaint(bgPaint);
+		//bioimpedancePlot.getDomainLabelWidget().setBackgroundPaint(bgPaint);
+		//bioimpedancePlot.getTitleWidget().setBackgroundPaint(bgPaint);
 	}
 
 	private static IntentFilter makeGattUpdateIntentFilter() {

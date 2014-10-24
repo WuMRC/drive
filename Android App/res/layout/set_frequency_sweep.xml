@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+
+    <EditText
+        android:id="@+id/set_upper_freq"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="4dp"
+        android:layout_marginLeft="4dp"
+        android:layout_marginRight="4dp"
+        android:layout_marginTop="16dp"
+        android:digits="1234567890"
+        android:hint="@string/set_start_freq"
+        android:inputType="phone"
+        android:maxLength="2" />
+
+    <EditText
+        android:id="@+id/set_step_size"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="4dp"
+        android:layout_marginLeft="4dp"
+        android:layout_marginRight="4dp"
+        android:layout_marginTop="16dp"
+        android:digits="1234567890"
+        android:hint="@string/set_step_size"
+        android:inputType="phone"
+        android:maxLength="2" />
+
+    <EditText
+        android:id="@+id/set_lower_freq"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="4dp"
+        android:layout_marginLeft="4dp"
+        android:layout_marginRight="4dp"
+        android:layout_marginTop="16dp"
+        android:digits="1234567890"
+        android:hint="@string/set_num_of_increments"
+        android:inputType="phone"
+        android:maxLength="1" />
+
+</LinearLayout>
