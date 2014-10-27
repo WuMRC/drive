@@ -4,7 +4,7 @@
 % SELECT PATIENT FOLDER
 [bioimp, ultrasound] = getDRIVEdata;
 
-bioimp.acq = loadACQ(char(bioimp.files(1)));
+bioimp.acq = loadACQ(char(bioimp.files(2)));
 
 
 %% STEP 2 - TRACK ULTRASOUND DATA
@@ -34,5 +34,27 @@ distensAvg = mean(ultrasound.data.distens(FsUS:end-FsUS));
 
 %% STEP XX - BIOIMPEDANCE
 
-dtBI = acq.hdr.graph.sample_time;
+dtBI = (bioimp.acq.hdr.graph.sample_time)*0.001;    % in seconds
+FsBI = 1/dtBI;
+
+%%
+
+timeBIend = 15;
+timeBI = (0:dtBI:timeBIend);
+
+indSample = 3;
+
+dataOfInterest = bioimp.acq.data(bioimp.acq.markers.lSample(indSample):...
+    bioimp.acq.markers.lSample(indSample)+timeBIend*FsBI,1);
+dataOfInterestSMOOTH = smooth(dataOfInterest,FsBI/2);
+
+plot(timeBI, dataOfInterest, 'Color', [0.75 0.75 0.75])
+hold on
+plot(timeBI, dataOfInterestSMOOTH, 'k')
+
+envTopBI = envelope(timeBI,dataOfInterestSMOOTH,'top',FsBI*2,'linear');
+envBotBI = envelope(timeBI,dataOfInterestSMOOTH,'bottom',FsBI*2,'linear');
+
+plot(timeBI,envTopBI,'r')
+plot(timeBI,envBotBI,'r')
 
