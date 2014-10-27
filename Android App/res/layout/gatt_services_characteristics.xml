@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:compat="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
@@ -38,6 +39,8 @@
         android:layout_height="wrap_content"
         android:layout_alignParentLeft="true"
         android:layout_below="@id/device_address_tag"
+        android:paddingBottom="@dimen/activity_vertical_margin"
+        android:paddingTop="@dimen/activity_vertical_margin"
         android:text="@string/label_state"
         android:textIsSelectable="true"
         android:textSize="20sp" />
@@ -47,17 +50,40 @@
         android:layout_width="5dp"
         android:layout_height="wrap_content"
         android:layout_below="@id/device_address_tag"
-        android:layout_toRightOf="@+id/state_tag" />
+        android:layout_toRightOf="@+id/state_tag"
+        android:paddingBottom="@dimen/activity_vertical_margin"
+        android:paddingTop="@dimen/activity_vertical_margin" />
 
     <TextView
         android:id="@+id/connection_state"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@id/device_address_tag"
         android:layout_toRightOf="@+id/state_tag_space"
+        android:paddingBottom="@dimen/activity_vertical_margin"
+        android:paddingTop="@dimen/activity_vertical_margin"
         android:text="@string/disconnected"
         android:textIsSelectable="true"
         android:textSize="20sp" />
+
+    <Space
+        android:id="@+id/statebar_tag_space"
+        android:layout_width="5dp"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/device_address_tag"
+        android:layout_toRightOf="@+id/connection_state"
+        android:paddingBottom="@dimen/activity_vertical_margin"
+        android:paddingTop="@dimen/activity_vertical_margin" />
+
+    <ProgressBar
+        android:id="@+id/connection_state_bar"
+        style="?android:attr/progressBarStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/device_address_tag"
+        android:layout_toRightOf="@+id/statebar_tag_space"
+        android:paddingTop="25dp"
+        android:visibility="gone" />
 
     <Switch
         android:id="@+id/enable_notifications"
@@ -66,6 +92,7 @@
         android:layout_alignParentLeft="true"
         android:layout_below="@id/connection_state"
         android:onClick="enableNotifications"
+        android:paddingBottom="@dimen/activity_vertical_margin"
         android:text="@string/enableNotifications"
         android:textSize="20sp"
         android:visibility="gone" />
@@ -197,5 +224,95 @@
             android:textSize="24sp"
             android:textStyle="bold|italic" />
     </RelativeLayout>
+
+    <TableLayout
+        android:id="@+id/summary_table"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/buttons"
+        android:layout_below="@+id/hscrollview"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="@dimen/activity_vertical_margin" >
+
+        <TableRow
+            android:id="@+id/tableRow1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" >
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_weight="1"
+                android:padding="3dip"
+                android:text="@string/sample_rate" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_weight="1"
+                android:padding="3dip"
+                android:text="@string/start_freq" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_weight="1"
+                android:padding="3dip"
+                android:text="@string/step_size" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_weight="1"
+                android:padding="3dip"
+                android:text="@string/num_of_increments" />
+        </TableRow>
+
+        <TableRow
+            android:id="@+id/tableRow2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" >
+
+            <TextView
+                android:id="@+id/sample_rate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_weight="1"
+                android:padding="3dip"
+                android:text="@string/not_applicable" />
+
+            <TextView
+                android:id="@+id/start_freq"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_weight="1"
+                android:padding="3dip"
+                android:text="@string/not_applicable" />
+
+            <TextView
+                android:id="@+id/step_size"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_weight="1"
+                android:padding="3dip"
+                android:text="@string/not_applicable" />
+
+            <TextView
+                android:id="@+id/num_of_increments"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
+                android:layout_weight="1"
+                android:padding="3dip"
+                android:text="@string/not_applicable" />
+        </TableRow>
+    </TableLayout>
 
 </RelativeLayout>

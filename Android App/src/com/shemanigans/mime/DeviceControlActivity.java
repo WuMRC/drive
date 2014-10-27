@@ -34,9 +34,11 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ExpandableListView;
+import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.SimpleExpandableListAdapter;
 import android.widget.Switch;
+import android.widget.TableLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -73,8 +75,6 @@ FrequencySweepFragment.FrequencySweepListener{
 	public static final String EXTRA_NUM_OF_INCREMENTS_BINDER = "NUM_OF_INCREMENTS_BINDER";
 	//public final static String EXTRA_MESSAGE = "EXPORT_TO_TEXT";
 
-	private TextView mConnectionState;
-	private TextView mDataField;
 	private String mDeviceName;
 	private String mDeviceAddress;
 	private ExpandableListView mGattServicesList;
@@ -96,10 +96,24 @@ FrequencySweepFragment.FrequencySweepListener{
 	private Calendar c = Calendar.getInstance();
 	private boolean checkNamedTextFile = false;
 	private double[] imp = {1, 2, 3, 4};
-	private static int sampleRate = 50;
-	private static byte startFreq = 0;
-	private static byte stepSize = 0;
-	private static byte numOfIncrements = 0;
+	private int sampleRate = 50;
+	private byte startFreq = 0;
+	private byte stepSize = 0;
+	private byte numOfIncrements = 0;
+
+	private TextView mConnectionState;
+	private TextView mDataField;
+	private TextView mDeviceAddressTextView;
+	private TextView sampleRateTextView;
+	private TextView startFreqTextView;
+	private TextView stepSizeTextView;
+	private TextView numOfIncrementsTextView;
+	private Button startButton;
+	private View startButtonBar;
+	private Switch enableNotifications;
+	private ProgressBar connectionStateBar;
+	private RelativeLayout textFileButtons;
+	private TableLayout summaryTable;
 
 	private Intent serviceIntent; 
 	private Intent activityIntent;
@@ -162,25 +176,30 @@ FrequencySweepFragment.FrequencySweepListener{
 			if (BluetoothLeService.ACTION_GATT_CONNECTED.equals(action)) {
 				mConnected = true;
 				updateConnectionState(R.string.connected);
-				Switch enableNotifications = (Switch) findViewById(R.id.enable_notifications);
 				enableNotifications.setClickable(true);
+				connectionStateBar.setVisibility(View.GONE);
+				startButton.setVisibility(View.VISIBLE);
+				startButtonBar.setVisibility(View.VISIBLE);
+				summaryTable.setVisibility(View.VISIBLE);
 				invalidateOptionsMenu();
 			} 
 			else if (BluetoothLeService.ACTION_GATT_CONNECTING.equals(action)) {
 				mConnected = false;
-				//updateConnectionState(R.string.connecting);
+				connectionStateBar.getIndeterminateDrawable().setColorFilter(
+						getResources().getColor(R.color.appbasetheme_color),
+						android.graphics.PorterDuff.Mode.SRC_IN);
+				connectionStateBar.setVisibility(View.VISIBLE);
+				updateConnectionState(R.string.connecting);
 				invalidateOptionsMenu();
 			}
 			else if (BluetoothLeService.ACTION_GATT_DISCONNECTED.equals(action)) {
 				mConnected = false;
 				updateConnectionState(R.string.disconnected);
-				Switch enableNotifications = (Switch) findViewById(R.id.enable_notifications);
 				enableNotifications.setChecked(false);
 				enableNotifications.setClickable(false);
-				Button startButton = (Button) findViewById(R.id.begin);
 				startButton.setVisibility(View.GONE);
-				View startButtonBar = (View) findViewById(R.id.begin_bar);
 				startButtonBar.setVisibility(View.GONE);
+				summaryTable.setVisibility(View.GONE);
 				mBluetoothLeService.stopForeground(true);
 				//mBluetoothLeService.close();
 				invalidateOptionsMenu();
@@ -192,6 +211,19 @@ FrequencySweepFragment.FrequencySweepListener{
 			} 
 			else if (BluetoothLeService.ACTION_DATA_AVAILABLE.equals(action)) {
 				displayData(intent.getStringExtra(BluetoothLeService.EXTRA_DATA));
+			}
+			else if (BluetoothLeService.ACTION_DATA_AVAILABLE_SAMPLE_RATE.equals(action)) {
+				sampleRate = intent.getByteExtra(BluetoothLeService.EXTRA_DATA_SAMPLE_RATE, Byte.valueOf("0"));
+				setSampleRateTextView(sampleRate);
+				Log.i(TAG, "Default sample rate: " + sampleRate);
+			}
+			else if (BluetoothLeService.ACTION_DATA_AVAILABLE_FREQUENCY_PARAMS.equals(action)) {
+				byte[] freqParams = intent.getByteArrayExtra(BluetoothLeService.EXTRA_DATA_FREQUENCY_PARAMS);
+				startFreq = freqParams[0];
+				stepSize = freqParams[1];
+				numOfIncrements = freqParams[2];
+				setAcFreqTextViewParams(startFreq, stepSize, numOfIncrements);
+				Log.i(TAG, "Default frequency start frequency: " + startFreq);
 			}
 			else if (BluetoothLeService.ACTION_DATA_AVAILABLE_BIOIMPEDANCE.equals(action)) {
 				displayData("\n"
@@ -231,7 +263,6 @@ FrequencySweepFragment.FrequencySweepListener{
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		Log.i(TAG, "Activity started afresh.");	
 
 		Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
 		bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
@@ -240,24 +271,17 @@ FrequencySweepFragment.FrequencySweepListener{
 		final Intent intent = getIntent();
 		mDeviceName = intent.getStringExtra(EXTRAS_DEVICE_NAME);
 		mDeviceAddress = intent.getStringExtra(EXTRAS_DEVICE_ADDRESS);
-		Log.i(TAG, "Names written for the first time.");
 
 		// Sets up UI references.
-		((TextView) findViewById(R.id.device_address)).setText(mDeviceAddress);
-		mGattServicesList = (ExpandableListView) findViewById(R.id.gatt_services_list);
+		initializeViewComponents();
+		mDeviceAddressTextView.setText(mDeviceAddress);
 		mGattServicesList.setOnChildClickListener(servicesListClickListner);
-		mConnectionState = (TextView) findViewById(R.id.connection_state);
-		mDataField = (TextView) findViewById(R.id.data_value);
 		mDeviceName = mDeviceName.substring(0, mDeviceName.length() - 9);
-
 		bioimpedancePlot = (XYPlot) findViewById(R.id.bioimpedancePlot);
-
-
 		getSupportActionBar().setTitle(mDeviceName);
 		getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
 		// Set up bioimpedance plots
-
 		setupPlot();
 	}
 
@@ -266,8 +290,6 @@ FrequencySweepFragment.FrequencySweepListener{
 		super.onResume();
 		registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
 		if (mBluetoothLeService != null) {
-			//final boolean result = mBluetoothLeService.connect(mDeviceAddress);
-			//Log.d(TAG, "Connect request result=" + result);
 		}
 	}
 
@@ -359,6 +381,7 @@ FrequencySweepFragment.FrequencySweepListener{
 	// demonstrates 'Read' and 'Notify' features.  See
 	// http://d.android.com/reference/android/bluetooth/BluetoothGatt.html for the complete
 	// list of supported characteristic features.
+
 	private final ExpandableListView.OnChildClickListener servicesListClickListner =
 			new ExpandableListView.OnChildClickListener() {
 		@Override
@@ -383,8 +406,6 @@ FrequencySweepFragment.FrequencySweepListener{
 					// it first so it doesn't update the data field on the user interface.
 
 					//also uncheck notifications switch that may have been previously checked.
-
-					Switch enableNotifications = (Switch) findViewById(R.id.enable_notifications);
 					enableNotifications.setChecked(false);
 					enableNotifications.setVisibility(View.GONE); 
 
@@ -395,10 +416,7 @@ FrequencySweepFragment.FrequencySweepListener{
 					mBluetoothLeService.readCharacteristic(characteristic);
 				}
 				if ((charaProp & BluetoothGattCharacteristic.PROPERTY_NOTIFY) > 0) {
-
-					Switch enableNotifications = (Switch) findViewById(R.id.enable_notifications);
 					enableNotifications.setVisibility(View.VISIBLE);
-
 					mNotifyCharacteristic = characteristic;
 				}
 				if ((charaProp & BluetoothGattCharacteristic.PROPERTY_WRITE) > 0) {
@@ -411,41 +429,28 @@ FrequencySweepFragment.FrequencySweepListener{
 	};
 
 	public void enableNotifications(View view) {	
-
-		Switch enableNotifications = (Switch) findViewById(R.id.enable_notifications);
 		enableNotifications.setVisibility(View.VISIBLE);
 
 		// Turn off notifications.
 		if(enableNotifications.isChecked() == false) {		
 			Intent intent = new Intent(this, ServiceBinder.class);
 			stopService(intent);
-
-			RelativeLayout buttons = (RelativeLayout) findViewById(R.id.buttons);
-			buttons.setVisibility(View.VISIBLE);
-
+			textFileButtons.setVisibility(View.VISIBLE);
 			mBluetoothLeService.removeCharacteristicNotification(mNotifyCharacteristic, false);
-			//mNotifyCharacteristic = null;
 			mBluetoothLeService.stopForeground(true);
 		}
 
 		// Turn on notifications.
 		else {
-			updateNotifications(serviceIntent, activityIntent, activityPendingIntent, notification);	
 			startSampling();
 		}
 	}
 
 	public void startSampling(View view) {
-		Switch enableNotifications = (Switch) findViewById(R.id.enable_notifications);
 		enableNotifications.setVisibility(View.VISIBLE);
 		enableNotifications.setChecked(true);
-
-		Button start = (Button) findViewById(R.id.begin);
-		start.setVisibility(View.GONE);
-		View start_bar = (View) findViewById(R.id.begin_bar);
-		start_bar.setVisibility(View.GONE);
-
-		updateNotifications(serviceIntent, activityIntent, activityPendingIntent, notification);
+		startButton.setVisibility(View.GONE);
+		startButtonBar.setVisibility(View.GONE);
 		startSampling();
 	}
 
@@ -653,9 +658,8 @@ FrequencySweepFragment.FrequencySweepListener{
 		checkNamedTextFile = false;
 	}
 
-	public static void setSampleRateFromService(int sampleRateFromService) {
-		sampleRate = sampleRateFromService;
-		Log.i(TAG, "Default sample rate: " + sampleRate);
+	private void setSampleRateTextView(int sampleRate) {
+		sampleRateTextView.setText(String.valueOf(sampleRate) + " Hz");
 	}
 
 	public void setSampleRate() {
@@ -673,8 +677,8 @@ FrequencySweepFragment.FrequencySweepListener{
 		// Set Value
 		try {
 			sampleRate = Integer.parseInt(sampleRateDialog.getValue());
-			Log.i(TAG, "This value was passed back: " + String.valueOf(sampleRate));
 			Toast.makeText(this, "New frequency: " + sampleRateDialog.getValue(), Toast.LENGTH_SHORT).show();
+			setSampleRateTextView(sampleRate);
 			mBluetoothLeService.writeCharacteristic(mSampleRateCharacteristic, sampleRate);
 			updateNotifications(serviceIntent, activityIntent, activityPendingIntent, notification);		
 		}
@@ -688,14 +692,20 @@ FrequencySweepFragment.FrequencySweepListener{
 		// User touched the dialog's negative button
 	}
 
-	public static void setFrequencyParamsFromService(
-			byte startFreqFromService,
-			byte stepSizeFromService,
-			byte numOfIncrementsFromService) {
-		startFreq = startFreqFromService;
-		stepSize = stepSizeFromService;
-		numOfIncrements = numOfIncrementsFromService;
-		Log.i(TAG, "Default frequency start frequency: " + startFreq);
+	private void setAcFreqTextViewParams(byte startFreq, byte stepSize, byte numOfIncrements) {
+		startFreqTextView.setText(String.valueOf(startFreq) + " KHz");
+		if(stepSize == 0) {
+			stepSizeTextView.setText(R.string.not_applicable);
+		}
+		else {
+			stepSizeTextView.setText(String.valueOf(stepSize) + " KHz");
+		}
+		if(numOfIncrements == 0) {
+			numOfIncrementsTextView.setText(R.string.not_applicable);
+		}
+		else {
+			numOfIncrementsTextView.setText(String.valueOf(numOfIncrements));
+		}
 	}
 
 	public void setFrequencySweep() {
@@ -725,7 +735,8 @@ FrequencySweepFragment.FrequencySweepListener{
 			if(startFreq == 0 || stepSize == 0 || numOfIncrements == 0) {
 				throw new IllegalArgumentException();
 			}
-			byte[] freqValuesByte = {startFreq, stepSize, numOfIncrements}; 
+			byte[] freqValuesByte = {startFreq, stepSize, numOfIncrements};
+			setAcFreqTextViewParams(startFreq, stepSize, numOfIncrements);
 			Toast.makeText(this, R.string.freq_sweep_enabled, Toast.LENGTH_SHORT).show();
 			mBluetoothLeService.writeCharacteristicArray(mACFrequencyCharacteristic, freqValuesByte);
 			updateNotifications(serviceIntent, activityIntent, activityPendingIntent, notification);		
@@ -759,6 +770,7 @@ FrequencySweepFragment.FrequencySweepListener{
 			}
 			byte[] freqValuesByte = {startFreq, stepSize, numOfIncrements}; 
 			Toast.makeText(this, R.string.freq_sweep_disabled, Toast.LENGTH_SHORT).show();
+			setAcFreqTextViewParams(startFreq, stepSize, numOfIncrements);
 			mBluetoothLeService.writeCharacteristicArray(mACFrequencyCharacteristic, freqValuesByte);
 			updateNotifications(serviceIntent, activityIntent, activityPendingIntent, notification);		
 		}
@@ -780,16 +792,6 @@ FrequencySweepFragment.FrequencySweepListener{
 			return true;
 		}
 		return false;
-	}
-
-	public void setUpSampleRateCharacteristic() {
-		sampleRate = mSampleRateCharacteristic.getValue()[0];
-	}
-
-	public void setUpAcFreqCharacteristic() {
-		startFreq = mACFrequencyCharacteristic.getValue()[0];
-		stepSize= mACFrequencyCharacteristic.getValue()[1];
-		numOfIncrements = mACFrequencyCharacteristic.getValue()[2];
 	}
 
 	private void updateNotifications(
@@ -817,14 +819,46 @@ FrequencySweepFragment.FrequencySweepListener{
 		notification.setLatestEventInfo(this, getText(R.string.sampling_data), getText(R.string.connected), activityPendingIntent);
 	}
 
+	private void initializeViewComponents() {	
+		startButton = (Button) findViewById(R.id.begin);
+		startButtonBar = (View) findViewById(R.id.begin_bar);
+		enableNotifications  = (Switch) findViewById(R.id.enable_notifications);
+		connectionStateBar = (ProgressBar) findViewById(R.id.connection_state_bar);
+		bioimpedancePlot = (com.androidplot.xy.XYPlot) findViewById(R.id.bioimpedancePlot);
+		textFileButtons = (RelativeLayout) findViewById(R.id.buttons);
+		mGattServicesList = (ExpandableListView) findViewById(R.id.gatt_services_list);
+		mConnectionState = (TextView) findViewById(R.id.connection_state);
+		mDataField = (TextView) findViewById(R.id.data_value);
+		mDeviceAddressTextView = (TextView) findViewById(R.id.device_address);
+		sampleRateTextView = (TextView) findViewById(R.id.sample_rate);
+		startFreqTextView = (TextView) findViewById(R.id.start_freq);
+		stepSizeTextView = (TextView) findViewById(R.id.step_size);
+		numOfIncrementsTextView = (TextView) findViewById(R.id.num_of_increments);
+		summaryTable = (TableLayout) findViewById(R.id.summary_table);
+	}
+
 	private void startSampling() {
+		serviceIntent = new Intent(this, ServiceBinder.class);
+		serviceIntent.putExtra(EXTRA_DEVICE_ADDRESS_BINDER, mDeviceAddress);
+		serviceIntent.putExtra(EXTRA_DEVICE_NAME_BINDER, mDeviceName);
+		startService(serviceIntent);
+
+		notification = new Notification(R.drawable.ic_notification, getText(R.string.sampling_data),System.currentTimeMillis());
+		activityIntent = new Intent(this, LongTerm.class);
+
+		activityIntent.putExtra(EXTRA_DEVICE_ADDRESS_BINDER, mDeviceAddress);
+		activityIntent.putExtra(EXTRA_DEVICE_NAME_BINDER, mDeviceName);
+		activityIntent.putExtra(EXTRA_SAMPLE_RATE_BINDER, sampleRate);
+		activityIntent.putExtra(EXTRA_START_FREQ_BINDER, startFreq);
+		activityIntent.putExtra(EXTRA_STEP_SIZE_BINDER, stepSize);
+		activityIntent.putExtra(EXTRA_NUM_OF_INCREMENTS_BINDER, numOfIncrements);
+
+		activityPendingIntent = PendingIntent.getActivity(this, 0, activityIntent, PendingIntent.FLAG_CANCEL_CURRENT);
+		notification.setLatestEventInfo(this, getText(R.string.sampling_data), getText(R.string.connected), activityPendingIntent);
 		mBluetoothLeService.startForeground(ONGOING_NOTIFICATION_ID, notification);
 
-		com.androidplot.xy.XYPlot data = (com.androidplot.xy.XYPlot) findViewById(R.id.bioimpedancePlot);
-		data.setVisibility(View.VISIBLE);
-
-		RelativeLayout buttons = (RelativeLayout) findViewById(R.id.buttons);
-		buttons.setVisibility(View.VISIBLE);
+		bioimpedancePlot.setVisibility(View.VISIBLE);
+		textFileButtons.setVisibility(View.VISIBLE);
 
 		mBluetoothLeService.setCharacteristicNotification(mNotifyCharacteristic, true);	
 	}
@@ -912,9 +946,12 @@ FrequencySweepFragment.FrequencySweepListener{
 	private static IntentFilter makeGattUpdateIntentFilter() {
 		final IntentFilter intentFilter = new IntentFilter();
 		intentFilter.addAction(BluetoothLeService.ACTION_GATT_CONNECTED);
+		intentFilter.addAction(BluetoothLeService.ACTION_GATT_CONNECTING);
 		intentFilter.addAction(BluetoothLeService.ACTION_GATT_DISCONNECTED);
 		intentFilter.addAction(BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED);
 		intentFilter.addAction(BluetoothLeService.ACTION_DATA_AVAILABLE);
+		intentFilter.addAction(BluetoothLeService.ACTION_DATA_AVAILABLE_SAMPLE_RATE);
+		intentFilter.addAction(BluetoothLeService.ACTION_DATA_AVAILABLE_FREQUENCY_PARAMS);
 		intentFilter.addAction(BluetoothLeService.ACTION_DATA_AVAILABLE_BIOIMPEDANCE);
 		return intentFilter;
 	}

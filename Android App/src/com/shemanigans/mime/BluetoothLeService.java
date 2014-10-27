@@ -36,6 +36,7 @@ public class BluetoothLeService extends Service {
 	private BluetoothGatt mBluetoothGatt;
 	private int mConnectionState = STATE_DISCONNECTED;
 	private static int sNumBoundClients = 0;
+	private static int GATT_INDETERMINATE = 8;
 
 	public int getmConnectionState() { 
 		return mConnectionState; 
@@ -57,12 +58,20 @@ public class BluetoothLeService extends Service {
 			"com.example.bluetooth.le.ACTION_DATA_AVAILABLE";
 	public final static String ACTION_DATA_AVAILABLE_BIOIMPEDANCE =
 			"com.example.bluetooth.le.ACTION_DATA_AVAILABLE_BIOIMPEDANCE";
+	public final static String ACTION_DATA_AVAILABLE_SAMPLE_RATE =
+			"com.example.bluetooth.le.ACTION_DATA_AVAILABLE_SAMPLE_RATE";
+	public final static String ACTION_DATA_AVAILABLE_FREQUENCY_PARAMS =
+			"com.example.bluetooth.le.ACTION_DATA_AVAILABLE_FREQUENCY_PARAMS";
 	public final static String EXTRA_DATA =
 			"com.example.bluetooth.le.EXTRA_DATA";
 	public final static String EXTRA_DATA_BIOIMPEDANCE_STRING =
 			"com.example.bluetooth.le.EXTRA_DATA_BIOIMPEDANCE_STRING";
 	public final static String EXTRA_DATA_BIOIMPEDANCE_DOUBLE =
 			"com.example.bluetooth.le.EXTRA_DATA_BIOIMPEDANCE_DOUBLE";
+	public final static String EXTRA_DATA_SAMPLE_RATE =
+			"com.example.bluetooth.le.EXTRA_DATA_SAMPLE_RATE";
+	public final static String EXTRA_DATA_FREQUENCY_PARAMS =
+			"com.example.bluetooth.le.EXTRA_DATA_FREQUENCY_PARAMS";
 	public final static double[] Z_BLE = {1, 2, 3, 4};
 	public final static UUID UUID_HEART_RATE_MEASUREMENT =
 			UUID.fromString(SampleGattAttributes.HEART_RATE_MEASUREMENT);
@@ -103,7 +112,6 @@ public class BluetoothLeService extends Service {
 				Log.i(TAG, "Disconnected from GATT server.");
 				broadcastUpdate(intentAction);
 			}
-
 		}
 
 		@Override
@@ -121,7 +129,19 @@ public class BluetoothLeService extends Service {
 				int status) {
 			characteristicReadQueue.remove();
 			if (status == BluetoothGatt.GATT_SUCCESS) {
-				broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
+				if(findCharacteristic(
+						characteristic.getUuid().toString(), 
+						SampleGattAttributes.SAMPLE_RATE)) {
+					broadcastUpdate(ACTION_DATA_AVAILABLE_SAMPLE_RATE, characteristic);
+				}
+				else if(findCharacteristic(
+						characteristic.getUuid().toString(), 
+						SampleGattAttributes.AC_FREQ)) {
+					broadcastUpdate(ACTION_DATA_AVAILABLE_FREQUENCY_PARAMS, characteristic);
+				}
+				else {
+					broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
+				}
 			}
 			else {
 				Log.i(TAG, "onCharacteristicRead error: " + status);
@@ -246,16 +266,16 @@ public class BluetoothLeService extends Service {
 		else if (UUID_SAMPLE_RATE.equals(characteristic.getUuid())) {
 			final byte[] data = characteristic.getValue();
 			if (data != null && data.length > 0) {
-				DeviceControlActivity.setSampleRateFromService(data[0]);
-				Log.i(TAG, "Set default sample rate.");
+				intent.putExtra(EXTRA_DATA_SAMPLE_RATE, data[0]);
+				Log.i(TAG, "Got default sample rate.");
 			}
 		}
 
 		else if (UUID_AC_FREQUENCY.equals(characteristic.getUuid())) {
 			final byte[] data = characteristic.getValue();
 			if (data != null && data.length > 0) {
-				DeviceControlActivity.setFrequencyParamsFromService(data[0], data[1], data[2]);
-				Log.i(TAG, "Set default frequency sweep params.");
+				intent.putExtra(EXTRA_DATA_FREQUENCY_PARAMS, data);
+				Log.i(TAG, "Got default frequency sweep params.");
 			}
 		}
 
@@ -342,9 +362,13 @@ public class BluetoothLeService extends Service {
 				&& mBluetoothGatt != null) {
 			Log.i(TAG, "Trying to use an existing mBluetoothGatt for connection.");
 			if (mBluetoothGatt.connect()) {
+				Log.i(TAG, "State changed to connecting...");
 				mConnectionState = STATE_CONNECTING;
+				mGattCallback.onConnectionStateChange(mBluetoothGatt, GATT_INDETERMINATE, STATE_CONNECTING);
 				return true;
-			} else {
+			} 
+			else {
+				Log.i(TAG, "Boolean returned false.");
 				return false;
 			}
 		}
@@ -517,6 +541,24 @@ public class BluetoothLeService extends Service {
 			descriptor.setValue(BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE);
 			mBluetoothGatt.writeDescriptor(descriptor);
 		}
+	}
+
+	private boolean findCharacteristic(String characteristicUUID, String referenceUUID) {
+		byte[]characteristic;
+		byte[] reference;
+		boolean check = false;
+		characteristic = characteristicUUID.getBytes();
+		reference = referenceUUID.getBytes();
+		for(int i = 0; i< characteristic.length; i++) {
+			if(characteristic[i] == reference[i]) {
+				check = true;
+			}
+			else {
+				check = false;
+				i = characteristic.length;
+			}
+		}
+		return check;
 	}
 
 	/**

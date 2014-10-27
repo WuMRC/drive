@@ -16,7 +16,7 @@
     <item
         android:id="@+id/menu_connect"
         android:orderInCategory="100"
-        android:showAsAction="ifRoom|withText"
+        compat:showAsAction="ifRoom|withText"
         android:title="@string/menu_connect"/>
     <item
         android:id="@+id/menu_disconnect"
@@ -26,7 +26,7 @@
     <item
         android:id="@+id/name_text_file"
         android:orderInCategory="102"
-        android:showAsAction="never"
+        compat:showAsAction="never"
         android:title="@string/name_text_file"/>
     <item
         android:id="@+id/set_sample_rate"

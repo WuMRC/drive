@@ -31,6 +31,8 @@ public class Scan extends ActionBarActivity {
 	private BluetoothAdapter mBluetoothAdapter;
 	private boolean mScanning;
 	private Handler mHandler;
+	private static final int REQUEST_ENABLE_BT = 1;
+	private static final long SCAN_PERIOD = 10000; 	// Stops scanning after 10 seconds.
 
 	private ListView mListView;
 
@@ -40,12 +42,6 @@ public class Scan extends ActionBarActivity {
 		}
 		return mListView;
 	}
-
-
-	private static final int REQUEST_ENABLE_BT = 1;
-	// Stops scanning after 10 seconds.
-	private static final long SCAN_PERIOD = 10000;
-
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -75,15 +71,6 @@ public class Scan extends ActionBarActivity {
 			return;
 		}
 	}
-
-	/**
-	 * Set up the {@link android.app.ActionBar}.
-	 */
-	//	private void setupActionBar() {
-
-	//		getActionBar().setDisplayHomeAsUpEnabled(true);
-
-	//	}
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {

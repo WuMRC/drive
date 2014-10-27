@@ -54,6 +54,11 @@
     <string name="no_zero">Failed: Cannot set a frequency of "0" </string>
     <string name="start">Start</string>
     <string name="back_to_scanning">Going back to scanning&#8230;</string>
+    <string name="sample_rate">S.R</string>
+    <string name="start_freq">S.F</string>
+    <string name="step_size">S.S</string>
+    <string name="num_of_increments">N.O.I</string>
+    <string name="not_applicable">-</string>
 
     <string-array name="LongTermOptionsArray">
         <item>Live Data</item>
@@ -72,7 +77,7 @@
     <string name="label_state">State:</string>
     <string name="no_data">No data</string>
     <string name="connected">Connected</string>
-    <!-- <string name="connecting">Connecting...</string> -->
+    <string name="connecting">Connecting&#8230;</string>
     <string name="disconnected">Disconnected</string>
     <string name="title_devices">BLE Device Scan</string>
     <string name="error_bluetooth_not_supported">Bluetooth not supported.</string>

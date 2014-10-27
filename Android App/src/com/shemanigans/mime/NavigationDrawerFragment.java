@@ -108,7 +108,8 @@ public class NavigationDrawerFragment extends Fragment {
 				selectItem(position);
 			}
 		});
-		mDrawerListView.setAdapter(new ArrayAdapter<String>(getSupportActionBar()
+		mDrawerListView.setAdapter(
+				new ArrayAdapter<String>(getSupportActionBar()
 				.getThemedContext(),
 				R.layout.fragment_navigationdrawer_textview,
 				android.R.id.text1, drawerOptions));
