@@ -11,7 +11,7 @@ fileCheckArray = zeros(1,length(fileArray));
 
 for file = 1:length(fileArray)
     fileInfo = dir(strcat(directory, fileArray(file).name));
-    if fileInfo.bytes > fileSize
+    if fileInfo.bytes > fileSize*1000000;
         fileCheckArray(file) = true;
     else 
         fileCheckArray(file) = false;
