@@ -49,7 +49,7 @@ pointDist = zeros(dicomFrames,1);
 newDicom = dicomFile;
 
 % Create object tracker
-tracker = vision.PointTracker('MaxBidirectionalError', 1);
+tracker = vision.PointTracker('MaxBidirectionalError', 20);
 
 % Initialize object tracker
 initialize(tracker, points(:,:,1), objectFrame);
@@ -98,6 +98,7 @@ data.pointDist = pointDist;                     % in px (currently)
 data.envelope = [envTop; envBot];               % in px (currently)
 data.distens = (envTop-envBot)./envTop*100;     % in percent
 
+data.DICOM = newDicom;
 
 end
 
