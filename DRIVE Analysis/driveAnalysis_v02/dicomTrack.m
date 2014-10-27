@@ -94,8 +94,9 @@ envBot = envelope(time,pointDist,'bottom',FsUS,'linear');
 % figure(2), plot(f,2*abs(Y(1:NFFT/2+1)))
 
 data.pointLog = pointLog;
-data.pointDist = pointDist;
-data.envelope = [envTop; envBot];
+data.pointDist = pointDist;                     % in px (currently)
+data.envelope = [envTop; envBot];               % in px (currently)
+data.distens = (envTop-envBot)./envTop*100;     % in percent
 
 
 end
