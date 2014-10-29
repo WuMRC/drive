@@ -58,15 +58,13 @@
 
 #define TWI_FREQ 400000L      // Setting TWI/I2C Frequency to 400MHz.
 
-#define cycles_base 300       //First term to set a number of cycles to ignore
+#define cycles_base 60       //First term to set a number of cycles to ignore
 //to dissipate transients before a measurement is
 //taken. The max value for this is 511.   
 
 #define cycles_multiplier 1    //Set a multiple for the cycles_base which
 //is used to calculate the desired number
 //of settling cycles. Values can be 1, 2, or 4.
-
-#define start_frequency 50000   //Set the initial AC current frequency (KHz).
 
 #define cal_resistance 554.72  //Set a calibration resistance for the gain
 //factor. This will have to be measured before any
@@ -99,7 +97,9 @@ double systemPhaseShift = 0;       // Initialize system phase shift value
 
 double phaseAngle = 0;       // Initialize phase angle value
 
-uint8_t startFreq = 0;       // Start frequency
+uint8_t sampleRate = 50; // Android app sample Rate
+
+uint8_t startFreq = 50;       // Start frequency
 
 uint8_t stepSize = 0;        // frequency step size between consecutive values.
 
@@ -122,12 +122,10 @@ uint8_t bioImpData[9] = {
   1, 2, 3, 4, 5, 6, 7, 8, 9}; // Unsigned integer array to carry data to phone
 
 uint8_t defaultSampleRate[1] = {
-  50}; // Initialize default sample rate value holder
+  sampleRate}; // Initialize default sample rate value holder
 
 uint8_t defaultFreqSweep[3] = {
-  50, 0 , 0}; // Initialize default frquency sweep value holder
-
-long sampleRate = 0; // Android app sample Rate
+  startFreq, stepSize , numOfIncrements}; // Initialize default frquency sweep value holder
 
 // ================================================================
 // BLE STATE TRACKING (UNIVERSAL TO JUST ABOUT ANY BLE PROJECT)
@@ -197,8 +195,7 @@ void setup() {
   AD5933.setExtClock(false);
   AD5933.resetAD5933();
   AD5933.setSettlingCycles(cycles_base,cycles_multiplier);
-  AD5933.setIncrementinHex(1);
-  AD5933.setNumofIncrement(2);  
+  AD5933.setStartFreq(((long)(startFreq)) * 1000);
   AD5933.setVolPGA(0, 1);
   double temp = AD5933.getTemperature();
   gain_factor = AD5933.getGainFactor(cal_resistance, cal_samples, false);
@@ -234,9 +231,9 @@ void setup() {
   ble112.ble_evt_attributes_status = my_ble_evt_attributes_status;
   ble112.ble_rsp_attributes_write = my_ble_rsp_attributes_write; 
 
-    // open Arduino USB serial (and wait, if we're using Leonardo)
-    // use 38400 since it works at 8MHz as well as 16MHz
-    Serial.begin(38400);
+  // open Arduino USB serial (and wait, if we're using Leonardo)
+  // use 38400 since it works at 8MHz as well as 16MHz
+  Serial.begin(38400);
   while (!Serial);
 
   // open BLE Hardware serial port
@@ -248,6 +245,10 @@ void setup() {
   digitalWrite(BLE_RESET_PIN, LOW);
   delay(5); // wait 5ms
   digitalWrite(BLE_RESET_PIN, HIGH);
+  
+  Serial.print("Start freq: ");
+  Serial.print(((long)(startFreq)) * 1000);
+  Serial.println();
 
   AD5933.getComplexOnce(gain_factor, rComp, iComp, Z_Value);
   systemPhaseShift = returnStandardPhaseAngle(atan2(iComp, rComp));
@@ -283,15 +284,6 @@ void loop() {
   AD5933.getComplexOnce(gain_factor, rComp, iComp, Z_Value);
   phaseAngle = returnStandardPhaseAngle((atan2(iComp, rComp))) - systemPhaseShift;
 
-  /*Serial.print(rComp);
-   Serial.print("\t");
-   Serial.print(iComp);
-   Serial.print("\t");
-   Serial.print(Z_Value);
-   Serial.print("\t");
-   Serial.print(phaseAngle);
-   Serial.println();*/
-
   // For BLE
   // =================================================== 
 
@@ -316,12 +308,6 @@ void loop() {
       Z_Value *= 1000;
       phaseAngle *= 100;
       changeZ_Value((long) Z_Value, (long) phaseAngle, bioImpData);
-      /*Serial.print(A[6]);
-       Serial.print("\t");
-       Serial.print(A[7]);
-       Serial.print("\t");
-       Serial.print(phaseAngle);
-       Serial.println();*/
     }     
 
     //Write notification values to characteristic on ble112. Causes notification to be sent.
@@ -594,13 +580,12 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
 
   // check for data written to "c_sample_rate" handle
   if (msg -> handle == GATT_HANDLE_C_SAMPLE_RATE && msg -> value.len > 0) {
-    sampleRate = (long) (1000000 / (msg -> value.data[0]));
-    //currentSampleRate[0] = msg -> value.data[0];
+    sampleRate = msg -> value.data[0];
     Serial.print("Sucessful write attempt; new frequency / period: ");
-    Serial.print(msg -> value.data[0]);
+    Serial.print(sampleRate);
     Serial.print(" hertz");
     Serial.print(" / ");         
-    Serial.print(sampleRate);
+    Serial.print(1000000 / ((long) sampleRate));
     Serial.print(" microseconds.");   
 
     // Starting to change the settings of AD5933
@@ -617,18 +602,33 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
 
     // End changing process.
 
-    Micro40Timer::set(sampleRate, notify);
+    Micro40Timer::set(1000000 / ((long) sampleRate), notify);
     Micro40Timer::start();
     Serial.println();
   }
   // check for data written to "c_ac_freq" handle  
   if (msg -> handle == GATT_HANDLE_C_AC_FREQ && msg -> value.len > 0) {
-    startFreq = msg -> value.data[0];
+    startFreq = msg -> value.data[0]; 
     stepSize = msg -> value.data[1];  
     numOfIncrements = msg -> value.data[2];
-    //currentFreqSweep[0] = startFreq;
-    //currentFreqSweep[1] = stepSize;
-    //currentFreqSweep[2] = numOfIncrements;
+    
+    Micro40Timer::stop(); 
+    
+    if(stepSize == 0) { // frequency sweep is disabled
+    
+    }
+    else { // frequency sweep is enabled
+      // need function to put chip in standby mode.
+      AD5933.setSettlingCycles(cycles_base, cycles_multiplier); // set number of settling cycles
+      AD5933.setStartFreq(startFreq * 1000); // convert from KHz to Hz and initilaize AD5933
+      AD5933.setIncrement(stepSize * 1000); // convert from KHz to Hz
+      AD5933.setNumofIncrement(numOfIncrements);
+      //AD5933.performFreqSweep();  Gain factor will need to be adjusted over the range of the frequency sweep    
+    }
+    
+    Micro40Timer::set(1000000 / ((long) sampleRate, notify);
+    Micro40Timer::start();
+    
     Serial.print("Sucessful write attempt to c_ac_freq.");
     Serial.println();      
     Serial.print("Start Frequency (KHz): ");  
@@ -743,6 +743,8 @@ void resetBLE() {
 //values[3] = ((getNthDigit(val, 10, 6) * 10) + getNthDigit(val, 10, 5));
 //values[4] = ((getNthDigit(val, 10, 4) * 10) + getNthDigit(val, 10, 3));
 //values[5] = ((getNthDigit(val, 10, 2) * 10) + getNthDigit(val, 10, 1));
+
+
 
 
 
