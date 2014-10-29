@@ -86,8 +86,8 @@ time = (1:dicomFrames)/FsUS;
 % % freq = peakFreq(pointDist,FsUS,'band',[0.6, 2.0]);
 % freq = 0.5;
 % Get envelope of tracked motion
-envTop = envelope(time,pointDist,'top',FsUS*2,'linear');
-envBot = envelope(time,pointDist,'bottom',FsUS*2,'linear');
+envTop = envelope(time,pointDist,'top',FsUS,'linear');
+envBot = envelope(time,pointDist,'bottom',FsUS,'linear');
 % 
 % figure(1), plot(time, pointDist)
 % hold on, plot(time, envTop,'r'), plot(time,envBot,'r')
