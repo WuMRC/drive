@@ -66,7 +66,7 @@
 //is used to calculate the desired number
 //of settling cycles. Values can be 1, 2, or 4.
 
-#define cal_resistance 554.72  //Set a calibration resistance for the gain
+#define cal_resistance 356.000  //Set a calibration resistance for the gain
 //factor. This will have to be measured before any
 //other measurements are performed.  
 
@@ -198,7 +198,7 @@ void setup() {
   AD5933.setStartFreq(((long)(startFreq)) * 1000);
   AD5933.setVolPGA(0, 1);
   double temp = AD5933.getTemperature();
-  gain_factor = AD5933.getGainFactor(cal_resistance, cal_samples, false);
+  AD5933.getGainFactorC(cal_resistance, cal_samples, gain_factor, systemPhaseShift, false);
 
   // ================================================================
   // For General elements
@@ -245,13 +245,14 @@ void setup() {
   digitalWrite(BLE_RESET_PIN, LOW);
   delay(5); // wait 5ms
   digitalWrite(BLE_RESET_PIN, HIGH);
-  
+
   Serial.print("Start freq: ");
   Serial.print(((long)(startFreq)) * 1000);
   Serial.println();
 
-  AD5933.getComplexOnce(gain_factor, rComp, iComp, Z_Value);
-  systemPhaseShift = returnStandardPhaseAngle(atan2(iComp, rComp));
+  //AD5933.getComplexOnce(gain_factor, rComp, iComp, Z_Value);
+  //systemPhaseShift = returnStandardPhaseAngle(atan2(iComp, rComp));
+  //systemPhaseShift = atan2(iComp, rComp);
   Serial.print("System Phase Shift: ");
   Serial.print(systemPhaseShift);
   Serial.println();
@@ -281,8 +282,7 @@ void loop() {
 
   AD5933.tempUpdate();
   AD5933.setCtrMode(REPEAT_FREQ);
-  AD5933.getComplexOnce(gain_factor, rComp, iComp, Z_Value);
-  phaseAngle = returnStandardPhaseAngle((atan2(iComp, rComp))) - systemPhaseShift;
+  AD5933.getComplexOnce(gain_factor, systemPhaseShift, rComp, iComp, Z_Value, phaseAngle);
 
   // For BLE
   // =================================================== 
@@ -297,7 +297,12 @@ void loop() {
     bioImpData[1] = (100 * cos((pseudo*3.14)/180));
     bioImpData[2] = (0);
 
-    if(((Z_Value - 554.72) > -3 && (Z_Value - 554.72) < 3) || ((Z_Value - 554.72) > 500)) {        
+    if(
+    ((Z_Value - cal_resistance) > - 0.4 
+      && 
+      (Z_Value - cal_resistance) < 0.4)
+      || 
+      ((Z_Value - cal_resistance) > 500)) {        
       bioImpData[3] = 0;
       bioImpData[4] = 0;
       bioImpData[5] = 0;
@@ -611,24 +616,25 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
     startFreq = msg -> value.data[0]; 
     stepSize = msg -> value.data[1];  
     numOfIncrements = msg -> value.data[2];
-    
+
     Micro40Timer::stop(); 
-    
+
     if(stepSize == 0) { // frequency sweep is disabled
-    
+
     }
     else { // frequency sweep is enabled
-      // need function to put chip in standby mode.
+      AD5933.resetAD5933(); // puts chip in standby mode.
       AD5933.setSettlingCycles(cycles_base, cycles_multiplier); // set number of settling cycles
       AD5933.setStartFreq(startFreq * 1000); // convert from KHz to Hz and initilaize AD5933
       AD5933.setIncrement(stepSize * 1000); // convert from KHz to Hz
       AD5933.setNumofIncrement(numOfIncrements);
-      //AD5933.performFreqSweep();  Gain factor will need to be adjusted over the range of the frequency sweep    
+      // Function to calculate array of changing gain factors
+      //AD5933.compFreqSweep();    
     }
-    
-    Micro40Timer::set(1000000 / ((long) sampleRate, notify);
+
+    Micro40Timer::set(1000000 / ((long) sampleRate), notify);
     Micro40Timer::start();
-    
+
     Serial.print("Sucessful write attempt to c_ac_freq.");
     Serial.println();      
     Serial.print("Start Frequency (KHz): ");  
@@ -743,16 +749,3 @@ void resetBLE() {
 //values[3] = ((getNthDigit(val, 10, 6) * 10) + getNthDigit(val, 10, 5));
 //values[4] = ((getNthDigit(val, 10, 4) * 10) + getNthDigit(val, 10, 3));
 //values[5] = ((getNthDigit(val, 10, 2) * 10) + getNthDigit(val, 10, 1));
-
-
-
-
-
-
-
-
-
-
-
-
-
