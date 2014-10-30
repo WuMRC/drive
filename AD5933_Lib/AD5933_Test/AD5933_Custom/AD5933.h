@@ -34,7 +34,7 @@ public: // The detailed instruction will be on Wiki or ".cpp" file
 	bool setStartFreq(long);
 	bool setIncrement(long);
 	bool setIncrementinHex(long);
-	bool setNumofIncrement(int);
+	bool setNumofIncrement(byte);
 	bool setSettlingCycles(int, byte);
 	bool resetAD5933();
 	bool setExtClock(bool);
@@ -66,17 +66,26 @@ public: // The detailed instruction will be on Wiki or ".cpp" file
 	bool isValueReady();
 	//int getRealComp();
 	//int getImagComp();
-	bool getComplexOnce(double , double &, double &, double &);
-	bool getComplexOnce(double , double &, double &);
-	bool compFreqSweep(double, double *, double *);
+	bool getComplexRawOnce(int &, int &);
+	bool getComplexOnce(double, double, double &, double &, double &, double &);
+	bool compFreqRawSweep(int *, int *);
+	bool compFreqSweep(double *, double *, double *, double *);
+	bool getGainFactorC(double, int, double &, double &);
+	bool getGainFactorC(double, int, double &, double &, bool);
+	bool getGainFactorS_Set(double , int, double *, double *);
+	bool getGainFactorS_TP(double , int, double, double, double &, double &, double &, double &);
+	bool compCbrArray(double, double, double, double, double *, double *);
+
 	
 
 private:
 	
 	static const byte Address_Ptr = 0xB0; // Address Pointer to read register values.
 	double opClock;
+	long incrHex;
 	//int getRealCompP();
 	//int getImagCompP();
+	byte numIncrement;
 	double getMagValue();
 	inline byte getStatusReg()
 	{
@@ -84,6 +93,10 @@ private:
 	}
 	HardwareSerial *printer;
 	bool blockRead(int, int, byte *);
+	inline double getMag(int cReal, int cImag)
+	{
+		return sqrt( ( square(cReal) + square(cImag)) );
+	}
 	
 };
 
