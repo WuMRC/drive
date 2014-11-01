@@ -49,7 +49,7 @@ pointDist = zeros(dicomFrames,1);
 newDicom = dicomFile;
 
 % Create object tracker
-tracker = vision.PointTracker('MaxBidirectionalError', 20);
+tracker = vision.PointTracker('MaxBidirectionalError', inf);
 
 % Initialize object tracker
 initialize(tracker, points(:,:,1), objectFrame);
@@ -93,10 +93,12 @@ envBot = envelope(time,pointDist,'bottom',FsUS,'linear');
 % hold on, plot(time, envTop,'r'), plot(time,envBot,'r')
 % figure(2), plot(f,2*abs(Y(1:NFFT/2+1)))
 
-data.pointLog = pointLog;
-data.pointDist = pointDist;                     % in px (currently)
-data.envelope = [envTop; envBot];               % in px (currently)
-data.distens = (envTop-envBot)./envTop*100;     % in percent
+data.PIXELS_PER_MM = (521-282)/(5*10);
+data.FsUS = FsUS;
+data.pointLog = pointLog/data.PIXELS_PER_MM;
+data.pointDist = pointDist/data.PIXELS_PER_MM;    % in mm (currently)
+% data.envelope = [envTop; envBot];               % in px (currently)
+% data.distens = (envTop-envBot)./envTop*100;     % in percent
 
 data.DICOM = newDicom;
 

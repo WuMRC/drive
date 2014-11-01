@@ -4,29 +4,40 @@
 % SELECT PATIENT FOLDER
 [bioimp, ultrasound] = getDRIVEdata;
 
-bioimp.acq = loadACQ(char(bioimp.files(2)));
+% bioimp.acq = loadACQ(char(bioimp.files(2)));
 
 
 %% STEP 2 - TRACK ULTRASOUND DATA
 [ultrasound.data] = dicomTrack(ultrasound.files(1).name);
 
-% implay(permute(ultrasound.data.DICOM,[1 2 4 3]))
+implay(permute(ultrasound.data.DICOM,[1 2 4 3]))
+
+%%
+imshow(ultrasound.data.DICOM(:,:,1));
+
+
+
 %%
 
+
 dicomInfo = dicominfo(ultrasound.files(1).name);
-FsUS = 1/((dicomInfo.FrameTime)*0.001);
-timeUS = (1:dicomInfo.NumberOfFrames)/FsUS;
+ultrasound.data.FsUS = 1/((dicomInfo.FrameTime)*0.001);
+ultrasound.data.timeUS = (1:dicomInfo.NumberOfFrames)/ultrasound.data.FsUS;
+
+ultrasound.data.envelope.card = ultrasound.data.pointDist;
+ultrasound.data.envelope.resp = 1;
+
 
 % Plot the diameter/distensibility over time
-% subplot(2,1,1)
-plot(timeUS, ultrasound.data.pointDist,'k')
-% hold on, plot(time, ultrasound.data.envelope(1,:)','r')
-% hold on, plot(time, ultrasound.data.envelope(2,:)','r')
-xlabel('Time [s]'); ylabel('Diameter [px]')
+subplot(2,1,1)
+plot(ultrasound.data.timeUS, ultrasound.data.pointDist,'k')
+% hold on, plot(timeUS, ultrasound.data.envelope(1,:)','r')
+% hold on, plot(timeUS, ultrasound.data.envelope(2,:)','r')
+xlabel('Time [s]'); ylabel('Diameter [mm]')
 title('Distance between 2 points')
 
 subplot(2,1,2)
-plot(timeUS, ultrasound.data.distens,'r')
+plot(ultrasound.data.timeUS, ultrasound.data.distens,'r')
 xlabel('Time [s]'); ylabel('Distensibility [%]')
 title('Distance between 2 points')
 

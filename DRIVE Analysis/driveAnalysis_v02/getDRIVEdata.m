@@ -16,7 +16,7 @@ ultrasoundFileArrayInfo = dir(dirUltrasound);
 fileArrayUltrasound = ultrasoundFileArrayInfo(arrayfun(@(x) x.name(1), ...
     ultrasoundFileArrayInfo) ~= '.');
 
-fileUltrasound = minFileSize(dirUltrasound,fileArrayUltrasound, 50);
+fileUltrasound = minFileSize(dirUltrasound,fileArrayUltrasound, 35);
 
 % Select the bioimpedance files
 bioimpedanceFileArrayInfo = dir(dirPatient);
