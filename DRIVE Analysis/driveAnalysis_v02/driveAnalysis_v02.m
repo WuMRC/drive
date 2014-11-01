@@ -8,7 +8,7 @@
 
 
 %% STEP 2 - TRACK ULTRASOUND DATA
-[ultrasound.data] = dicomTrack(ultrasound.files(1).name);
+[ultrasound.data] = dicomTrack(ultrasound.files(2).name);
 
 implay(permute(ultrasound.data.DICOM,[1 2 4 3]))
 
@@ -20,22 +20,47 @@ imshow(ultrasound.data.DICOM(:,:,1));
 %%
 
 
-dicomInfo = dicominfo(ultrasound.files(1).name);
-ultrasound.data.FsUS = 1/((dicomInfo.FrameTime)*0.001);
-ultrasound.data.timeUS = (1:dicomInfo.NumberOfFrames)/ultrasound.data.FsUS;
+ultrasound.info = dicominfo(ultrasound.files(1).name);
+ultrasound.info.FsUS = 1/((ultrasound.info.FrameTime)*0.001);
+ultrasound.data.timeUS = (1:ultrasound.info.NumberOfFrames)...
+    /ultrasound.info.FsUS;
 
-ultrasound.data.envelope.card = ultrasound.data.pointDist;
-ultrasound.data.envelope.resp = 1;
+ultrasound.data.envelope.card = [envelope(ultrasound.data.timeUS, ...
+    ultrasound.data.pointDist,'top',ultrasound.info.FsUS,'linear') 
+    envelope(ultrasound.data.timeUS, ...
+    ultrasound.data.pointDist,'bottom',ultrasound.info.FsUS,'linear')];
+ultrasound.data.envelope.resp = [envelope(ultrasound.data.timeUS, ...
+    ultrasound.data.pointDist,'top',ultrasound.info.FsUS*5,'linear') 
+    envelope(ultrasound.data.timeUS, ...
+    ultrasound.data.pointDist,'bottom',ultrasound.info.FsUS*5,'linear')];
+
+
+%% Respiratory Signal from IVC
+
+ultrasound.data.resp = smooth(ultrasound.data.pointDist,ultrasound.info.FsUS);%, 'rloess');
+subplot(2,1,1), plot(ultrasound.data.timeUS,ultrasound.data.resp)
+hold on, plot(ultrasound.data.timeUS,ultrasound.data.pointDist,'k')
+
+%% Cardiac Signal from IVC
+ultrasound.data.card = ultrasound.data.pointDist- ultrasound.data.resp;
+subplot(2,1,2), plot(ultrasound.data.timeUS,ultrasound.data.card,'r')
+
+%%
+
 
 
 % Plot the diameter/distensibility over time
 subplot(2,1,1)
 plot(ultrasound.data.timeUS, ultrasound.data.pointDist,'k')
-% hold on, plot(timeUS, ultrasound.data.envelope(1,:)','r')
-% hold on, plot(timeUS, ultrasound.data.envelope(2,:)','r')
+hold on, plot(timeUS, ultrasound.data.envelope.card(1,:)','r')
+hold on, plot(timeUS, ultrasound.data.envelope.card(2,:)','r')
+hold on, plot(timeUS, ultrasound.data.envelope.resp(1,:)','b')
+hold on, plot(timeUS, ultrasound.data.envelope.resp(2,:)','b')
 xlabel('Time [s]'); ylabel('Diameter [mm]')
 title('Distance between 2 points')
 
+%%
+% ultrasound.data.distens = 
 subplot(2,1,2)
 plot(ultrasound.data.timeUS, ultrasound.data.distens,'r')
 xlabel('Time [s]'); ylabel('Distensibility [%]')
