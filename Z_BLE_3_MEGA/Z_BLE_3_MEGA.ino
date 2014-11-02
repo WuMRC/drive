@@ -85,6 +85,10 @@
 #define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
 #endif 
 
+double* GF_Array = NULL; // Pointer for dynamic gain factor array size
+
+double* PS_Array = NULL; // Pointer for dynamic phase shift array size
+
 double gain_factor = 0;      // Initialize Gain factor
 
 double Z_Value = 0;          // Initialize impedance magnitude
@@ -97,14 +101,29 @@ double systemPhaseShift = 0;       // Initialize system phase shift value
 
 double phaseAngle = 0;       // Initialize phase angle value
 
-uint8_t sampleRate = 50; // Android app sample Rate
+uint8_t sampleRate = 50; // Android app sample rate (Hz)
 
-uint8_t startFreq = 50;       // Start frequency
+uint8_t startFreq = 50;       // AC Start frequency  (KHz)
 
-uint8_t stepSize = 0;        // frequency step size between consecutive values.
+uint8_t stepSize = 0;        // AC frequency step size between consecutive values. (KHz)
 
 uint8_t numOfIncrements = 0;       // Number of frequency increments.
 
+double deltaGF = 0; // used for 2 point calibration
+
+double deltaPS = 0; // used for 2 point calibration
+
+double startFreqHz = ((long)(startFreq)) * 1000; // AC Start frequency (Hz)
+
+double stepSizeHz = 0; // AC frequency step size between consecutive values. (Hz)
+
+double endFreqHz = 0; // end frequency for 2 point calibration
+
+long sampleRatePeriod = 0; // Android app sample rate reriod (microseconds)
+
+uint8_t incr = 0; // used to loop frquency sweeps
+
+int ctrReg = 0;
 
 // ================================================================
 // General variables
@@ -117,6 +136,8 @@ volatile boolean writer = false;  // Variable that toggles notifications to phon
 boolean notifier = false; // Variable to manage sample rate. Managed from interrupt context.
 
 boolean timedOut = false; // Used to identify if the module timed out.
+
+boolean freqSweepFlag = false;
 
 uint8_t bioImpData[9] = {
   1, 2, 3, 4, 5, 6, 7, 8, 9}; // Unsigned integer array to carry data to phone
@@ -195,7 +216,7 @@ void setup() {
   AD5933.setExtClock(false);
   AD5933.resetAD5933();
   AD5933.setSettlingCycles(cycles_base,cycles_multiplier);
-  AD5933.setStartFreq(((long)(startFreq)) * 1000);
+  AD5933.setStartFreq(startFreqHz);
   AD5933.setVolPGA(0, 1);
   double temp = AD5933.getTemperature();
   AD5933.getGainFactorC(cal_resistance, cal_samples, gain_factor, systemPhaseShift, false);
@@ -247,7 +268,7 @@ void setup() {
   digitalWrite(BLE_RESET_PIN, HIGH);
 
   Serial.print("Start freq: ");
-  Serial.print(((long)(startFreq)) * 1000);
+  Serial.print(startFreqHz);
   Serial.println();
 
   //AD5933.getComplexOnce(gain_factor, rComp, iComp, Z_Value);
@@ -263,7 +284,8 @@ void setup() {
   ble112.ble_cmd_attributes_write(GATT_HANDLE_C_AC_FREQ, 0, 3, defaultFreqSweep);
 
   // Start with sampling rate of 50 hertz
-  Micro40Timer::set(20000, notify); // 20000 microsecond period -> 50 hertz frequency
+  sampleRatePeriod = 20000;
+  Micro40Timer::set(sampleRatePeriod, notify); // 20000 microsecond period -> 50 hertz frequency
   Micro40Timer::start();
 
 }
@@ -281,8 +303,30 @@ void loop() {
   // =================================================== 
 
   AD5933.tempUpdate();
-  AD5933.setCtrMode(REPEAT_FREQ);
-  AD5933.getComplexOnce(gain_factor, systemPhaseShift, rComp, iComp, Z_Value, phaseAngle);
+
+  if(!freqSweepFlag) { // Repeat frequency, don't sweep.
+    AD5933.setCtrMode(REPEAT_FREQ);
+    AD5933.getComplexOnce(gain_factor, systemPhaseShift, rComp, iComp, Z_Value, phaseAngle);
+  }
+
+  else { // Perform frequency sweep at the speed of the loop.
+    ctrReg = AD5933.getByte(0x80);
+    if(incr == 0) {
+      AD5933.setCtrMode(STAND_BY, ctrReg);
+      AD5933.setCtrMode(INIT_START_FREQ, ctrReg);
+      AD5933.setCtrMode(START_FREQ_SWEEP, ctrReg);
+    }
+
+    AD5933.getComplexOnce(GF_Array[incr], PS_Array[incr], rComp, iComp, Z_Value, phaseAngle);
+    AD5933.setCtrMode(INCR_FREQ, ctrReg);
+
+    incr++;
+
+    if(incr > numOfIncrements) {
+      incr = 0;
+      AD5933.setCtrMode(POWER_DOWN, ctrReg);
+    }
+  }
 
   // For BLE
   // =================================================== 
@@ -585,19 +629,15 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
 
   // check for data written to "c_sample_rate" handle
   if (msg -> handle == GATT_HANDLE_C_SAMPLE_RATE && msg -> value.len > 0) {
-    sampleRate = msg -> value.data[0];
-    Serial.print("Sucessful write attempt; new frequency / period: ");
-    Serial.print(sampleRate);
-    Serial.print(" hertz");
-    Serial.print(" / ");         
-    Serial.print(1000000 / ((long) sampleRate));
-    Serial.print(" microseconds.");   
-
-    // Starting to change the settings of AD5933
     Micro40Timer::stop();
+
+    sampleRate = msg -> value.data[0];
+    sampleRatePeriod = 1000000 / ((long) sampleRate);
+
+    // Start to change the settings of AD5933
+
     AD5933.resetAD5933();
     int cycleBase = (int)(477.84 * pow(2.718,-0.017) );
-
     AD5933.setSettlingCycles(cycles_base, cycles_multiplier);
     AD5933.tempUpdate();
     AD5933.setCtrMode(INIT_START_FREQ);
@@ -607,33 +647,130 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
 
     // End changing process.
 
-    Micro40Timer::set(1000000 / ((long) sampleRate), notify);
-    Micro40Timer::start();
+    Serial.print("Sucessful write attempt; new frequency / period: ");
+    Serial.print(sampleRate);
+    Serial.print(" hertz");
+    Serial.print(" / ");         
+    Serial.print(1000000 / ((long) sampleRate));
+    Serial.print(" microseconds.");
     Serial.println();
+
+    Micro40Timer::set(sampleRatePeriod, notify); 
+    Micro40Timer::start();
   }
   // check for data written to "c_ac_freq" handle  
   if (msg -> handle == GATT_HANDLE_C_AC_FREQ && msg -> value.len > 0) {
+
+    Micro40Timer::stop(); // stop data being written to BLE.
+
     startFreq = msg -> value.data[0]; 
     stepSize = msg -> value.data[1];  
     numOfIncrements = msg -> value.data[2];
 
-    Micro40Timer::stop(); 
+    startFreqHz = (double)startFreq * 1000;
+    stepSizeHz = (double)stepSize * 1000;
+    endFreqHz = startFreqHz + ((double)stepSize * numOfIncrements * 1000);    
 
     if(stepSize == 0) { // frequency sweep is disabled
+      freqSweepFlag = false;
+
+      cbi(TWSR, TWPS0);
+      cbi(TWSR, TWPS1);
+      AD5933.setExtClock(false);
+      AD5933.resetAD5933();
+      AD5933.setSettlingCycles(cycles_base,cycles_multiplier);
+      AD5933.setStartFreq(startFreqHz);
+      AD5933.setVolPGA(0, 1);
+      AD5933.getGainFactorC(cal_resistance, cal_samples, gain_factor, systemPhaseShift, false);
+
+      Serial.print("Frequency:");
+      Serial.print("\t");
+      Serial.print(startFreqHz);
+      Serial.print("\t");
+      Serial.print("Gain factor:");
+      Serial.print("\t");
+      Serial.print(gain_factor);
+      Serial.print("\t");
+      Serial.print("Phaseshift:");
+      Serial.print("\t");
+      Serial.print(systemPhaseShift);
+      Serial.println();      
+
+      delete [] GF_Array; // Free memory from previous GF array if it exists.
+      delete [] PS_Array; // Free memory from previous PS array if it exists.
 
     }
     else { // frequency sweep is enabled
-      AD5933.resetAD5933(); // puts chip in standby mode.
-      AD5933.setSettlingCycles(cycles_base, cycles_multiplier); // set number of settling cycles
-      AD5933.setStartFreq(startFreq * 1000); // convert from KHz to Hz and initilaize AD5933
-      AD5933.setIncrement(stepSize * 1000); // convert from KHz to Hz
-      AD5933.setNumofIncrement(numOfIncrements);
-      // Function to calculate array of changing gain factors
-      //AD5933.compFreqSweep();    
-    }
 
-    Micro40Timer::set(1000000 / ((long) sampleRate), notify);
-    Micro40Timer::start();
+      freqSweepFlag = true;
+
+      cbi(TWSR, TWPS0);
+      cbi(TWSR, TWPS1);
+      AD5933.setExtClock(false);
+      AD5933.resetAD5933();
+      AD5933.setStartFreq(startFreqHz);
+      AD5933.setIncrement(stepSizeHz);
+      AD5933.setNumofIncrement(numOfIncrements + 1);      
+      AD5933.setSettlingCycles(cycles_base,cycles_multiplier);
+      AD5933.getTemperature();
+      AD5933.setVolPGA(0, 1);      
+
+      // generate gain factor array using two point calibration.
+
+      GF_Array = new double[numOfIncrements + 1];
+      PS_Array = new double[numOfIncrements + 1];
+      deltaGF = 0;
+      deltaPS = 0;
+
+      for (int i = 0; i < numOfIncrements; i++) {
+        GF_Array[i] = 0;    // Initialize all elements to zero.
+        PS_Array[i] = 0;    // Initialize all elements to zero.        
+      }
+
+      /*AD5933.getGainFactorS_TP(
+       cal_resistance, cal_samples, startFreqHz, endFreqHz,
+       GF_Array[0], GFincrement, 
+       PS_Array[0], PSincrement);*/
+
+      /*AD5933.compCbrArray(
+       GF_Array[0], GFincrement,
+       PS_Array[0], PSincrement,
+       GF_Array, PS_Array);*/
+
+      AD5933.getGainFactors_LI(
+      cal_resistance, cal_samples, startFreqHz, endFreqHz,
+      GF_Array[0], GF_Array[numOfIncrements], 
+      PS_Array[0], PS_Array[numOfIncrements]);
+
+      deltaGF = GF_Array[numOfIncrements] - GF_Array[0];
+      deltaPS = PS_Array[numOfIncrements] - PS_Array[0];
+
+      AD5933.getArraysLI(
+      deltaGF, deltaPS,
+      stepSizeHz, numOfIncrements,
+      GF_Array[0], PS_Array[0],
+      GF_Array, PS_Array);
+
+      Serial.println(); 
+
+      for(int t1 = 0; t1 <= numOfIncrements; t1++) {
+        Serial.print("Frequency: ");
+        Serial.print("\t");
+        Serial.print(startFreqHz + (stepSizeHz * t1));
+        Serial.print("\t");        
+        Serial.print("Gainfactor term: ");
+        Serial.print(t1);
+        Serial.print("\t");
+        Serial.print(GF_Array[t1]);
+        Serial.print("\t");
+        Serial.print("Phaseshift term: ");
+        Serial.print(t1);
+        Serial.print("\t");
+        Serial.print(PS_Array[t1]);         
+        Serial.println(); 
+      }   
+    }
+    Serial.println(); 
 
     Serial.print("Sucessful write attempt to c_ac_freq.");
     Serial.println();      
@@ -645,7 +782,10 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
     Serial.println();    
     Serial.print("Number of Increments: ");    
     Serial.print(numOfIncrements);  
-    Serial.println();    
+    Serial.println();
+
+    Micro40Timer::set(sampleRatePeriod, notify);
+    Micro40Timer::start();    
   }  
 }
 void my_ble_evt_attclient_indicated(const struct ble_msg_attclient_indicated_evt_t *msg) {
@@ -732,6 +872,7 @@ void changeZ_Value(long magnitude, long phaseAng, uint8_t *values) {
   values[3] = magnitude % 100;
 }
 
+
 void resetBLE() {
   digitalWrite(BLE_RESET_PIN, LOW);
   delay(5); // wait 5ms
@@ -749,3 +890,7 @@ void resetBLE() {
 //values[3] = ((getNthDigit(val, 10, 6) * 10) + getNthDigit(val, 10, 5));
 //values[4] = ((getNthDigit(val, 10, 4) * 10) + getNthDigit(val, 10, 3));
 //values[5] = ((getNthDigit(val, 10, 2) * 10) + getNthDigit(val, 10, 1));
+
+
+
+
