@@ -1,6 +1,6 @@
 // Based onBluegiga BGLib Arduino interface library slave device stub sketch
 // 2014-02-12 by Jeff Rowberg <jeff@rowberg.net>
-// 2014-07-13 modified by Adetunji Dahunsi <tunjid.com>
+// 2014-11-02 modified by Adetunji Dahunsi <tunjid.com>
 // Updates should (hopefully) always be available at https://github.com/WuMRC
 
 /* ============================================
@@ -48,6 +48,7 @@
 #include "BGLib.h" // BGLib C library for BGAPI communication.
 #include "AD5933.h" //Library for AD5933 functions (must be installed)
 #include <Micro40Timer.h> // Timer function for notifications
+#include <MemoryFree.h>
 
 // uncomment the following line for debug serial output
 #define DEBUG
@@ -74,9 +75,9 @@
 //resistance. These are used to get an average gain
 //factor.
 
-#define M_PI 3.14159265358979323846	// pi
+//#define M_PI 3.14159265358979323846	// pi
 
-#define M_PI_2 1.57079632679489661923	// pi/2 
+//#define M_PI_2 1.57079632679489661923	// pi/2 
 
 #ifndef cbi
 #define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
@@ -275,13 +276,15 @@ void setup() {
   //systemPhaseShift = returnStandardPhaseAngle(atan2(iComp, rComp));
   //systemPhaseShift = atan2(iComp, rComp);
   Serial.print("System Phase Shift: ");
-  Serial.print(systemPhaseShift);
+  Serial.print(systemPhaseShift,5);
   Serial.println();
 
   // Write default values for handles once. 
   ble112.ble_cmd_attributes_write(GATT_HANDLE_C_SAMPLE_RATE, 0, 1, defaultSampleRate);
   delay(20); // Wait 20 ms so async callback isn't blocked.
-  ble112.ble_cmd_attributes_write(GATT_HANDLE_C_AC_FREQ, 0, 3, defaultFreqSweep);
+  ble112.ble_cmd_attributes_write(GATT_HANDLE_C_AC_FREQ, 0, 3, defaultFreqSweep); 
+  
+  bioImpData[8] = startFreq; // initialize start frequency data.
 
   // Start with sampling rate of 50 hertz
   sampleRatePeriod = 20000;
@@ -319,7 +322,8 @@ void loop() {
 
     AD5933.getComplexOnce(GF_Array[incr], PS_Array[incr], rComp, iComp, Z_Value, phaseAngle);
     AD5933.setCtrMode(INCR_FREQ, ctrReg);
-
+    
+    bioImpData[8] = startFreq + (incr * stepSize);
     incr++;
 
     if(incr > numOfIncrements) {
@@ -360,7 +364,7 @@ void loop() {
     }     
 
     //Write notification values to characteristic on ble112. Causes notification to be sent.
-    ble112.ble_cmd_attributes_write(GATT_HANDLE_C_BIOIMPEDANCE_DATA, 0, 8, bioImpData);
+    ble112.ble_cmd_attributes_write(GATT_HANDLE_C_BIOIMPEDANCE_DATA, 0, 9, bioImpData);
     writer = false;     
   }   
   else {
@@ -646,7 +650,8 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
     //AD5933.setCtrMode(REPEAT_FREQ);
 
     // End changing process.
-
+    
+    Serial.println();
     Serial.print("Sucessful write attempt; new frequency / period: ");
     Serial.print(sampleRate);
     Serial.print(" hertz");
@@ -662,10 +667,15 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
   if (msg -> handle == GATT_HANDLE_C_AC_FREQ && msg -> value.len > 0) {
 
     Micro40Timer::stop(); // stop data being written to BLE.
+    
+    delete [] GF_Array; // Free memory from previous GF array if it exists.
+    delete [] PS_Array; // Free memory from previous PS array if it exists.
 
     startFreq = msg -> value.data[0]; 
     stepSize = msg -> value.data[1];  
     numOfIncrements = msg -> value.data[2];
+    
+    bioImpData[8] = startFreq; // update AC freq value
 
     startFreqHz = (double)startFreq * 1000;
     stepSizeHz = (double)stepSize * 1000;
@@ -683,6 +693,7 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
       AD5933.setVolPGA(0, 1);
       AD5933.getGainFactorC(cal_resistance, cal_samples, gain_factor, systemPhaseShift, false);
 
+      Serial.println();
       Serial.print("Frequency:");
       Serial.print("\t");
       Serial.print(startFreqHz);
@@ -691,18 +702,14 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
       Serial.print("\t");
       Serial.print(gain_factor);
       Serial.print("\t");
-      Serial.print("Phaseshift:");
+      Serial.print("SystemPS:");
       Serial.print("\t");
-      Serial.print(systemPhaseShift);
+      Serial.print(systemPhaseShift, 5);
       Serial.println();      
-
-      delete [] GF_Array; // Free memory from previous GF array if it exists.
-      delete [] PS_Array; // Free memory from previous PS array if it exists.
-
     }
     else { // frequency sweep is enabled
 
-      freqSweepFlag = true;
+      freqSweepFlag = true;    
 
       cbi(TWSR, TWPS0);
       cbi(TWSR, TWPS1);
@@ -763,10 +770,10 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
         Serial.print("\t");
         Serial.print(GF_Array[t1]);
         Serial.print("\t");
-        Serial.print("Phaseshift term: ");
+        Serial.print("SystemPS term: ");
         Serial.print(t1);
         Serial.print("\t");
-        Serial.print(PS_Array[t1]);         
+        Serial.print(PS_Array[t1], 5);         
         Serial.println(); 
       }   
     }
@@ -781,7 +788,9 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
     Serial.print(stepSize);
     Serial.println();    
     Serial.print("Number of Increments: ");    
-    Serial.print(numOfIncrements);  
+    Serial.print(numOfIncrements);
+    Serial.println();
+    Serial.println(freeMemory());  
     Serial.println();
 
     Micro40Timer::set(sampleRatePeriod, notify);
