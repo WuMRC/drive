@@ -12,6 +12,7 @@ disp(['User selected: ', fullfile(filename)]);
 [pathstr, name, ext] = fileparts(filename);
 
 if strcmp(ext,'.DCM') || strcmp(ext,'.dcm')
+%     dicomread(filename);
     dicomFile = permute(dicomread(filename),[1, 2, 4, 3]);
     dicomSize = size(dicomFile);
     dicomFrames = dicomSize(3);
@@ -44,6 +45,9 @@ nPoints = size(poiX,1);
 pointLog = zeros(nPoints, 2, dicomFrames);
 points = [poiX, poiY];
 % pointImage = insertMarker(objectFrame, points, '+', 'Color', 'white');
+
+% % KALMAN FILTER
+% dicomFile = uint8(kalmanStack(double(dicomFile(:,:,:,1)),0.5,0.5));
 
 pointDist = zeros(dicomFrames,1);
 newDicom = dicomFile;

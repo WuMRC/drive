@@ -8,17 +8,12 @@
 
 
 %% STEP 2 - TRACK ULTRASOUND DATA
-[ultrasound.data] = dicomTrack(ultrasound.files(2).name);
+[ultrasound.data] = dicomTrack(ultrasound.files(1).name);
 
 implay(permute(ultrasound.data.DICOM,[1 2 4 3]))
 
-%%
-imshow(ultrasound.data.DICOM(:,:,1));
-
-
 
 %%
-
 
 ultrasound.info = dicominfo(ultrasound.files(1).name);
 ultrasound.info.FsUS = 1/((ultrasound.info.FrameTime)*0.001);
@@ -35,15 +30,19 @@ ultrasound.data.envelope.resp = [envelope(ultrasound.data.timeUS, ...
     ultrasound.data.pointDist,'bottom',ultrasound.info.FsUS*5,'linear')];
 
 
-%% Respiratory Signal from IVC
+% %% Respiratory Signal from IVC
 
 ultrasound.data.resp = smooth(ultrasound.data.pointDist,ultrasound.info.FsUS);%, 'rloess');
 subplot(2,1,1), plot(ultrasound.data.timeUS,ultrasound.data.resp)
 hold on, plot(ultrasound.data.timeUS,ultrasound.data.pointDist,'k')
+xlabel('Time [s]')
+ylabel('IVC_D [mm]')
 
-%% Cardiac Signal from IVC
+% %% Cardiac Signal from IVC
 ultrasound.data.card = ultrasound.data.pointDist- ultrasound.data.resp;
 subplot(2,1,2), plot(ultrasound.data.timeUS,ultrasound.data.card,'r')
+xlabel('Time [s]')
+ylabel('\Delta IVC_{D,cardiac} [mm]')
 
 %%
 
