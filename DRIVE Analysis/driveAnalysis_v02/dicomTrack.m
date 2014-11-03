@@ -90,17 +90,28 @@ time = (1:dicomFrames)/FsUS;
 % % freq = peakFreq(pointDist,FsUS,'band',[0.6, 2.0]);
 % freq = 0.5;
 % Get envelope of tracked motion
-envTop = envelope(time,pointDist,'top',FsUS,'linear');
-envBot = envelope(time,pointDist,'bottom',FsUS,'linear');
+% envTop = envelope(time,pointDist,'top',FsUS,'linear');
+% envBot = envelope(time,pointDist,'bottom',FsUS,'linear');
 % 
 % figure(1), plot(time, pointDist)
 % hold on, plot(time, envTop,'r'), plot(time,envBot,'r')
 % figure(2), plot(f,2*abs(Y(1:NFFT/2+1)))
 
-data.PIXELS_PER_MM = (521-282)/(5*10);
+% data.PIXELS_PER_MM = (521-282)/(5*10);
+% data.PIXELS_PER_MM = (205-145)/(2*10);
+data.PIXELS_PER_MM = (396-244)/(5*10);
+% data.PIXELS_PER_MM = (505-302)/(5*10);
+% data.PIXELS_PER_MM = (360-224)/(5*10);
+% data.PIXELS_PER_MM = (369-174)/(5*10);
+% data.PIXELS_PER_MM = (321-94)/(5*10);
+
+
+
+
+
 data.FsUS = FsUS;
-data.pointLog = pointLog/data.PIXELS_PER_MM;
-data.pointDist = pointDist/data.PIXELS_PER_MM;    % in mm (currently)
+data.pointLog = pointLog;
+data.pointDist = pointDist;    % in px (currently)
 % data.envelope = [envTop; envBot];               % in px (currently)
 % data.distens = (envTop-envBot)./envTop*100;     % in percent
 
