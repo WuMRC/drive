@@ -2,12 +2,99 @@
 
 %% STEP 1 - GET DATA
 % SELECT PATIENT FOLDER
+clear, close, clc
 [bioimp, ultrasound] = getDRIVEdata;
 
-bioimp.acq = loadACQ(char(bioimp.files(1)));
+%%
+bioimp.acq = loadACQ(char(bioimp.files(2)));
+
+%%
+markerToInvestigate = 2;
+fprintf(bioimp.acq.markers.szText{:,markerToInvestigate})
+fprintf('\n')
+
+%%
+if bioimp.acq.markers.lMarkers > 2
+    
+    timeLength = 15;
+    % NORMAL BREATHING
+    if strfind(bioimp.acq.markers.szText{:,markerToInvestigate},'nb') > 0
+        bioimp.nb.dt = (bioimp.acq.hdr.graph.sample_time)*0.001; % in sec
+        bioimp.nb.time = 0:bioimp.nb.dt:15-bioimp.nb.dt;
+        bioimp.nb.FsBI = 1/bioimp.nb.dt;
+        bioimp.nb.data = bioimp.acq.data(...
+            bioimp.acq.markers.lSample(markerToInvestigate):...
+            bioimp.acq.markers.lSample(markerToInvestigate)...
+            +(timeLength*bioimp.nb.FsBI-1),:);
+        
+        bioimp.nb.armS.total = smooth(smooth(...
+            bioimp.nb.data(:,1),...
+            bioimp.nb.FsBI/2),bioimp.nb.FsBI/10);
+        bioimp.nb.legS.total = smooth(smooth(...
+            bioimp.nb.data(:,2),...
+            bioimp.nb.FsBI/2),bioimp.nb.FsBI/10);
+        
+        bioimp.nb.armS.resp = smooth(bioimp.nb.armS.total,bioimp.nb.FsBI);
+        bioimp.nb.legS.resp = smooth(bioimp.nb.legS.total,bioimp.nb.FsBI);
+        
+        bioimp.nb.armS.card = bioimp.nb.armS.total-bioimp.nb.armS.resp;
+        bioimp.nb.legS.card = bioimp.nb.legS.total-bioimp.nb.legS.resp;
+        
+        
+        % PLOT
+        subplot(2,1,1), plot(bioimp.nb.time,bioimp.nb.armS.resp,'b')
+        title('Arm impedance changes to normal breathing')
+        xlabel('Time [s]')
+        ylabel('Total and Resp Z [Volts (need conversion)]')
+        hold on, plot(bioimp.nb.time,bioimp.nb.armS.total,'k')
+        subplot(2,1,2), plot(bioimp.nb.time,bioimp.nb.armS.card,'r')
+        xlabel('Time [s]')
+        ylabel('Card Z [Volts (need conversion)]')
+        
+        
+    else fprintf('Not a normal breathing exercise')
+    end
+end
+
+%%
+bioimpedanceLegSMOOTH = smooth(bioimpedanceLeg,Fs/2).*20;
+bioimpedanceLegSMOOTH = smooth(bioimpedanceLegSMOOTH, 20);
+respLegSMOOTH = smooth(bioimpedanceLegSMOOTH, 200);
+
+bioimpedanceArmSMOOTH = smooth(bioimpedanceArm,Fs/2).*20;
+bioimpedanceArmSMOOTH = smooth(bioimpedanceArmSMOOTH, 20);
+
+figure, plot(timeBioimpedance, bioimpedanceArmSMOOTH(timeMarkerBioimpedanceInd(DATA_TO_ANALYZE):...
+    (timeMarkerBioimpedanceInd(DATA_TO_ANALYZE)+200*10)))
+%
+
+%% STEP XX - BIOIMPEDANCE
+
+FsBI = 1/bioimp.nb.dt;
+
+%%
+
+timeBIend = 15;
+timeBI = (0:bioimp.nb.dt:timeBIend);
+
+indSample = 3;
+
+dataOfInterest = bioimp.acq.data(bioimp.acq.markers.lSample(indSample):...
+    bioimp.acq.markers.lSample(indSample)+timeBIend*FsBI,1);
+dataOfInterestSMOOTH = smooth(dataOfInterest,FsBI/2);
+
+plot(timeBI, dataOfInterest, 'Color', [0.75 0.75 0.75])
+hold on
+plot(timeBI, dataOfInterestSMOOTH, 'k')
+
+envTopBI = envelope(timeBI,dataOfInterestSMOOTH,'top',FsBI*2,'linear');
+envBotBI = envelope(timeBI,dataOfInterestSMOOTH,'bottom',FsBI*2,'linear');
+
+plot(timeBI,envTopBI,'r')
+plot(timeBI,envBotBI,'r')
 
 
-%% STEP 2 - TRACK ULTRASOUND DATA
+%% STEP YY - TRACK ULTRASOUND DATA
 fileUS = 1;
 [ultrasound.data] = dicomTrack(ultrasound.files(fileUS).name);
 
@@ -22,7 +109,7 @@ implay(permute(ultrasound.data.DICOM,[1 2 4 3]))
 
 
 
-%%
+%% YYY
 
 ultrasound.info = dicominfo(ultrasound.files(fileUS).name);
 ultrasound.info.FsUS = 1/((ultrasound.info.FrameTime)*0.001);
@@ -56,52 +143,6 @@ subplot(2,1,2), plot(ultrasound.data.timeUS,ultrasound.data.card,'r')
 xlabel('Time [s]')
 ylabel('\Delta IVC_{D,cardiac} [mm]')
 
-%%
 
 
-
-% Plot the diameter/distensibility over time
-subplot(2,1,1)
-plot(ultrasound.data.timeUS, ultrasound.data.pointDist,'k')
-hold on, plot(timeUS, ultrasound.data.envelope.card(1,:)','r')
-hold on, plot(timeUS, ultrasound.data.envelope.card(2,:)','r')
-hold on, plot(timeUS, ultrasound.data.envelope.resp(1,:)','b')
-hold on, plot(timeUS, ultrasound.data.envelope.resp(2,:)','b')
-xlabel('Time [s]'); ylabel('Diameter [mm]')
-title('Distance between 2 points')
-
-%%
-% ultrasound.data.distens = 
-subplot(2,1,2)
-plot(ultrasound.data.timeUS, ultrasound.data.distens,'r')
-xlabel('Time [s]'); ylabel('Distensibility [%]')
-title('Distance between 2 points')
-
-distensAvg = mean(ultrasound.data.distens(FsUS:end-FsUS));
-
-%% STEP XX - BIOIMPEDANCE
-
-dtBI = (bioimp.acq.hdr.graph.sample_time)*0.001;    % in seconds
-FsBI = 1/dtBI;
-
-%%
-
-timeBIend = 15;
-timeBI = (0:dtBI:timeBIend);
-
-indSample = 3;
-
-dataOfInterest = bioimp.acq.data(bioimp.acq.markers.lSample(indSample):...
-    bioimp.acq.markers.lSample(indSample)+timeBIend*FsBI,1);
-dataOfInterestSMOOTH = smooth(dataOfInterest,FsBI/2);
-
-plot(timeBI, dataOfInterest, 'Color', [0.75 0.75 0.75])
-hold on
-plot(timeBI, dataOfInterestSMOOTH, 'k')
-
-envTopBI = envelope(timeBI,dataOfInterestSMOOTH,'top',FsBI*2,'linear');
-envBotBI = envelope(timeBI,dataOfInterestSMOOTH,'bottom',FsBI*2,'linear');
-
-plot(timeBI,envTopBI,'r')
-plot(timeBI,envBotBI,'r')
 
