@@ -3,46 +3,6 @@
 // 2014-11-02 modified by Adetunji Dahunsi <tunjid.com>
 // Updates should (hopefully) always be available at https://github.com/WuMRC
 
-/* ============================================
- !!!!!!!!!!!!!!!!!
- !!! IMPORTANT !!!
- !!!!!!!!!!!!!!!!!
- 
- THIS SCRIPT WILL NOT COMMUNICATE PROPERLY IF YOU DO NOT ENSURE ONE OF THE
- FOLLOWING IS TRUE:
- 
- 1. You enable the <wakeup_pin> functionality in your firmware
- 
- 2. You COMMENT OUT two lines below which depend on wake-up
- funcitonality to work properly (they will BLOCK otherwise):
- 
- ble112.onBeforeTXCommand = onBeforeTXCommand;
- ble112.onTXCommandComplete = onTXCommandComplete;
- 
-/* ============================================
- BGLib Arduino interface library code is placed under the MIT license
- Copyright (c) 2014 Jeff Rowberg
- 
- Permission is hereby granted, free of charge, to any person obtaining a copy
- of this software and associated documentation files (the "Software"), to deal
- in the Software without restriction, including without limitation the rights
- to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- copies of the Software, and to permit persons to whom the Software is
- furnished to do so, subject to the following conditions:
- 
- The above copyright notice and this permission notice shall be included in
- all copies or substantial portions of the Software.
- 
- THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- THE SOFTWARE.
- ===============================================
- */
-
 #include <Wire.h>
 #include <Math.h>
 #include "BGLib.h" // BGLib C library for BGAPI communication.
@@ -57,23 +17,15 @@
 // Constants
 // ================================================================
 
-#define TWI_FREQ 400000L      // Setting TWI/I2C Frequency to 400MHz.
+#define TWI_FREQ 400000L      // Set TWI/I2C Frequency to 400MHz.
 
-#define cycles_base 60       // Term to set a number of cycles to ignore
-// to dissipate transients before a measurement is
-// taken. The max value for this is 511.
+#define cycles_base 60       // Cycles to ignore before a measurement is taken. Max is 511.
 
-#define cycles_multiplier 1    //Set a multiple for the cycles_base which
-//is used to calculate the desired number
-//of settling cycles. Values can be 1, 2, or 4.
+#define cycles_multiplier 1    // Multiple for cycles_base. Can be 1, 2, or 4.
 
-#define cal_resistance 356.000  //Set a calibration resistance for the gain
-//factor. This will have to be measured before any
-//other measurements are performed.  
+#define cal_resistance 356.000  // Calibration resistance for the gain factor. 
 
-#define cal_samples 40         //Set a number of measurements to take of the calibration
-//resistance. These are used to get an average gain
-//factor.
+#define cal_samples 40         // Number of measurements to take of the calibration resistance.
 
 //#define M_PI 3.14159265358979323846	// pi
 //#define M_PI_2 1.57079632679489661923	// pi/2 
@@ -89,47 +41,49 @@
 // Dynamic variables
 // ================================================================
 
-int ctrReg = 0; // initialize control register variable
+int ctrReg = 0; // Initialize control register variable.
 
-long sampleRatePeriod = 0; // Android app sample rate period (microseconds)
+long sampleRatePeriod = 0; // Android app sample rate period (microseconds).
 
-uint8_t currentStep = 0; // used to loop frequency sweeps
+uint8_t currentStep = 0; // Used to loop frequency sweeps.
 
-uint8_t sampleRate = 50; // Android app sample rate (Hz)
+uint8_t sampleRate = 50; // Android app sample rate (Hz).
 
-uint8_t startFreq = 50;       // AC Start frequency  (KHz)
+uint8_t startFreq = 50;       // AC Start frequency (KHz).
 
 uint8_t stepSize = 0;        // AC frequency step size between consecutive values. (KHz)
 
 uint8_t numOfIncrements = 0;       // Number of frequency currentStepements.
 
-double startFreqHz = ((long)(startFreq)) * 1000; // AC Start frequency (Hz)
+double startFreqHz = ((long)(startFreq)) * 1000; // AC Start frequency (Hz).
 
-double stepSizeHz = 0; // AC frequency step size between consecutive values. (Hz)
+double stepSizeHz = 0; // AC frequency step size between consecutive values (Hz).
 
-double endFreqHz = 0; // end frequency for 2 point calibration
+double endFreqHz = 0; // End frequency for 2 point calibration.
 
-double gain_factor = 0;      // Initialize Gain factor
+double gain_factor = 0;      // Initialize Gain factor.
 
-double Z_Value = 0;          // Initialize impedance magnitude
+double Z_Value = 0;          // Initialize impedance magnitude.
 
-double rComp = 0;            // Initialize real component value
+double rComp = 0;            // Initialize real component value.
 
-double iComp = 0;            // Initialize imaginary component value
+double iComp = 0;            // Initialize imaginary component value.
 
-double systemPhaseShift = 0;       // Initialize system phase shift value
+double systemPhaseShift = 0;       // Initialize system phase shift value.
 
-double phaseAngle = 0;       // Initialize phase angle value
+double phaseAngle = 0;       // Initialize phase angle value.
 
-double deltaGF = 0; // used for 2 point calibration
+double deltaGF = 0; // Used for 2 point calibration.
 
-double deltaPS = 0; // used for 2 point calibration
+double deltaPS = 0; // Used for 2 point calibration.
 
 double pseudo = 0; // Pseudo signal to replace accelerometer data.
 
-double* GF_Array = NULL; // Pointer for dynamic gain factor array size
+double temp = 0; // Used to update AD5933's temperature.
 
-double* PS_Array = NULL; // Pointer for dynamic phase shift array size
+double* GF_Array = NULL; // Pointer for dynamic gain factor array size.
+
+double* PS_Array = NULL; // Pointer for dynamic phase shift array size.
 
 double* CR_Array = NULL; // Pointer for calibration impedance at a certain frequency. Used for filtering.
 
@@ -137,21 +91,16 @@ boolean NOTIFICATIONS_FLAG = false; // Variable that toggles notifications to ph
 
 boolean TIMED_OUT_FLAG = false; // Used to identify if the module timed out.
 
-boolean FREQ_SWEEP_FLAG = false; // Used to toggle frequency sweeps
+boolean FREQ_SWEEP_FLAG = false; // Used to toggle frequency sweeps.
 
-volatile boolean SAMPLE_RATE_FLAG = false;  // Variable to manage sample rate. Managed from interrupt context.
+volatile 
+boolean SAMPLE_RATE_FLAG = false;  // Variable to manage sample rate. Managed from interrupt context.
 
-uint8_t 
-bioImpData[9] = {
-  1, 2, 3, 4, 5, 6, 7, 8, 9}; // Unsigned integer array to carry data to phone.
+uint8_t bioImpData[9]; // Unsigned integer array to carry data to phone.
 
-uint8_t 
-defaultSampleRate[1] = {
-  sampleRate}; // Initialize default sample rate value holder
+uint8_t defaultSampleRate[1] = {sampleRate}; // Initialize default sample rate value holder.
 
-uint8_t 
-defaultFreqSweep[3] = {
-  startFreq, stepSize , numOfIncrements}; // Initialize default frquency sweep value holder
+uint8_t defaultFreqSweep[3] = {startFreq, stepSize , numOfIncrements}; // Initialize default frquency sweep value holder.
 
 // ================================================================
 // BLE STATE TRACKING (UNIVERSAL TO JUST ABOUT ANY BLE PROJECT)
@@ -179,8 +128,8 @@ uint8_t ble_bonding = 0xFF; // 0xFF = no bonding, otherwise = bonding handle
 #define BLE_RESET_PIN   6   // BLE reset pin (active-low)
 
 #define GATT_HANDLE_C_BIOIMPEDANCE_DATA   17  // 0x11, supports "read", "notify" and "indicate" operations
-#define GATT_HANDLE_C_SAMPLE_RATE   21  // 0x15, supports "read" and "write" operation
-#define GATT_HANDLE_C_AC_FREQ   25  // 0x19, supports "read" and "write" operation
+#define GATT_HANDLE_C_SAMPLE_RATE   21  // 0x15, supports "read" and "write" operations
+#define GATT_HANDLE_C_AC_FREQ   25  // 0x19, supports "read" and "write" operations
 
 // use SoftwareSerial on pins D8/D8 for RX/TX (Arduino side)
 
@@ -208,7 +157,6 @@ void setup() {
   // For AD5933
   // ================================================================
 
-  //TWBR = 1; 
   Wire.begin();
   cbi(TWSR, TWPS0);
   cbi(TWSR, TWPS1);
@@ -217,7 +165,7 @@ void setup() {
   AD5933.setSettlingCycles(cycles_base,cycles_multiplier);
   AD5933.setStartFreq(startFreqHz);
   AD5933.setVolPGA(0, 1);
-  double temp = AD5933.getTemperature();
+  temp = AD5933.getTemperature();
   AD5933.getGainFactorC(cal_resistance, cal_samples, gain_factor, systemPhaseShift, false);
 
   // ================================================================
@@ -266,7 +214,7 @@ void setup() {
   Serial.println();
 
   Serial.print("System Phase Shift: ");
-  Serial.print(systemPhaseShift,5);
+  Serial.print(systemPhaseShift);
   Serial.println();
 
   // Write default values for handles once. 
@@ -354,7 +302,7 @@ void loop() {
     else {
       Z_Value *= 1000;
       phaseAngle *= 100;
-      changeZ_Value((long) Z_Value, (long) phaseAngle, bioImpData);
+      updateData((long) Z_Value, (long) phaseAngle, bioImpData);
       bioImpData[8] = startFreq + (currentStep * stepSize);
     }     
 
@@ -691,7 +639,7 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
       Serial.print("\t");
       Serial.print("SystemPS:");
       Serial.print("\t");
-      Serial.print(systemPhaseShift, 5);
+      Serial.print(systemPhaseShift);
       Serial.print("\t");
       Serial.print("CR: ");
       Serial.print("\t");
@@ -729,12 +677,6 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
       cal_resistance, cal_samples, startFreqHz, endFreqHz,
       GF_Array[0], GF_Array[numOfIncrements], 
       PS_Array[0], PS_Array[numOfIncrements]);
-
-      Serial.print("GAIN FACTOR START: ");
-      Serial.println(GF_Array[0]);
-
-      Serial.print("GAIN FACTOR END: ");
-      Serial.println(GF_Array[numOfIncrements]);
 
       deltaGF = GF_Array[numOfIncrements] - GF_Array[0];
       deltaPS = PS_Array[numOfIncrements] - PS_Array[0];
@@ -781,7 +723,7 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
         Serial.print("SystemPS term: ");
         Serial.print(t1);
         Serial.print("\t");
-        Serial.print(PS_Array[t1], 5);
+        Serial.print(PS_Array[t1]);
         Serial.print("\t");        
         Serial.print("CR term: ");
         Serial.print(t1);
@@ -874,7 +816,7 @@ double returnStandardPhaseAngle(double angle) {
   return angle;
 }
 
-void changeZ_Value(long magnitude, long phaseAng, uint8_t *values) {
+void updateData(long magnitude, long phaseAng, uint8_t *values) {
 
   if(phaseAng > 0) {
     values[7] = phaseAng % 100;
