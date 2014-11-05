@@ -54,7 +54,7 @@
 #define DEBUG
 
 // ================================================================
-// For Z_Logger
+// Constants
 // ================================================================
 
 #define TWI_FREQ 400000L      // Setting TWI/I2C Frequency to 400MHz.
@@ -83,13 +83,31 @@
 #endif
 #ifndef sbi
 #define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
-#endif 
+#endif
 
-double* GF_Array = NULL; // Pointer for dynamic gain factor array size
+// ================================================================
+// Dynamic variables
+// ================================================================
 
-double* PS_Array = NULL; // Pointer for dynamic phase shift array size
+int ctrReg = 0; // initialize control register variable
 
-double* CR_Array = NULL; // Pointer for calibration impedance at a certain frequency. Used for filtering.
+long sampleRatePeriod = 0; // Android app sample rate period (microseconds)
+
+uint8_t currentStep = 0; // used to loop frequency sweeps
+
+uint8_t sampleRate = 50; // Android app sample rate (Hz)
+
+uint8_t startFreq = 50;       // AC Start frequency  (KHz)
+
+uint8_t stepSize = 0;        // AC frequency step size between consecutive values. (KHz)
+
+uint8_t numOfIncrements = 0;       // Number of frequency currentStepements.
+
+double startFreqHz = ((long)(startFreq)) * 1000; // AC Start frequency (Hz)
+
+double stepSizeHz = 0; // AC frequency step size between consecutive values. (Hz)
+
+double endFreqHz = 0; // end frequency for 2 point calibration
 
 double gain_factor = 0;      // Initialize Gain factor
 
@@ -103,43 +121,25 @@ double systemPhaseShift = 0;       // Initialize system phase shift value
 
 double phaseAngle = 0;       // Initialize phase angle value
 
-uint8_t sampleRate = 50; // Android app sample rate (Hz)
-
-uint8_t startFreq = 50;       // AC Start frequency  (KHz)
-
-uint8_t stepSize = 0;        // AC frequency step size between consecutive values. (KHz)
-
-uint8_t numOfIncrements = 0;       // Number of frequency increments.
-
 double deltaGF = 0; // used for 2 point calibration
 
 double deltaPS = 0; // used for 2 point calibration
 
-double startFreqHz = ((long)(startFreq)) * 1000; // AC Start frequency (Hz)
+double pseudo = 0; // Pseudo signal to replace accelerometer data.
 
-double stepSizeHz = 0; // AC frequency step size between consecutive values. (Hz)
+double* GF_Array = NULL; // Pointer for dynamic gain factor array size
 
-double endFreqHz = 0; // end frequency for 2 point calibration
+double* PS_Array = NULL; // Pointer for dynamic phase shift array size
 
-long sampleRatePeriod = 0; // Android app sample rate period (microseconds)
-
-uint8_t incr = 0; // used to loop frequency sweeps
-
-int ctrReg = 0; // initialize control register variable
-
-// ================================================================
-// General variables
-// ================================================================
-
-volatile double pseudo = 0; // Pseudo signal to replace accelerometer data.
-
-volatile boolean SAMPLE_RATE_FLAG = false;  // Variable to manage sample rate. Managed from interrupt context.
+double* CR_Array = NULL; // Pointer for calibration impedance at a certain frequency. Used for filtering.
 
 boolean NOTIFICATIONS_FLAG = false; // Variable that toggles notifications to phone subscription state. 
 
 boolean TIMED_OUT_FLAG = false; // Used to identify if the module timed out.
 
 boolean FREQ_SWEEP_FLAG = false; // Used to toggle frequency sweeps
+
+volatile boolean SAMPLE_RATE_FLAG = false;  // Variable to manage sample rate. Managed from interrupt context.
 
 uint8_t 
 bioImpData[9] = {
@@ -175,13 +175,6 @@ uint8_t ble_bonding = 0xFF; // 0xFF = no bonding, otherwise = bonding handle
 // HARDWARE CONNECTIONS AND GATT STRUCTURE SETUP
 // ================================================================
 
-// NOTE: this assumes you are using one of the following firmwares:
-//  - BGLib_U1A1P_38400_noflow
-//  - BGLib_U1A1P_38400_noflow_wake16
-//  - BGLib_U1A1P_38400_noflow_wake16_hwake15
-// If not, then you may need to change the pin assignments and/or
-// GATT handles to match your firmware.
-
 #define LED_PIN         13  // Arduino Uno LED pin
 #define BLE_RESET_PIN   6   // BLE reset pin (active-low)
 
@@ -212,7 +205,7 @@ BGLib ble112((HardwareSerial *)&Serial1, 0, 1);
 void setup() {
 
   // ================================================================
-  // For Z_Logger
+  // For AD5933
   // ================================================================
 
   //TWBR = 1; 
@@ -228,7 +221,7 @@ void setup() {
   AD5933.getGainFactorC(cal_resistance, cal_samples, gain_factor, systemPhaseShift, false);
 
   // ================================================================
-  // For General elements
+  // For BLE, Serial Communication and Timer interrupts
   // ================================================================
 
   // initialize status LED
@@ -243,11 +236,6 @@ void setup() {
   ble112.onBusy = onBusy;
   ble112.onIdle = onIdle;
   ble112.onTimeout = onTimeout;
-
-  // ONLY enable these if you are using the <wakeup_pin> parameter in your firmware's hardware.xml file
-  // BLE module must be woken up before sending any UART data
-  //ble112.onBeforeTXCommand = onBeforeTXCommand;
-  //ble112.onTXCommandComplete = onTXCommandComplete;
 
   // set up BGLib event handolers
   ble112.ble_evt_system_boot = my_ble_evt_system_boot;
@@ -315,12 +303,7 @@ void loop() {
 
   // Check if GATT Client (Smartphone) is subscribed to notifications.
 
-  if (SAMPLE_RATE_FLAG == true) { // this flag is toggled from the timer's interrupt context. It sets the sample rate.
-
-    //Serial.println(millis());
-
-    // For Z_Logger
-    // =================================================== 
+  if (SAMPLE_RATE_FLAG == true) { // this flag is toggled from the timer's interrupt context. It sets the sample rate. 
 
     AD5933.tempUpdate();
 
@@ -331,24 +314,22 @@ void loop() {
 
     else { // Perform frequency sweep at the speed of the loop determined by SAMPLE_RATE_FLAG.
       // Byte of ctrReg alredy gotten from changing mode to enable freq sweep.
-      if(incr == 0) {
+      if(currentStep == 0) {
         AD5933.setCtrMode(STAND_BY, ctrReg);
         AD5933.setCtrMode(INIT_START_FREQ, ctrReg);
         AD5933.setCtrMode(START_FREQ_SWEEP, ctrReg);
       }
 
-      AD5933.getComplex(GF_Array[incr], PS_Array[incr], Z_Value, phaseAngle);
+      AD5933.getComplex(GF_Array[currentStep], PS_Array[currentStep], Z_Value, phaseAngle);
 
-      if(incr == numOfIncrements) {
-        incr = 0;
+      if(currentStep == numOfIncrements) {
+        currentStep = 0;
         AD5933.setCtrMode(POWER_DOWN, ctrReg);
       }
       else {
         AD5933.setCtrMode(INCR_FREQ, ctrReg);
-        incr++;
+        currentStep++;
       }
-
-      bioImpData[8] = startFreq + (incr * stepSize);
     }
 
     // For BLE
@@ -358,22 +339,23 @@ void loop() {
     bioImpData[1] = (100 * cos((pseudo*3.14)/180));
     bioImpData[2] = (0);
 
-    if(
-    ((Z_Value - CR_Array[incr]) > - 0.5 
+    if((
+      (Z_Value - CR_Array[currentStep]) > - 0.5 
       && 
-      (Z_Value - CR_Array[incr]) < 0.5)
+      (Z_Value - CR_Array[currentStep]) < 0.5)
       || 
-      ((Z_Value - CR_Array[incr]) > 500)) {        
-      bioImpData[3] = 0;
-      bioImpData[4] = 0;
-      bioImpData[5] = 0;
-      bioImpData[6] = 0;
-      bioImpData[7] = 0;
+      ((Z_Value - CR_Array[currentStep]) > 500)) {
+        
+      for(int i = 3; i <= 7; i++) {    // Transmit zero if filter is not satisfied.    
+        bioImpData[i] = 0;
+      }
+      
     }
     else {
       Z_Value *= 1000;
       phaseAngle *= 100;
       changeZ_Value((long) Z_Value, (long) phaseAngle, bioImpData);
+      bioImpData[8] = startFreq + (currentStep * stepSize);
     }     
 
     //Write notification values to characteristic on ble112. Causes notification to be sent.
@@ -668,16 +650,16 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
 
     Micro40Timer::stop(); // stop data being written to BLE.
 
-    delete [] GF_Array; // Free memory from previous GF array if it exists.
-    delete [] PS_Array; // Free memory from previous PS array if it exists.
-    delete [] CR_Array; // Free memory from previous CR array if it exists.
+    delete [] GF_Array; // Free memory from previous GF array.
+    delete [] PS_Array; // Free memory from previous PS array.
+    delete [] CR_Array; // Free memory from previous CR array.
 
     startFreq = msg -> value.data[0]; 
     stepSize = msg -> value.data[1];  
     numOfIncrements = msg -> value.data[2];
 
     bioImpData[8] = startFreq; // update AC freq value
-    incr = 0; // reset incr for filtering in loop.
+    currentStep = 0; // reset currentStep for filtering in loop.
 
     startFreqHz = (double)startFreq * 1000;
     stepSizeHz = (double)stepSize * 1000;
@@ -686,7 +668,8 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
     if(stepSize == 0) { // frequency sweep is disabled
 
       FREQ_SWEEP_FLAG = false;
-      CR_Array = new double[1]; // size of one for sigle impedance at single frequency.
+      
+      CR_Array = new double[1]; // size of one for single impedance at single frequency.
 
       AD5933.setExtClock(false);
       AD5933.resetAD5933();
@@ -727,7 +710,7 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
       AD5933.setSettlingCycles(cycles_base, cycles_multiplier);
       AD5933.getTemperature();
       AD5933.setVolPGA(0, 1);  
-    
+
       // generate gain factor array using two point calibration.
 
       GF_Array = new double[numOfIncrements + 1];
@@ -746,10 +729,10 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
       cal_resistance, cal_samples, startFreqHz, endFreqHz,
       GF_Array[0], GF_Array[numOfIncrements], 
       PS_Array[0], PS_Array[numOfIncrements]);
-      
+
       Serial.print("GAIN FACTOR START: ");
       Serial.println(GF_Array[0]);
-      
+
       Serial.print("GAIN FACTOR END: ");
       Serial.println(GF_Array[numOfIncrements]);
 
@@ -763,7 +746,7 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
       GF_Array, PS_Array);
 
       //AD5933.getGainFactorS_Set(cal_resistance, cal_samples, GF_Array, PS_Array);
-      
+
       Serial.println();
 
       for(int t1 = 0; t1 <= numOfIncrements; t1++) { // print and set CR filter array.
@@ -817,7 +800,7 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
     Serial.print("Step size (KHz): ");    
     Serial.print(stepSize);
     Serial.println();    
-    Serial.print("Number of Increments: ");    
+    Serial.print("Number of currentStepements: ");    
     Serial.print(numOfIncrements);
     Serial.println();
     Serial.println(freeMemory());  
@@ -914,7 +897,7 @@ void changeZ_Value(long magnitude, long phaseAng, uint8_t *values) {
 
 void resetBLE() {
   digitalWrite(BLE_RESET_PIN, LOW);
-  delay(5); // wait 5ms
+  delay(50); // wait 5ms
   digitalWrite(BLE_RESET_PIN, HIGH);
   Serial.println("Reset attempt.");
 }
@@ -929,5 +912,3 @@ void resetBLE() {
 //values[3] = ((getNthDigit(val, 10, 6) * 10) + getNthDigit(val, 10, 5));
 //values[4] = ((getNthDigit(val, 10, 4) * 10) + getNthDigit(val, 10, 3));
 //values[5] = ((getNthDigit(val, 10, 2) * 10) + getNthDigit(val, 10, 1));
-
-
