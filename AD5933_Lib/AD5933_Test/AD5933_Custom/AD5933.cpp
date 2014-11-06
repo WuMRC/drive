@@ -1,4 +1,5 @@
 // Library Code Section of AD5933
+// Author: Il-Taek Kwon
 
 #include "AD5933.h"
 //#include <WProgram.h>
@@ -143,7 +144,7 @@ bool AD5933_Class::compCbrArray(double GF_Init, double GF_Incr, double PS_Init, 
 	int t1 = 0;
 	arrGainFactor[0] = GF_Init;
 	arrPShift[0] = PS_Init;
-	for(t1=1;t1<numIncrement;t1++)
+	for(t1=1;t1<numIncrement+1;t1++)
 	{
 		arrGainFactor[t1] = arrGainFactor[t1-1] + GF_Incr;
 		arrPShift[t1] = arrPShift[t1-1] + PS_Incr;
@@ -151,13 +152,93 @@ bool AD5933_Class::compCbrArray(double GF_Init, double GF_Incr, double PS_Init, 
 	return true;
 }
 
-bool AD5933_Class::getGainFactorS_TP(double cResistance, int avgNum, double startFreq, double endFreq, double &GF_Init, double &GF_Incr, double &PS_Init, double &PS_Incr)
+/*
+bool AD5933_Class::getArraysLI(double deltaGF, double deltaPS, double GF_Initial, double PS_Initial, double *arrGainFactor, double *arrPShift)
+{
+  int t1 = 0;
+
+  for(t1 = 1; t1 < numIncrement+1; t1++)
+  {
+    arrGainFactor[t1] = (deltaGF * t1 / (numIncrement+1)) + GF_Initial;
+    arrPShift[t1] = (deltaPS * t1 / (numIncrement+1)) + PS_Initial;
+  }
+  return true;
+}
+
+bool AD5933_Class::getGainFactors_LI(double cResistance, int avgNum, double &GF_Initial, double &GF_Final, double &PS_Initial, double &PS_Final)
+{
+  	int ctrReg = getByte(0x80);
+  	byte numIncrementBackup = numIncrement;
+	long incrHexBackup = incrHex;
+	setNumofIncrement(2);
+	setIncrementinHex(incrHexBackup * numIncrement);
+	if(setCtrMode(STAND_BY, ctrReg) == false)
+    {
+      return false;
+  	}
+    if(setCtrMode(INIT_START_FREQ, ctrReg) == false)
+    {
+      return false;
+    }
+    if(setCtrMode(START_FREQ_SWEEP, ctrReg) == false)
+    {
+      return false;
+    }
+    
+  int t1=0;
+  int rImag, rReal;
+  double sumMag=0, sumPhase=0;
+    for(t1=0;t1<avgNum;t1++)
+    {
+      getComplexRawOnce(rReal, rImag); // Only for real and Imag components. 
+      sumMag += getMag(rReal, rImag);
+      sumPhase += atan2(rImag, rReal);
+      
+      if(setCtrMode(REPEAT_FREQ, ctrReg) == false)
+      {
+          return false;
+      }
+    }
+    GF_Initial = (sumMag / avgNum) * cResistance;
+    PS_Initial = sumPhase / avgNum;
+    
+    setCtrMode(INCR_FREQ, ctrReg);
+    
+    sumMag = 0;
+    sumPhase = 0;
+    
+    for(t1=0;t1<avgNum;t1++)
+    {
+      getComplexRawOnce(rReal, rImag); // Only for real and Imag components. 
+      sumMag += getMag(rReal, rImag);
+      sumPhase += atan2(rImag, rReal);
+      
+      if(setCtrMode(REPEAT_FREQ, ctrReg) == false)
+      {
+          return false;
+      }
+    }
+    GF_Final = (sumMag / avgNum) * cResistance;
+    PS_Final = (sumPhase / avgNum);
+    
+    
+    if(setCtrMode(POWER_DOWN, ctrReg) == false)
+    {
+      return false;
+    }
+    setNumofIncrement(numIncrementBackup);
+    setIncrementinHex(incrHexBackup);
+    return true; // Succeed!  
+}
+*/
+
+bool AD5933_Class::getGainFactorS_TP(double cResistance, int avgNum, double &GF_Init, double &GF_Incr, double &PS_Init, double &PS_Incr)
 {
 	int ctrReg = getByte(0x80);
 	byte numIncrementBackup = numIncrement;
 	long incrHexBackup = incrHex;
 	setNumofIncrement(2);
-	setIncrement(endFreq-startFreq);
+	setIncrementinHex(incrHexBackup * numIncrement);
 	if(setCtrMode(STAND_BY, ctrReg) == false)
   	{
     	return false;
@@ -567,8 +648,7 @@ bool AD5933_Class::setNumofIncrement(byte num)
     return false;
   }
   
-  num--; 	// Decrement due to the internal interpretation.
-	  		// Example: If the value is 2, it performs 3 times.
+  // Example: If the value is 2, it performs 3 times.
   int lowerHex = num % 256;
   int upperHex = (num >> 8) % 2; // Parsing number for register input.
   
@@ -577,7 +657,7 @@ bool AD5933_Class::setNumofIncrement(byte num)
   t4 = setByte(0x89, lowerHex);
   if(t2 && t4)
   {
-    numIncrement = num+1;
+    numIncrement = num;
     return true; // Succeed!
   }
   else
@@ -594,7 +674,7 @@ bool AD5933_Class::setIncrement(long increment)
 // Because the increment frequency should be converted into unique Hexadecimal number, it approximately calculates the Hex value.
 // long increment - increment frequency in Hz.
 {
-  long freqHex = increment / (opClock / pow(2, 29)); // Based on the data sheet.
+  long freqHex = convIncr_Freq_to_Hex(increment); // Based on the data sheet.
   return setIncrementinHex(freqHex); // Call setIncrementinHex(long);
 }
 
@@ -639,6 +719,7 @@ bool AD5933_Class::setStartFreq(long startFreq) // long startFreq in Hz
   //double t1 = opClock / pow(2,29);
   //printer->println(t1);
 #endif
+  startFreqB = startFreq;
   long freqHex = startFreq / (opClock / pow(2, 29)); // based on datasheet
   if(freqHex > 0xFFFFFF)
   {
@@ -925,6 +1006,26 @@ bool AD5933_Class::getComplexOnce(double gainFactor, double pShift, double &vRea
   	
 	return true;
 }
+
+bool AD5933_Class::getComplexPolar(double gainFactor, double pShift, double &impVal, double &phase)
+{
+	while( (getStatusReg() & 0x02) != 0x02 )
+		; // Wait until measurement is complete.
+	
+	int rComp, iComp;
+ 
+  	byte impData[4];
+  	blockRead(0x94, 4, impData);
+  	rComp = impData[0]*16*16+impData[1];
+  	iComp = impData[2]*16*16+impData[3];
+  
+  	double magSq = getMag(rComp, iComp);
+	impVal=gainFactor/magSq;
+	phase = atan2(iComp, rComp) - pShift;
+	
+	return true;
+}
+
 
 /*
 int AD5933_Class::getRealComp()

@@ -1,4 +1,5 @@
 // Header File for AD5933 Library
+// Author: Il-Taek Kwon
 #ifndef AD5933_Head // Pre-Processing code to prevent from duplicate declaration.
 #define AD5933_Head
 
@@ -68,21 +69,23 @@ public: // The detailed instruction will be on Wiki or ".cpp" file
 	//int getImagComp();
 	bool getComplexRawOnce(int &, int &);
 	bool getComplexOnce(double, double, double &, double &, double &, double &);
+	bool getComplexPolar(double , double , double &, double &);
 	bool compFreqRawSweep(int *, int *);
 	bool compFreqSweep(double *, double *, double *, double *);
 	bool getGainFactorC(double, int, double &, double &);
 	bool getGainFactorC(double, int, double &, double &, bool);
 	bool getGainFactorS_Set(double , int, double *, double *);
-	bool getGainFactorS_TP(double , int, double, double, double &, double &, double &, double &);
+	bool getGainFactorS_TP(double , int, double &, double &, double &, double &);
 	bool compCbrArray(double, double, double, double, double *, double *);
 
-	
+	//bool getGainFactors_LI(double , int, double &, double &, double &, double &);
+	//bool getArraysLI(double, double, double, double, double, double *, double *);	
 
 private:
 	
 	static const byte Address_Ptr = 0xB0; // Address Pointer to read register values.
 	double opClock;
-	long incrHex;
+	long incrHex, startFreqB, freqIncr;
 	//int getRealCompP();
 	//int getImagCompP();
 	byte numIncrement;
@@ -96,6 +99,14 @@ private:
 	inline double getMag(int cReal, int cImag)
 	{
 		return sqrt( ( square(cReal) + square(cImag)) );
+	}
+	inline long convIncr_Hex_to_Freq(long incrementHex)
+	{
+		return incrementHex * (opClock / pow(2, 29));
+	}
+	inline long convIncr_Freq_to_Hex(long incrementFreq)
+	{
+		return incrementFreq / (opClock / pow(2, 29));
 	}
 	
 };
