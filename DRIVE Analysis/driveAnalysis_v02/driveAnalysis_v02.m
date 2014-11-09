@@ -9,7 +9,7 @@ clear, close, clc
 bioimp.acq = loadACQ(char(bioimp.files(1)));
 
 %%
-filename = 'b081314a-held1.fig';
+filename = 'b101514b-nb3.fig';
 markerToInvestigate = 4;
 fprintf(bioimp.acq.markers.szText{:,markerToInvestigate})
 fprintf('\n')
