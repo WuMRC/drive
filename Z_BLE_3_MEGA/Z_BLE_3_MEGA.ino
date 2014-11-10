@@ -3,12 +3,12 @@
 // 2014-11-02 modified by Adetunji Dahunsi <tunjid.com>
 // Updates should (hopefully) always be available at https://github.com/WuMRC
 
-#include <Wire.h>
-#include <Math.h>
+#include "Wire.h"
+#include "Math.h"
 #include "BGLib.h" // BGLib C library for BGAPI communication.
 #include "AD5933.h" //Library for AD5933 functions (must be installed)
-#include <Micro40Timer.h> // Timer function for notifications
-#include <MemoryFree.h>
+#include "Micro40Timer.h" // Timer function for notifications
+#include "MemoryFree.h"
 
 // uncomment the following line for debug serial output
 #define DEBUG
@@ -19,7 +19,7 @@
 
 #define TWI_FREQ 400000L      // Set TWI/I2C Frequency to 400MHz.
 
-#define cycles_base 60       // Cycles to ignore before a measurement is taken. Max is 511.
+#define cycles_base 5       // Cycles to ignore before a measurement is taken. Max is 511.
 
 #define cycles_multiplier 1    // Multiple for cycles_base. Can be 1, 2, or 4.
 
@@ -51,9 +51,9 @@ uint8_t sampleRate = 50; // Android app sample rate (Hz).
 
 uint8_t startFreq = 50;       // AC Start frequency (KHz).
 
-uint8_t stepSize = 0;        // AC frequency step size between consecutive values. (KHz)
+uint8_t stepSize = 0;        // AC frequency step size between consecutive values (KHz).
 
-uint8_t numOfIncrements = 0;       // Number of frequency currentStepements.
+uint8_t numOfIncrements = 0;       // Number of frequency increments.
 
 double startFreqHz = ((long)(startFreq)) * 1000; // AC Start frequency (Hz).
 
@@ -98,12 +98,14 @@ boolean SAMPLE_RATE_FLAG = false;  // Variable to manage sample rate. Managed fr
 
 uint8_t bioImpData[9]; // Unsigned integer array to carry data to phone.
 
-uint8_t defaultSampleRate[1] = {sampleRate}; // Initialize default sample rate value holder.
+uint8_t defaultSampleRate[1] = {
+  sampleRate}; // Initialize default sample rate value holder.
 
-uint8_t defaultFreqSweep[3] = {startFreq, stepSize , numOfIncrements}; // Initialize default frquency sweep value holder.
+uint8_t defaultFreqSweep[3] = {
+  startFreq, stepSize , numOfIncrements}; // Initialize default frquency sweep value holder.
 
 // ================================================================
-// BLE STATE TRACKING (UNIVERSAL TO JUST ABOUT ANY BLE PROJECT)
+// BLE STATE TRACKING 
 // ================================================================
 
 // BLE state machine definitions
@@ -194,6 +196,8 @@ void setup() {
   ble112.ble_evt_attributes_status = my_ble_evt_attributes_status;
   ble112.ble_rsp_attributes_write = my_ble_rsp_attributes_write; 
 
+  ctrReg = AD5933.getByte(0x80);
+
   // open Arduino USB serial (and wait, if we're using Leonardo)
   // use 38400 since it works at 8MHz as well as 16MHz
   Serial.begin(38400);
@@ -251,8 +255,14 @@ void loop() {
 
   // Check if GATT Client (Smartphone) is subscribed to notifications.
 
-  if (SAMPLE_RATE_FLAG == true) { // this flag is toggled from the timer's interrupt context. It sets the sample rate. 
+  if (SAMPLE_RATE_FLAG) { // this flag is toggled from the timer's interrupt context. It controls the sample rate. 
 
+    // For AD5933
+    // =================================================== 
+    
+    // Serial.println(millis());
+
+    bioImpData[8] = startFreq + (currentStep * stepSize);
     AD5933.tempUpdate();
 
     if(!FREQ_SWEEP_FLAG) { // Repeat frequency, don't sweep.
@@ -261,6 +271,7 @@ void loop() {
     }
 
     else { // Perform frequency sweep at the speed of the loop determined by SAMPLE_RATE_FLAG.
+
       // Byte of ctrReg alredy gotten from changing mode to enable freq sweep.
       if(currentStep == 0) {
         AD5933.setCtrMode(STAND_BY, ctrReg);
@@ -288,30 +299,30 @@ void loop() {
     bioImpData[2] = (0);
 
     if((
-      (Z_Value - CR_Array[currentStep]) > - 0.5 
+    (Z_Value - CR_Array[currentStep]) > - 0.5 
       && 
       (Z_Value - CR_Array[currentStep]) < 0.5)
       || 
       ((Z_Value - CR_Array[currentStep]) > 500)) {
-        
+
       for(int i = 3; i <= 7; i++) {    // Transmit zero if filter is not satisfied.    
         bioImpData[i] = 0;
       }
-      
+
     }
     else {
       Z_Value *= 1000;
       phaseAngle *= 100;
       updateData((long) Z_Value, (long) phaseAngle, bioImpData);
-      bioImpData[8] = startFreq + (currentStep * stepSize);
     }     
 
     //Write notification values to characteristic on ble112. Causes notification to be sent.
     ble112.ble_cmd_attributes_write(GATT_HANDLE_C_BIOIMPEDANCE_DATA, 0, 9, bioImpData);
-    SAMPLE_RATE_FLAG = false;     
+    SAMPLE_RATE_FLAG = false; // Switch this flag back to false till timer interrupt switches it back on.     
   }   
   else {
     // Do zilch, zip, nada, nothing if notifications are not enabled.
+    //AD5933.setCtrMode(POWER_DOWN, ctrReg);
   } 
 
   // blink Arduino LED based on state:
@@ -602,6 +613,8 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
     delete [] PS_Array; // Free memory from previous PS array.
     delete [] CR_Array; // Free memory from previous CR array.
 
+    Serial.println("Old Arrays Deleted.");
+
     startFreq = msg -> value.data[0]; 
     stepSize = msg -> value.data[1];  
     numOfIncrements = msg -> value.data[2];
@@ -609,15 +622,15 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
     bioImpData[8] = startFreq; // update AC freq value
     currentStep = 0; // reset currentStep for filtering in loop.
 
-    startFreqHz = (double)startFreq * 1000;
-    stepSizeHz = (double)stepSize * 1000;
-    endFreqHz = startFreqHz + ((double)stepSize * (double)numOfIncrements * 1000);    
+    startFreqHz = (double)startFreq * 1000;  
 
     if(stepSize == 0) { // frequency sweep is disabled
 
       FREQ_SWEEP_FLAG = false;
-      
+
       CR_Array = new double[1]; // size of one for single impedance at single frequency.
+
+      Serial.println("New Arrays created.");
 
       AD5933.setExtClock(false);
       AD5933.resetAD5933();
@@ -627,6 +640,8 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
       AD5933.getGainFactorC(cal_resistance, cal_samples, gain_factor, systemPhaseShift, false);
 
       AD5933.getComplex(gain_factor, systemPhaseShift, CR_Array[0], phaseAngle);
+
+      Serial.println("Gain factors gotten.");
 
       Serial.println();
       Serial.print("Frequency:");
@@ -650,14 +665,8 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
 
       FREQ_SWEEP_FLAG = true;
 
-      AD5933.setExtClock(false);
-      AD5933.resetAD5933();
-      AD5933.setStartFreq(startFreqHz);
-      AD5933.setIncrement(stepSizeHz);
-      AD5933.setNumofIncrement(numOfIncrements + 1);      
-      AD5933.setSettlingCycles(cycles_base, cycles_multiplier);
-      AD5933.getTemperature();
-      AD5933.setVolPGA(0, 1);  
+      stepSizeHz = (double)stepSize * 1000;
+      endFreqHz = startFreqHz + ((double)stepSize * (double)numOfIncrements * 1000);   
 
       // generate gain factor array using two point calibration.
 
@@ -672,6 +681,17 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
         GF_Array[i] = 0;    // Initialize all elements to zero.
         PS_Array[i] = 0;    // Initialize all elements to zero.        
       }
+
+      Serial.println("New Arrays created.");
+
+      AD5933.setExtClock(false);
+      AD5933.resetAD5933();
+      AD5933.setStartFreq(startFreqHz);
+      AD5933.setIncrement(stepSizeHz);
+      AD5933.setNumofIncrement(numOfIncrements + 1);      
+      AD5933.setSettlingCycles(cycles_base, cycles_multiplier);
+      AD5933.getTemperature();
+      AD5933.setVolPGA(0, 1); 
 
       AD5933.getGainFactors_LI(
       cal_resistance, cal_samples, startFreqHz, endFreqHz,
@@ -688,6 +708,8 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
       GF_Array, PS_Array);
 
       //AD5933.getGainFactorS_Set(cal_resistance, cal_samples, GF_Array, PS_Array);
+      
+      Serial.println("Gain factors gotten.");
 
       Serial.println();
 
@@ -789,31 +811,14 @@ void my_ble_evt_attributes_status (const struct ble_msg_attributes_status_evt_t 
     NOTIFICATIONS_FLAG = false;
   }
   else {
-    NOTIFICATIONS_FLAG = false;          
+    NOTIFICATIONS_FLAG = false;
   }  
 }
 
 void notify() {
-  if (NOTIFICATIONS_FLAG == true) {
+  if (NOTIFICATIONS_FLAG) {
     SAMPLE_RATE_FLAG = true; 
-  }  
-}
-
-double returnStandardPhaseAngle(double angle) {
-
-  if(angle >= 0 && angle < M_PI_2) {    // 1st quadrant
-    angle = angle;
   }
-  else if(angle >= M_PI_2 && angle < M_PI) {      // 2nd quadrant
-    angle = M_PI - angle;
-  }
-  else if(angle <= -1 * M_PI_2 && angle > -1 * M_PI) {      // 3rd quadrant
-    angle = angle + M_PI;
-  }
-  else if(angle <= 0 && angle > -1 * M_PI_2) {         // 4th quadrant
-    angle *=  -1;
-  }
-  return angle;
 }
 
 void updateData(long magnitude, long phaseAng, uint8_t *values) {
@@ -844,13 +849,4 @@ void resetBLE() {
   Serial.println("Reset attempt.");
 }
 
-/*long getNthDigit(long number, int base, int n) {
- long answer = 0;
- answer = (long) (number / pow(base, n - 1));
- answer = answer % base;
- return answer;
- }*/
 
-//values[3] = ((getNthDigit(val, 10, 6) * 10) + getNthDigit(val, 10, 5));
-//values[4] = ((getNthDigit(val, 10, 4) * 10) + getNthDigit(val, 10, 3));
-//values[5] = ((getNthDigit(val, 10, 2) * 10) + getNthDigit(val, 10, 1));
