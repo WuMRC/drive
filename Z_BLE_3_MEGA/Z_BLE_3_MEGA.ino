@@ -259,7 +259,7 @@ void loop() {
 
     // For AD5933
     // =================================================== 
-    
+
     // Serial.println(millis());
 
     bioImpData[8] = startFreq + (currentStep * stepSize);
@@ -564,6 +564,7 @@ void my_ble_evt_connection_disconnect(const struct ble_msg_connection_disconnect
 }
 
 void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *msg) {
+  Micro40Timer::stop(); // stop data being written to BLE (Timer interrupts) as soon as this callback is called.
 #ifdef DEBUG
   Serial.print("###\tattributes_value: { ");
   Serial.print("connection: "); 
@@ -587,7 +588,6 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
 
   // check for data written to "c_sample_rate" handle
   if (msg -> handle == GATT_HANDLE_C_SAMPLE_RATE && msg -> value.len > 0) {
-    Micro40Timer::stop();
 
     sampleRate = msg -> value.data[0];
     sampleRatePeriod = 1000000 / ((long) sampleRate);
@@ -606,8 +606,6 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
   }
   // check for data written to "c_ac_freq" handle  
   if (msg -> handle == GATT_HANDLE_C_AC_FREQ && msg -> value.len > 0) {
-
-    Micro40Timer::stop(); // stop data being written to BLE.
 
     delete [] GF_Array; // Free memory from previous GF array.
     delete [] PS_Array; // Free memory from previous PS array.
@@ -708,7 +706,7 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
       GF_Array, PS_Array);
 
       //AD5933.getGainFactorS_Set(cal_resistance, cal_samples, GF_Array, PS_Array);
-      
+
       Serial.println("Gain factors gotten.");
 
       Serial.println();
@@ -848,5 +846,4 @@ void resetBLE() {
   digitalWrite(BLE_RESET_PIN, HIGH);
   Serial.println("Reset attempt.");
 }
-
 
