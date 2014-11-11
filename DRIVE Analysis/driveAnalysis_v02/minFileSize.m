@@ -11,12 +11,16 @@ fileCheckArray = zeros(1,length(fileArray));
 
 for file = 1:length(fileArray)
     fileInfo = dir(strcat(directory, fileArray(file).name));
-    if fileInfo.bytes > fileSize*1000000;
-        fileCheckArray(file) = true;
-    else 
+    % Check to make sure you are not picking up nested directories
+    if length(fileInfo) == 1
+        if fileInfo.bytes > fileSize*1000000
+            fileCheckArray(file) = true;
+        else
+            fileCheckArray(file) = false;
+        end
+    else
         fileCheckArray(file) = false;
     end
-end
 
 % Remove all files below the threshold
 fileCheckArray = logical(fileCheckArray);
