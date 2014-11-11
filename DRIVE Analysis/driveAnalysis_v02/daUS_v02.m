@@ -4,9 +4,11 @@
 % SELECT PATIENT FOLDER
 clear, close, clc
 [bioimp, ultrasound] = getDRIVEdata;
+bioimp.acq = loadACQ(char(bioimp.files(1)));
+
 
 %% STEP YY - TRACK ULTRASOUND DATA
-fileUS = 1;
+fileUS = 5;
 [ultrasound.data] = dicomTrack(ultrasound.files(fileUS).name);
 
 implay(permute(ultrasound.data.DICOM,[1 2 4 3]))

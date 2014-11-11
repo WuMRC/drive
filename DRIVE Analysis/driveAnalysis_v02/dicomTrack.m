@@ -97,8 +97,10 @@ time = (1:dicomFrames)/FsUS;
 % hold on, plot(time, envTop,'r'), plot(time,envBot,'r')
 % figure(2), plot(f,2*abs(Y(1:NFFT/2+1)))
 
-% data.PIXELS_PER_MM = (387-190)/(5*10);    % 071014 C1
-data.PIXELS_PER_MM = (521-282)/(5*10);    % 071014 C2
+% data.PIXELS_PER_MM = (228-152)/(5*10);    % 022414 C
+% data.PIXELS_PER_MM = (250-164)/(5*10);    % 0230614 C
+data.PIXELS_PER_MM = (387-190)/(5*10);    % 071014 C1
+% data.PIXELS_PER_MM = (521-282)/(5*10);    % 071014 C2
 % data.PIXELS_PER_MM = (205-145)/(2*10);
 % data.PIXELS_PER_MM = (396-244)/(5*10);
 % data.PIXELS_PER_MM = (505-302)/(5*10);

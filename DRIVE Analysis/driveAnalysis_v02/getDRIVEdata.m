@@ -1,5 +1,5 @@
 function [ bioimp, ultrasound ] = getDRIVEdata
-%UNTITLED3 Summary of this function goes here
+%GETDRIVEDATA Gets the data used for the DRIVE experiments
 %   Detailed explanation goes here
 
 % Select patient folder
