@@ -6,7 +6,7 @@ clear, close, clc
 [bioimp, ultrasound] = getDRIVEdata;
 
 %%
-bioimp.acq = loadACQ(char(bioimp.files(1)));
+bioimp.acq = loadACQ(char(bioimp.files(4)));
 
 %%
 filename = 'b101514b-nb3.fig';

@@ -1,28 +1,16 @@
-function [data] = dicomTrack( filename )
+function [data] = dicomTrack_v03
 %DICOMTRACK Track points on a DICOM
 %   Eventual expansion to multiple different ways to track
 %
+[filename, pathname] = uigetfile('*.DCM;*.dcm', ...
+    'Choose DICOM images to work with', pwd, ...
+    'MultiSelect', 'off');
 
-if nargin == 0
-    %     disp('No file selected. Exiting function.')
-    %     return
-    [filename, pathname] = uigetfile('*.DCM;*.dcm', ...
-        'Choose DICOM images to work with', pwd, ...
-        'MultiSelect', 'off');
-end
+addpath(genpath(pathname));
+cd(pathname)
 
-disp(['User selected: ', fullfile(filename)]);
-[pathstr, name, ext] = fileparts(filename);
-
-if strcmp(ext,'.DCM') || strcmp(ext,'.dcm')
-%     dicomread(filename);
-    dicomFile = permute(dicomread(filename),[1, 2, 4, 3]);
-    dicomSize = size(dicomFile);
-    dicomFrames = dicomSize(3);
-else
-    disp('File chosen not a DICOM. Exiting function.')
-    return
-end
+dicomFile = permute(dicomread(filename),[1, 2, 4, 3]);
+[~, ~, dicomFrames, ~] = size(dicomFile);
 
 
 %Adjust image
@@ -101,8 +89,11 @@ time = (1:dicomFrames)/FsUS;
 % figure(2), plot(f,2*abs(Y(1:NFFT/2+1)))
 
 % data.PIXELS_PER_MM = (228-152)/(5*10);    % 022414 C
-% data.PIXELS_PER_MM = (250-164)/(5*10);    % 0230614 C
-data.PIXELS_PER_MM = (387-190)/(5*10);    % 071014 C1
+% data.PIXELS_PER_MM = (250-164)/(5*10);    % 030614 C
+% data.PIXELS_PER_MM = (196-135)/(5*10);    % 041714 C
+% data.PIXELS_PER_MM = (228-152)/(5*10);    % 042314 C
+data.PIXELS_PER_MM = (210-142)/(5*10);    % 042814 C
+% data.PIXELS_PER_MM = (387-190)/(5*10);    % 071014 C1
 % data.PIXELS_PER_MM = (521-282)/(5*10);    % 071014 C2
 % data.PIXELS_PER_MM = (205-145)/(2*10);
 % data.PIXELS_PER_MM = (396-244)/(5*10);

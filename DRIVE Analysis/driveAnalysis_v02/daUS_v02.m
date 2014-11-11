@@ -4,11 +4,12 @@
 % SELECT PATIENT FOLDER
 clear, close, clc
 [bioimp, ultrasound] = getDRIVEdata;
-bioimp.acq = loadACQ(char(bioimp.files(1)));
+%%
+bioimp.acq = loadACQ(char(bioimp.files(5)));
 
 
 %% STEP YY - TRACK ULTRASOUND DATA
-fileUS = 5;
+fileUS = 7;
 [ultrasound.data] = dicomTrack(ultrasound.files(fileUS).name);
 
 implay(permute(ultrasound.data.DICOM,[1 2 4 3]))
@@ -22,7 +23,7 @@ implay(permute(ultrasound.data.DICOM,[1 2 4 3]))
 
 
 
-%% YYY
+% %% YYY
 
 ultrasound.info = dicominfo(ultrasound.files(fileUS).name);
 ultrasound.info.FsUS = 1/((ultrasound.info.FrameTime)*0.001);
