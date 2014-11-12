@@ -85,9 +85,9 @@
         android:paddingTop="25dp"
         android:visibility="gone" />
 
-    <Switch
+    <android.support.v7.widget.SwitchCompat
         android:id="@+id/enable_notifications"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentLeft="true"
         android:layout_below="@id/connection_state"
@@ -144,6 +144,8 @@
         android:layout_centerInParent="true"
         android:background="?android:attr/selectableItemBackground"
         android:onClick="startSampling"
+        android:paddingLeft="80dp"
+        android:paddingRight="80dp"
         android:text="@string/start"
         android:textColor="@color/appbasetheme_color"
         android:textSize="24sp"
@@ -225,12 +227,24 @@
             android:textStyle="bold|italic" />
     </RelativeLayout>
 
+    <TextView
+        android:id="@+id/parameter_summary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/hscrollview"
+        android:layout_gravity="center_horizontal"
+        android:gravity="center"
+        android:text="@string/parameter_summary"
+        android:textColor="@color/appbasetheme_color"
+        android:textSize="22sp"
+        android:textStyle="bold" />
+
     <TableLayout
         android:id="@+id/summary_table"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_above="@+id/buttons"
-        android:layout_below="@+id/hscrollview"
+        android:layout_below="@+id/parameter_summary"
         android:layout_gravity="center_horizontal"
         android:layout_marginTop="@dimen/activity_vertical_margin" >
 

@@ -70,6 +70,8 @@ FrequencySweepFragment.FrequencySweepListener{
 	private String mDeviceName;
 	private String mDeviceAddress;
 	private boolean mConnected = true;
+	
+	private BioimpFragment bioimpFrag;
 
 	private int sampleRate = 70;
 	private byte startFreq = 0;
@@ -207,11 +209,12 @@ FrequencySweepFragment.FrequencySweepListener{
 		switch (number) {
 		// When a fragment is attached to the hosting activity, pass the connected device's name.
 		case 1:
-			BioimpFragment bioimpFrag = (BioimpFragment)
+			bioimpFrag = (BioimpFragment)
 			getSupportFragmentManager().findFragmentByTag(LIVE_DATA_TAG);
-			Log.i(TAG, mDeviceName + ".");
 			bioimpFrag.setDeviceName(mDeviceName);
 			bioimpFrag.setDeviceAddress(mDeviceAddress);
+			bioimpFrag.updateSampleRate(sampleRate);
+			bioimpFrag.UpdateFrequencyParams(startFreq, stepSize, numOfIncrements);
 
 			if(mConnected == true) {
 				mTitle = getString(R.string.live_data);
@@ -298,7 +301,7 @@ FrequencySweepFragment.FrequencySweepListener{
 			Intent intent = new Intent(this, ServiceBinder.class);
 			stopService(intent);
 			Log.i(TAG, "Attempted disconnect.");
-			//mBluetoothLeService.close();
+			mBluetoothLeService.close();
 			return true;
 		case R.id.name_text_file:
 			showTextFileDialog();
@@ -382,8 +385,9 @@ FrequencySweepFragment.FrequencySweepListener{
 					fixedLengthString("X", 6) 
 					+ fixedLengthString("Y", 6)
 					+ fixedLengthString("Z", 6)
-					+ fixedLengthString("Ω", 7)
+					+ fixedLengthString("Ω", 9)
 					+ fixedLengthString("θ", 6)
+					+ fixedLengthString("KHz", 4)
 					+ "\n");
 			for (int i = 0; i < textFile.size(); i++) {
 				myOutWriter.append(textFile.get(i));
@@ -449,6 +453,9 @@ FrequencySweepFragment.FrequencySweepListener{
 			sampleRate = Integer.parseInt(sampleRateDialog.getValue());
 			Toast.makeText(this, "New frequency: " + sampleRateDialog.getValue(), Toast.LENGTH_SHORT).show();
 			mServiceBinder.writeSampleRateCharacteristic(sampleRate);
+			if(bioimpFrag.getTag() == LIVE_DATA_TAG) {
+				bioimpFrag.setSampleRateTextView(sampleRate);
+			}
 		}
 		catch (Exception e) {
 			Toast.makeText(this, R.string.set_fail, Toast.LENGTH_SHORT).show();
@@ -490,6 +497,9 @@ FrequencySweepFragment.FrequencySweepListener{
 			byte[] freqValuesByte = {startFreq, stepSize, numOfIncrements}; 
 			Toast.makeText(this, R.string.freq_sweep_enabled, Toast.LENGTH_SHORT).show();
 			mServiceBinder.writeFrequencySweepCharacteristic(freqValuesByte);
+			if(bioimpFrag.getTag() == LIVE_DATA_TAG) {
+				bioimpFrag.setAcFreqTextViewParams(startFreq, stepSize, numOfIncrements);
+			}
 		}
 		catch (Exception e) {
 			if(e instanceof IllegalArgumentException) {
@@ -521,6 +531,9 @@ FrequencySweepFragment.FrequencySweepListener{
 			byte[] freqValuesByte = {startFreq, stepSize, numOfIncrements}; 
 			Toast.makeText(this, R.string.freq_sweep_disabled, Toast.LENGTH_SHORT).show();
 			mServiceBinder.writeFrequencySweepCharacteristic(freqValuesByte);
+			if(bioimpFrag.getTag() == LIVE_DATA_TAG) {
+				bioimpFrag.setAcFreqTextViewParams(startFreq, stepSize, numOfIncrements);
+			}
 		}
 		catch (Exception e) {
 			if(e instanceof IllegalArgumentException) {

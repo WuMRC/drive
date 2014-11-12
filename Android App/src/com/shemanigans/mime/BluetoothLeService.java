@@ -82,7 +82,7 @@ public class BluetoothLeService extends Service {
 	public final static UUID UUID_AC_FREQUENCY = 
 			UUID.fromString(SampleGattAttributes.AC_FREQ);
 
-	private Queue<BluetoothGattDescriptor> descriptorWriteQueue = new LinkedList<BluetoothGattDescriptor>();
+	//private Queue<BluetoothGattDescriptor> descriptorWriteQueue = new LinkedList<BluetoothGattDescriptor>();
 	private Queue<BluetoothGattCharacteristic> characteristicReadQueue = new LinkedList<BluetoothGattCharacteristic>();
 
 	// Implements callback methods for GATT events that the app cares about.  For example,
@@ -127,8 +127,10 @@ public class BluetoothLeService extends Service {
 		public void onCharacteristicRead(BluetoothGatt gatt,
 				BluetoothGattCharacteristic characteristic,
 				int status) {
-			characteristicReadQueue.remove();
 			if (status == BluetoothGatt.GATT_SUCCESS) {
+				if(characteristicReadQueue.size() > 0) {
+					characteristicReadQueue.remove();
+				}
 				if(findCharacteristic(
 						characteristic.getUuid().toString(), 
 						SampleGattAttributes.SAMPLE_RATE)) {
@@ -146,34 +148,34 @@ public class BluetoothLeService extends Service {
 			else {
 				Log.i(TAG, "onCharacteristicRead error: " + status);
 			}
-			if(characteristicReadQueue.size() > 0)
+			if(characteristicReadQueue.size() > 0) {
 				mBluetoothGatt.readCharacteristic(characteristicReadQueue.element());
+			}
 		}
 
-		@Override
+		/*@Override
 		public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {         
 			if (status == BluetoothGatt.GATT_SUCCESS) {
-				Log.i(TAG, "Callback: Wrote GATT Descriptor successfully.");           
+				Log.i(TAG, "Callback: Wrote GATT Descriptor successfully."); 
+				if(descriptorWriteQueue.size() > 0) {
+					descriptorWriteQueue.remove();  //pop the item that we just finishing writing
+				}
 			}           
 			else{
 				Log.i(TAG, "Callback: Error writing GATT Descriptor: "+ status);
 			}
-			descriptorWriteQueue.remove();  //pop the item that we just finishing writing
+			Log.i(TAG, "" + descriptorWriteQueue.size());
 			//if there is more to write, do it!
-			if(descriptorWriteQueue.size() > 0)
+			if(descriptorWriteQueue.size() > 0) {
 				mBluetoothGatt.writeDescriptor(descriptorWriteQueue.element());
-			else if(characteristicReadQueue.size() > 0)
-				mBluetoothGatt.readCharacteristic(characteristicReadQueue.element());
-		};
+			}
+		};*/
 
 		@Override
 		public void onCharacteristicChanged(BluetoothGatt gatt,
 				BluetoothGattCharacteristic characteristic) {
 			if(UUID_BIOIMPEDANCE_DATA.equals(characteristic.getUuid())) {
 				broadcastUpdate(ACTION_DATA_AVAILABLE_BIOIMPEDANCE, characteristic);
-			}
-			else {
-				broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
 			}
 		}
 	};
@@ -212,10 +214,10 @@ public class BluetoothLeService extends Service {
 			if (data != null && data.length > 0) {
 				final StringBuilder stringBuilder = new StringBuilder(data.length);
 				final StringBuilder impVal = new StringBuilder(data.length);
-				final StringBuilder freq = new StringBuilder(data.length);
 				int phaseAngleUnit = 0;
 				int phaseAngleDecimal = 0;
 				double phaseAngleWhole = 0;
+				byte freq = 0;
 				int c = 0;
 				for(byte byteChar : data) {
 
@@ -238,7 +240,7 @@ public class BluetoothLeService extends Service {
 						phaseAngleDecimal = byteChar;
 					}
 					if(c > 7) {
-						freq.append(String.valueOf(byteChar));
+						freq = byteChar;
 					}
 					c++;
 				}
@@ -256,8 +258,9 @@ public class BluetoothLeService extends Service {
 				double actualVal = Double.parseDouble(impVal.toString());
 				actualVal = actualVal / 1000;
 				Z_BLE[3] = actualVal;
-				stringBuilder.append(fixedLengthString(String.valueOf(actualVal), 7));
+				stringBuilder.append(fixedLengthString(String.valueOf(actualVal), 9));
 				stringBuilder.append(fixedLengthString(String.valueOf(phaseAngleWhole), 6));
+				stringBuilder.append(fixedLengthString(String.valueOf(freq), 4));
 				intent.putExtra(EXTRA_DATA_BIOIMPEDANCE_STRING, new String(stringBuilder.toString()));
 				intent.putExtra(EXTRA_DATA_BIOIMPEDANCE_DOUBLE, Z_BLE);
 			}
@@ -433,19 +436,21 @@ public class BluetoothLeService extends Service {
 		characteristicReadQueue.add(characteristic);
 		//if there is only 1 item in the queue, then read it.  If more than 1, we handle asynchronously in the callback above
 		//GIVE PRECEDENCE to descriptor writes.  They must all finish first.
-		if((characteristicReadQueue.size() == 1) && (descriptorWriteQueue.size() == 0))
+		if(characteristicReadQueue.size() > 0) {
 			Log.i(TAG, "Attempted read of queue before callback method.");
-		mBluetoothGatt.readCharacteristic(characteristic); 
+			mBluetoothGatt.readCharacteristic(characteristic); 
+		}
 	}
 
-	public void writeGattDescriptor(BluetoothGattDescriptor descriptor){
+	/*public void writeGattDescriptor(BluetoothGattDescriptor descriptor){
 		//put the descriptor into the write queue
 		descriptorWriteQueue.add(descriptor);
 		//if there is only 1 item in the queue, then write it.  If more than 1, we handle asynchronously in the callback above
-		if(descriptorWriteQueue.size() == 1){   
-			mBluetoothGatt.writeDescriptor(descriptor);      
+		if(descriptorWriteQueue.size() > 0){ 
+			mBluetoothGatt.writeDescriptor(descriptor);
+			Log.i(TAG, "Wrote descriptor please");
 		}
-	}
+	}*/
 
 	public void writeCharacteristic(BluetoothGattCharacteristic characteristic, int value) {
 		if (mBluetoothAdapter == null || mBluetoothGatt == null) {

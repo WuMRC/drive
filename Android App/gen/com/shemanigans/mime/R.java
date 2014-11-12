@@ -2258,7 +2258,7 @@ containing a value of this type.
         public static final int notification_icon=0x7f0200ac;
     }
     public static final class id {
-        public static final int ViewColorPickerHelper=0x7f0a005d;
+        public static final int ViewColorPickerHelper=0x7f0a0065;
         public static final int action_bar=0x7f0a0042;
         public static final int action_bar_activity_content=0x7f0a0003;
         public static final int action_bar_container=0x7f0a0041;
@@ -2277,36 +2277,35 @@ containing a value of this type.
         public static final int alignBounds=0x7f0a0022;
         public static final int alignMargins=0x7f0a0023;
         public static final int always=0x7f0a0014;
-        public static final int begin=0x7f0a006d;
-        public static final int begin_bar=0x7f0a006e;
+        public static final int begin=0x7f0a0074;
+        public static final int begin_bar=0x7f0a0075;
         public static final int beginning=0x7f0a001b;
-        public static final int bioimpedancePlot=0x7f0a006a;
-        public static final int bioimpedancePlot2=0x7f0a005c;
+        public static final int bioimpedancePlot=0x7f0a005c;
         public static final int bluetooth_prompt=0x7f0a0050;
         public static final int bluetooth_prompt_progressbar=0x7f0a0051;
         public static final int bottom=0x7f0a001e;
         public static final int button_pair=0x7f0a0054;
-        public static final int buttons=0x7f0a0070;
+        public static final int buttons=0x7f0a0077;
         public static final int center=0x7f0a0024;
         public static final int center_horizontal=0x7f0a0025;
         public static final int center_vertical=0x7f0a0026;
         public static final int checkbox=0x7f0a003a;
-        public static final int clear_text_file=0x7f0a0072;
-        public static final int clear_text_file_frag=0x7f0a005f;
+        public static final int clear_text_file=0x7f0a0079;
+        public static final int clear_text_file_frag=0x7f0a0067;
         public static final int clip_horizontal=0x7f0a0027;
         public static final int clip_vertical=0x7f0a0028;
         public static final int collapseActionView=0x7f0a0015;
-        public static final int connection_state=0x7f0a0065;
-        public static final int connection_state_bar=0x7f0a0067;
+        public static final int connection_state=0x7f0a006d;
+        public static final int connection_state_bar=0x7f0a006f;
         public static final int container=0x7f0a0056;
         public static final int current_frequency=0x7f0a0082;
-        public static final int data_label=0x7f0a006b;
-        public static final int data_value=0x7f0a006c;
+        public static final int data_label=0x7f0a0072;
+        public static final int data_value=0x7f0a0073;
         public static final int decor_content_parent=0x7f0a0040;
         public static final int default_activity_button=0x7f0a0035;
         public static final int device_address=0x7f0a005b;
-        public static final int device_address_space_tag=0x7f0a0062;
-        public static final int device_address_tag=0x7f0a0061;
+        public static final int device_address_space_tag=0x7f0a006a;
+        public static final int device_address_tag=0x7f0a0069;
         public static final int device_name=0x7f0a005a;
         public static final int dialog=0x7f0a0019;
         public static final int disableHome=0x7f0a000d;
@@ -2314,25 +2313,25 @@ containing a value of this type.
         public static final int drawer_layout=0x7f0a0055;
         public static final int dropdown=0x7f0a001a;
         public static final int edit_query=0x7f0a0044;
-        public static final int enable_notifications=0x7f0a0068;
+        public static final int enable_notifications=0x7f0a0070;
         public static final int end=0x7f0a001c;
         public static final int expand_activities_button=0x7f0a0033;
         public static final int expanded_menu=0x7f0a0039;
-        public static final int export_to_text=0x7f0a0071;
-        public static final int export_to_text_frag=0x7f0a005e;
+        public static final int export_to_text=0x7f0a0078;
+        public static final int export_to_text_frag=0x7f0a0066;
         public static final int fill=0x7f0a0029;
         public static final int fill_horizontal=0x7f0a002a;
         public static final int fill_vertical=0x7f0a002b;
-        public static final int gatt_services_list=0x7f0a006f;
+        public static final int gatt_services_list=0x7f0a0076;
         public static final int home=0x7f0a0000;
         public static final int homeAsUp=0x7f0a000e;
         public static final int horizontal=0x7f0a0020;
-        public static final int hscrollview=0x7f0a0069;
+        public static final int hscrollview=0x7f0a0071;
         public static final int icon=0x7f0a0037;
         public static final int ifRoom=0x7f0a0016;
         public static final int image=0x7f0a0034;
         public static final int left=0x7f0a002c;
-        public static final int linearLayout1=0x7f0a0060;
+        public static final int linearLayout1=0x7f0a0068;
         public static final int list=0x7f0a0059;
         public static final int listMode=0x7f0a000a;
         public static final int list_item=0x7f0a0036;
@@ -2352,13 +2351,14 @@ containing a value of this type.
         public static final int never=0x7f0a0017;
         public static final int none=0x7f0a000f;
         public static final int normal=0x7f0a000b;
-        public static final int num_of_increments=0x7f0a0079;
+        public static final int num_of_increments=0x7f0a0064;
         public static final int pairing_prompt=0x7f0a0052;
+        public static final int parameter_summary=0x7f0a005d;
         public static final int progress_circular=0x7f0a0007;
         public static final int progress_horizontal=0x7f0a0008;
         public static final int radio=0x7f0a003c;
         public static final int right=0x7f0a002d;
-        public static final int sample_rate=0x7f0a0076;
+        public static final int sample_rate=0x7f0a0061;
         public static final int search_badge=0x7f0a0046;
         public static final int search_bar=0x7f0a0045;
         public static final int search_button=0x7f0a0047;
@@ -2380,16 +2380,16 @@ containing a value of this type.
         public static final int showTitle=0x7f0a0012;
         public static final int split_action_bar=0x7f0a0004;
         public static final int start=0x7f0a002e;
-        public static final int start_freq=0x7f0a0077;
-        public static final int state_tag=0x7f0a0063;
-        public static final int state_tag_space=0x7f0a0064;
-        public static final int statebar_tag_space=0x7f0a0066;
-        public static final int step_size=0x7f0a0078;
+        public static final int start_freq=0x7f0a0062;
+        public static final int state_tag=0x7f0a006b;
+        public static final int state_tag_space=0x7f0a006c;
+        public static final int statebar_tag_space=0x7f0a006e;
+        public static final int step_size=0x7f0a0063;
         public static final int submit_area=0x7f0a004d;
-        public static final int summary_table=0x7f0a0073;
+        public static final int summary_table=0x7f0a005e;
         public static final int tabMode=0x7f0a000c;
-        public static final int tableRow1=0x7f0a0074;
-        public static final int tableRow2=0x7f0a0075;
+        public static final int tableRow1=0x7f0a005f;
+        public static final int tableRow2=0x7f0a0060;
         public static final int textViewName=0x7f0a0058;
         public static final int textfile_name=0x7f0a0084;
         public static final int title=0x7f0a0038;
@@ -2539,14 +2539,14 @@ containing a value of this type.
         /**  Description of a share target (both in the list of such or the default share button) in a ShareActionProvider (share UI). [CHAR LIMIT=NONE] 
          */
         public static final int abc_shareactionprovider_share_with_application=0x7f0b000d;
-        public static final int action_example=0x7f0b006d;
+        public static final int action_example=0x7f0b006e;
         public static final int action_settings=0x7f0b0016;
         public static final int app_name=0x7f0b0015;
-        public static final int back_to_scan=0x7f0b0069;
+        public static final int back_to_scan=0x7f0b006a;
         public static final int back_to_scanning=0x7f0b0047;
         /**  Imported strings fron example 
          */
-        public static final int ble_not_supported=0x7f0b004d;
+        public static final int ble_not_supported=0x7f0b004e;
         public static final int buttonNo=0x7f0b0028;
         public static final int button_no=0x7f0b001c;
         public static final int button_scan=0x7f0b0020;
@@ -2556,34 +2556,34 @@ containing a value of this type.
         public static final int cancelled=0x7f0b002e;
         public static final int check_value=0x7f0b0044;
         public static final int clearTextFile=0x7f0b002a;
-        public static final int connected=0x7f0b0053;
-        public static final int connecting=0x7f0b0054;
-        public static final int data_export=0x7f0b0068;
+        public static final int connected=0x7f0b0054;
+        public static final int connecting=0x7f0b0055;
+        public static final int data_export=0x7f0b0069;
         public static final int desc=0x7f0b0034;
         public static final int disable=0x7f0b003e;
-        public static final int disconnected=0x7f0b0055;
+        public static final int disconnected=0x7f0b0056;
         public static final int edit_message=0x7f0b0018;
         public static final int enable=0x7f0b003d;
         public static final int enableNotifications=0x7f0b002b;
         public static final int enable_frequency_sweep=0x7f0b0039;
-        public static final int error_bluetooth_not_supported=0x7f0b0057;
+        public static final int error_bluetooth_not_supported=0x7f0b0058;
         public static final int exportToText=0x7f0b0029;
         public static final int freq_sweep_disabled=0x7f0b0043;
         public static final int freq_sweep_enabled=0x7f0b0042;
         public static final int hello_world=0x7f0b0017;
-        public static final int label_data=0x7f0b004e;
-        public static final int label_device_address=0x7f0b004f;
-        public static final int label_device_name=0x7f0b0050;
-        public static final int label_state=0x7f0b0051;
-        public static final int live_data=0x7f0b0065;
+        public static final int label_data=0x7f0b004f;
+        public static final int label_device_address=0x7f0b0050;
+        public static final int label_device_name=0x7f0b0051;
+        public static final int label_state=0x7f0b0052;
+        public static final int live_data=0x7f0b0066;
         public static final int main_splash_screen=0x7f0b001e;
         /**  Menu items 
          */
-        public static final int menu_connect=0x7f0b005b;
-        public static final int menu_disconnect=0x7f0b005c;
-        public static final int menu_refresh=0x7f0b005f;
-        public static final int menu_scan=0x7f0b005d;
-        public static final int menu_stop=0x7f0b005e;
+        public static final int menu_connect=0x7f0b005c;
+        public static final int menu_disconnect=0x7f0b005d;
+        public static final int menu_refresh=0x7f0b0060;
+        public static final int menu_scan=0x7f0b005e;
+        public static final int menu_stop=0x7f0b005f;
         public static final int mime_options=0x7f0b0035;
         public static final int monitor=0x7f0b0030;
         /**  Content description of a MediaRouteButton for accessibility support.
@@ -2606,16 +2606,17 @@ containing a value of this type.
          */
         public static final int mr_user_route_category_name=0x7f0b0010;
         public static final int multi_freq=0x7f0b0040;
-        public static final int name_text_file=0x7f0b0063;
-        public static final int navigation_drawer_close=0x7f0b006c;
-        public static final int navigation_drawer_open=0x7f0b006b;
-        public static final int no_data=0x7f0b0052;
+        public static final int name_text_file=0x7f0b0064;
+        public static final int navigation_drawer_close=0x7f0b006d;
+        public static final int navigation_drawer_open=0x7f0b006c;
+        public static final int no_data=0x7f0b0053;
         public static final int no_zero=0x7f0b0045;
         public static final int not_applicable=0x7f0b004c;
         public static final int num_of_increments=0x7f0b004b;
         public static final int ok=0x7f0b002c;
-        public static final int past_12=0x7f0b0067;
-        public static final int past_hour=0x7f0b0066;
+        public static final int parameter_summary=0x7f0b004d;
+        public static final int past_12=0x7f0b0068;
+        public static final int past_hour=0x7f0b0067;
         public static final int sample_rate=0x7f0b0048;
         public static final int sample_rate_options=0x7f0b0037;
         public static final int sampling_data=0x7f0b002f;
@@ -2628,29 +2629,29 @@ containing a value of this type.
         public static final int set_sample_rate=0x7f0b0036;
         public static final int set_start_freq=0x7f0b003a;
         public static final int set_step_size=0x7f0b003b;
-        public static final int set_time=0x7f0b0062;
+        public static final int set_time=0x7f0b0063;
         public static final int showGraph=0x7f0b0032;
         public static final int showMain=0x7f0b0031;
         public static final int single_freq=0x7f0b003f;
         public static final int start=0x7f0b0046;
         public static final int start_freq=0x7f0b0049;
         public static final int step_size=0x7f0b004a;
-        public static final int text_file_name=0x7f0b0064;
-        public static final int title_activity_accelerometer_data_parser=0x7f0b0061;
+        public static final int text_file_name=0x7f0b0065;
+        public static final int title_activity_accelerometer_data_parser=0x7f0b0062;
         public static final int title_activity_act_and_pair=0x7f0b0021;
-        public static final int title_activity_button_no=0x7f0b0060;
+        public static final int title_activity_button_no=0x7f0b0061;
         public static final int title_activity_device_control=0x7f0b0025;
         public static final int title_activity_device_scan=0x7f0b0024;
         public static final int title_activity_display_message=0x7f0b001a;
-        public static final int title_activity_long_term=0x7f0b006e;
+        public static final int title_activity_long_term=0x7f0b006f;
         public static final int title_activity_pair=0x7f0b0022;
         public static final int title_activity_scan=0x7f0b0023;
-        public static final int title_activity_test=0x7f0b006a;
-        public static final int title_devices=0x7f0b0056;
+        public static final int title_activity_test=0x7f0b006b;
+        public static final int title_devices=0x7f0b0057;
         public static final int uc=0x7f0b0033;
-        public static final int unknown_characteristic=0x7f0b0059;
-        public static final int unknown_device=0x7f0b0058;
-        public static final int unknown_service=0x7f0b005a;
+        public static final int unknown_characteristic=0x7f0b005a;
+        public static final int unknown_device=0x7f0b0059;
+        public static final int unknown_service=0x7f0b005b;
     }
     public static final class style {
         /**  the theme applied to the application or activity 
@@ -2671,6 +2672,11 @@ containing a value of this type.
         AppBaseTheme from res/values/styles.xml on API 11+ devices.
     
  API 11 theme customizations can go here. 
+
+        Base application theme for API 14+. This theme completely replaces
+        AppBaseTheme from BOTH res/values/styles.xml and
+        res/values-v11/styles.xml on API 14+ devices.
+    
 
         Base application theme for API 14+. This theme completely replaces
         AppBaseTheme from BOTH res/values/styles.xml and

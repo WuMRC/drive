@@ -19,11 +19,11 @@
 
 #define TWI_FREQ 400000L      // Set TWI/I2C Frequency to 400MHz.
 
-#define cycles_base 5       // Cycles to ignore before a measurement is taken. Max is 511.
+#define cycles_base 15       // Cycles to ignore before a measurement is taken. Max is 511.
 
 #define cycles_multiplier 1    // Multiple for cycles_base. Can be 1, 2, or 4.
 
-#define cal_resistance 356.000  // Calibration resistance for the gain factor. 
+#define cal_resistance 220.64  // Calibration resistance for the gain factor. 
 
 #define cal_samples 40         // Number of measurements to take of the calibration resistance.
 
@@ -303,7 +303,7 @@ void loop() {
       && 
       (Z_Value - CR_Array[currentStep]) < 0.5)
       || 
-      ((Z_Value - CR_Array[currentStep]) > 500)) {
+      (Z_Value > 999)) {
 
       for(int i = 3; i <= 7; i++) {    // Transmit zero if filter is not satisfied.    
         bioImpData[i] = 0;
@@ -762,7 +762,7 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
     Serial.print("Step size (KHz): ");    
     Serial.print(stepSize);
     Serial.println();    
-    Serial.print("Number of currentStepements: ");    
+    Serial.print("Number of increments: ");    
     Serial.print(numOfIncrements);
     Serial.println();
     Serial.println(freeMemory());  

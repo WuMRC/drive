@@ -166,16 +166,6 @@ public class ServiceBinder extends Service {
 		mBluetoothLeService.clientDisconnected();
 	}
 
-	private static IntentFilter makeGattUpdateIntentFilter() {
-		final IntentFilter intentFilter = new IntentFilter();
-		intentFilter.addAction(BluetoothLeService.ACTION_GATT_CONNECTED);
-		intentFilter.addAction(BluetoothLeService.ACTION_GATT_DISCONNECTED);
-		intentFilter.addAction(BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED);
-		intentFilter.addAction(BluetoothLeService.ACTION_DATA_AVAILABLE);
-		intentFilter.addAction(BluetoothLeService.ACTION_DATA_AVAILABLE_BIOIMPEDANCE);
-		return intentFilter;
-	}
-
 	public void exportToText(String[] value, File file) {
 		// write on SD card file data in the text box
 
@@ -299,8 +289,9 @@ public class ServiceBinder extends Service {
 		return 	fixedLengthString("X", 6) 
 				+ fixedLengthString("Y", 6)
 				+ fixedLengthString("Z", 6)
-				+ fixedLengthString("Ω", 7)
+				+ fixedLengthString("Ω", 9)
 				+ fixedLengthString("θ", 6)
+				+ fixedLengthString("KHz", 4)
 				+ "\n";
 	}
 
@@ -332,6 +323,16 @@ public class ServiceBinder extends Service {
 			}
 		}
 		return check;
+	}
+	
+	private static IntentFilter makeGattUpdateIntentFilter() {
+		final IntentFilter intentFilter = new IntentFilter();
+		intentFilter.addAction(BluetoothLeService.ACTION_GATT_CONNECTED);
+		intentFilter.addAction(BluetoothLeService.ACTION_GATT_DISCONNECTED);
+		intentFilter.addAction(BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED);
+		intentFilter.addAction(BluetoothLeService.ACTION_DATA_AVAILABLE);
+		intentFilter.addAction(BluetoothLeService.ACTION_DATA_AVAILABLE_BIOIMPEDANCE);
+		return intentFilter;
 	}
 
 	private void getGattServices(List<BluetoothGattService> gattServices) {

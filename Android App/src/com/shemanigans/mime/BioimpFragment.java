@@ -1,10 +1,10 @@
 package com.shemanigans.mime;
 
 import android.app.Activity;
-import android.support.v4.app.Fragment;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.os.Bundle;
+import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,13 +24,28 @@ public class BioimpFragment extends Fragment{
 	 */
 	private static final String ARG_SECTION_NUMBER = "section_number";
 	private static final int HISTORY_SIZE = 360;
-	private XYPlot bioimpedancePlot = null;
 	private SimpleXYSeries accelXseries = null;
 	private SimpleXYSeries accelYseries = null;
 	private SimpleXYSeries accelZseries = null;
 	private SimpleXYSeries bioimpedanceSeries = null;
+
 	private String mDeviceName;	
 	private String mDeviceAddress;
+	private int sampleRate = 50;
+	private byte startFreq = 0;
+	private byte stepSize = 0;
+	private byte numOfIncrements = 0;
+
+	private TextView deviceName;
+	private TextView deviceAddress;
+	private TextView sampleRateTextView;
+	private TextView startFreqTextView;
+	private TextView stepSizeTextView;
+	private TextView numOfIncrementsTextView;
+	private Button exportToText;
+	private Button clearTextFile;
+	private XYPlot bioimpedancePlot = null;
+
 
 	OnButtonClickedListener mCallback;
 
@@ -57,10 +72,11 @@ public class BioimpFragment extends Fragment{
 		switch (getArguments().getInt(ARG_SECTION_NUMBER)) {
 		case 1:
 			rootView = inflater.inflate(R.layout.fragment_long_term, container, false);
-			TextView deviceName = (TextView) rootView.findViewById(R.id.device_name);
-			TextView deviceAddress = (TextView) rootView.findViewById(R.id.device_address);
-			Button exportToText = (Button) rootView.findViewById(R.id.export_to_text_frag);
-			Button clearTextFile = (Button) rootView.findViewById(R.id.clear_text_file_frag);
+			initializeViewComponentsLiveData(rootView);
+			deviceName.setText(mDeviceName);
+			deviceAddress.setText(mDeviceAddress);
+			setSampleRateTextView(sampleRate);
+			setAcFreqTextViewParams(startFreq, stepSize, numOfIncrements);
 
 			exportToText.setOnClickListener(new View.OnClickListener() {
 				@Override
@@ -75,13 +91,8 @@ public class BioimpFragment extends Fragment{
 					clearTextFileFrag();
 				}
 			});
-
-			deviceName.setText(mDeviceName);
-			deviceAddress.setText(mDeviceAddress);
-
-			bioimpedancePlot = (XYPlot) rootView.findViewById(R.id.bioimpedancePlot2);
 			setupPlot();
-			
+
 			break;
 		case 2:
 			rootView = inflater.inflate(R.layout.fragment_placeholder, container, false);
@@ -115,7 +126,7 @@ public class BioimpFragment extends Fragment{
 			mCallback = (OnButtonClickedListener) activity;
 		} catch (ClassCastException e) {
 			throw new ClassCastException(activity.toString()
-					+ " must implement OnHeadlineSelectedListener");
+					+ " must implement OnButtonClickedListener");
 		}
 
 		((LongTerm) activity).onSectionAttached(
@@ -130,22 +141,44 @@ public class BioimpFragment extends Fragment{
 		mCallback.clearTextFile();
 	}
 
-	public String getDeviceName() {
-		return mDeviceName;
-	}
-
 	public void setDeviceName(String mDeviceName) {
 		this.mDeviceName = mDeviceName;
-	}
-
-	public String getDeviceAddress() {
-		return mDeviceAddress;
 	}
 
 	public void setDeviceAddress(String mDeviceAddress) {
 		this.mDeviceAddress = mDeviceAddress;
 	}
-	
+
+	public void updateSampleRate(int sampleRate) {
+		this.sampleRate = sampleRate;
+	}
+
+	public void UpdateFrequencyParams(byte startFreq, byte stepSize, byte numOfIncrements) {
+		this.startFreq = startFreq;
+		this.stepSize = stepSize;
+		this.numOfIncrements = numOfIncrements;
+	}
+
+	public void setSampleRateTextView(int sampleRate) {
+		sampleRateTextView.setText(String.valueOf(sampleRate) + " Hz");
+	}
+
+	public void setAcFreqTextViewParams(byte startFreq, byte stepSize, byte numOfIncrements) {
+		startFreqTextView.setText(String.valueOf(startFreq) + " KHz");
+		if(stepSize == 0) {
+			stepSizeTextView.setText(R.string.not_applicable);
+		}
+		else {
+			stepSizeTextView.setText(String.valueOf(stepSize) + " KHz");
+		}
+		if(numOfIncrements == 0) {
+			numOfIncrementsTextView.setText(R.string.not_applicable);
+		}
+		else {
+			numOfIncrementsTextView.setText(String.valueOf(numOfIncrements));
+		}
+	}
+
 	public void updatePlot(double[] imp) {
 		if (accelXseries.size() > HISTORY_SIZE) {		        	
 			accelXseries.removeFirst();
@@ -163,7 +196,19 @@ public class BioimpFragment extends Fragment{
 		// redraw the Plots:
 		bioimpedancePlot.redraw();	
 	}
-	
+
+	private void initializeViewComponentsLiveData(View rootView) {		
+		deviceName = (TextView) rootView.findViewById(R.id.device_name);
+		deviceAddress = (TextView) rootView.findViewById(R.id.device_address);
+		exportToText = (Button) rootView.findViewById(R.id.export_to_text_frag);
+		clearTextFile = (Button) rootView.findViewById(R.id.clear_text_file_frag);
+		bioimpedancePlot = (XYPlot) rootView.findViewById(R.id.bioimpedancePlot);
+		sampleRateTextView = (TextView) rootView.findViewById(R.id.sample_rate);
+		startFreqTextView = (TextView) rootView.findViewById(R.id.start_freq);
+		stepSizeTextView = (TextView) rootView.findViewById(R.id.step_size);
+		numOfIncrementsTextView = (TextView) rootView.findViewById(R.id.num_of_increments);
+	}
+
 	private void setupPlot() {
 		Paint bgPaint = new Paint();
 		bgPaint.setColor(Color.parseColor("#d8d8d8"));
@@ -219,9 +264,9 @@ public class BioimpFragment extends Fragment{
 		bioimpedancePlot.setRangeLabel("Data");
 		bioimpedancePlot.setTicksPerRangeLabel(3);
 		bioimpedancePlot.getRangeLabelWidget().pack();
-		
+
 		// Format legend
-		
+
 		bioimpedancePlot.getLegendWidget().getTextPaint().setColor(Color.parseColor("#006bb2"));
 		bioimpedancePlot.getLegendWidget().getTextPaint().setTextSize(20);
 		bioimpedancePlot.getLegendWidget().setPaddingBottom(10);
@@ -231,7 +276,7 @@ public class BioimpFragment extends Fragment{
 		bioimpedancePlot.addSeries(accelYseries, new LineAndPointFormatter(Color.parseColor("#8b008b"), null, null, null));
 		bioimpedancePlot.addSeries(accelZseries, new LineAndPointFormatter(Color.parseColor("#8b8b00"), null, null, null));
 		bioimpedancePlot.addSeries(bioimpedanceSeries, new LineAndPointFormatter(Color.parseColor("#006bb2"), null, null, null));
-		
+
 		bioimpedancePlot.getBackgroundPaint().set(bgPaint);
 	}
 

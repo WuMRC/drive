@@ -59,6 +59,7 @@
     <string name="step_size">S.S</string>
     <string name="num_of_increments">N.O.I</string>
     <string name="not_applicable">-</string>
+    <string name="parameter_summary">Parameter Summary</string>
 
     <string-array name="LongTermOptionsArray">
         <item>Live Data</item>
