@@ -90,9 +90,19 @@ time = (1:dicomFrames)/FsUS;
 
 % data.PIXELS_PER_MM = (228-152)/(5*10);    % 022414 C
 % data.PIXELS_PER_MM = (250-164)/(5*10);    % 030614 C
+% data.PIXELS_PER_MM = (210-142)/(5*10);    % 032714 B
+% data.PIXELS_PER_MM = (297-185)/(10*10);   % 033114 A
+% data.PIXELS_PER_MM = (258-196)/(5*10);   % 040314 A
+% data.PIXELS_PER_MM = (258-196)/(5*10);   % 052714 A
+% data.PIXELS_PER_MM = (217-119)/(5*10);   % 052914 A
+data.PIXELS_PER_MM = (224-103)/(4*10);   % 060514 A
+
+
 % data.PIXELS_PER_MM = (196-135)/(5*10);    % 041714 C
 % data.PIXELS_PER_MM = (228-152)/(5*10);    % 042314 C
-data.PIXELS_PER_MM = (210-142)/(5*10);    % 042814 C
+% data.PIXELS_PER_MM = (210-142)/(5*10);    % 042814 C
+% data.PIXELS_PER_MM = (216-125)/(4*10);    % 052214 C1
+% data.PIXELS_PER_MM = (284-165)/(5*10);    % 052214 C2
 % data.PIXELS_PER_MM = (387-190)/(5*10);    % 071014 C1
 % data.PIXELS_PER_MM = (521-282)/(5*10);    % 071014 C2
 % data.PIXELS_PER_MM = (205-145)/(2*10);
