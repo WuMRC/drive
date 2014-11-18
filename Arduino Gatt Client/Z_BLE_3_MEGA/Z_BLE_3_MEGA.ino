@@ -19,13 +19,13 @@
 
 #define TWI_FREQ 400000L      // Set TWI/I2C Frequency to 400MHz.
 
-#define cycles_base 15       // Cycles to ignore before a measurement is taken. Max is 511.
+#define cycles_base 10       // Cycles to ignore before a measurement is taken. Max is 511.
 
 #define cycles_multiplier 1    // Multiple for cycles_base. Can be 1, 2, or 4.
 
-#define cal_resistance 220.64  // Calibration resistance for the gain factor. 
+#define cal_resistance 356  // Calibration resistance for the gain factor. 
 
-#define cal_samples 40         // Number of measurements to take of the calibration resistance.
+#define cal_samples 10         // Number of measurements to take of the calibration resistance.
 
 //#define M_PI 3.14159265358979323846	// pi
 //#define M_PI_2 1.57079632679489661923	// pi/2 
@@ -312,6 +312,7 @@ void loop() {
     }
     else {
       Z_Value *= 1000;
+      phaseAngle += 0.005;
       phaseAngle *= 100;
       updateData((long) Z_Value, (long) phaseAngle, bioImpData);
     }     
@@ -628,7 +629,7 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
 
       CR_Array = new double[1]; // size of one for single impedance at single frequency.
 
-      Serial.println("New Arrays created.");
+      Serial.println("New Array created.");
 
       AD5933.setExtClock(false);
       AD5933.resetAD5933();
@@ -683,76 +684,88 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
       Serial.println("New Arrays created.");
 
       AD5933.setExtClock(false);
-      AD5933.resetAD5933();
-      AD5933.setStartFreq(startFreqHz);
-      AD5933.setIncrement(stepSizeHz);
-      AD5933.setNumofIncrement(numOfIncrements + 1);      
-      AD5933.setSettlingCycles(cycles_base, cycles_multiplier);
-      AD5933.getTemperature();
-      AD5933.setVolPGA(0, 1); 
+       AD5933.resetAD5933();
+       AD5933.setStartFreq(startFreqHz);
+       AD5933.setIncrement(stepSizeHz);
+       AD5933.setNumofIncrement(numOfIncrements);      
+       AD5933.setSettlingCycles(cycles_base, cycles_multiplier);
+       AD5933.getTemperature();
+       AD5933.setVolPGA(0, 1);
 
-      AD5933.getGainFactors_LI(
-      cal_resistance, cal_samples, startFreqHz, endFreqHz,
-      GF_Array[0], GF_Array[numOfIncrements], 
-      PS_Array[0], PS_Array[numOfIncrements]);
+       AD5933.getGainFactors_LI(
+       cal_resistance, cal_samples, startFreqHz, endFreqHz,
+       GF_Array[0], GF_Array[numOfIncrements], 
+       PS_Array[0], PS_Array[numOfIncrements]);
+       
+       deltaGF = GF_Array[numOfIncrements] - GF_Array[0];
+       deltaPS = PS_Array[numOfIncrements] - PS_Array[0];
+       
+       AD5933.getArraysLI(
+       deltaGF, deltaPS,
+       stepSizeHz, numOfIncrements,
+       GF_Array[0], PS_Array[0],
+       GF_Array, PS_Array);
 
-      deltaGF = GF_Array[numOfIncrements] - GF_Array[0];
-      deltaPS = PS_Array[numOfIncrements] - PS_Array[0];
-
-      AD5933.getArraysLI(
-      deltaGF, deltaPS,
-      stepSizeHz, numOfIncrements,
-      GF_Array[0], PS_Array[0],
-      GF_Array, PS_Array);
-
-      //AD5933.getGainFactorS_Set(cal_resistance, cal_samples, GF_Array, PS_Array);
+      // AD5933.getGainFactorS_Set(cal_resistance, cal_samples, GF_Array, PS_Array);
+      
+      // getGainFactorArray(startFreqHz, stepSizeHz, numOfIncrements, GF_Array, PS_Array);
 
       Serial.println("Gain factors gotten.");
 
       Serial.println();
 
-      for(int t1 = 0; t1 <= numOfIncrements; t1++) { // print and set CR filter array.
+      for(int i = 0; i <= numOfIncrements; i++) { // print and set CR filter array.
+      
+         // AD5933.getComplex(GF_Array[i], PS_Array[i], CR_Array[i], phaseAngle);
 
-        if(t1 == 0) {
-          ctrReg = AD5933.getByte(0x80);
-          AD5933.setCtrMode(STAND_BY, ctrReg);
-          AD5933.setCtrMode(INIT_START_FREQ, ctrReg);
-          AD5933.setCtrMode(START_FREQ_SWEEP, ctrReg);
-          AD5933.getComplex(GF_Array[t1], PS_Array[t1], CR_Array[t1], phaseAngle);
-        }
-
-        else if(t1 > 0 &&  t1 < numOfIncrements) {
-          AD5933.getComplex(GF_Array[t1], PS_Array[t1], CR_Array[t1], phaseAngle);
-          AD5933.setCtrMode(INCR_FREQ, ctrReg);
-        }
-
-        else if(t1 = numOfIncrements) {
-          AD5933.getComplex(GF_Array[t1], PS_Array[t1], CR_Array[t1], phaseAngle);
-          AD5933.setCtrMode(POWER_DOWN, ctrReg);
-        }
+        if(i == 0) {
+         ctrReg = AD5933.getByte(0x80);
+         AD5933.setCtrMode(STAND_BY, ctrReg);
+         AD5933.setCtrMode(INIT_START_FREQ, ctrReg);
+         AD5933.setCtrMode(START_FREQ_SWEEP, ctrReg);
+         AD5933.getComplex(GF_Array[i], PS_Array[i], CR_Array[i], phaseAngle);
+         }
+         
+         else if(i > 0 &&  i < numOfIncrements) {
+         AD5933.getComplex(GF_Array[i], PS_Array[i], CR_Array[i], phaseAngle);
+         AD5933.setCtrMode(INCR_FREQ, ctrReg);
+         }
+         
+         else if(i = numOfIncrements) {
+         AD5933.getComplex(GF_Array[i], PS_Array[i], CR_Array[i], phaseAngle);
+         AD5933.setCtrMode(POWER_DOWN, ctrReg);
+         }
 
         Serial.print("Frequency: ");
         Serial.print("\t");
-        Serial.print(startFreqHz + (stepSizeHz * t1));
+        Serial.print(startFreqHz + (stepSizeHz * i));
         Serial.print("\t");        
         Serial.print("Gainfactor term: ");
-        Serial.print(t1);
+        Serial.print(i);
         Serial.print("\t");
-        Serial.print(GF_Array[t1]);
+        Serial.print(GF_Array[i]);
         Serial.print("\t");
         Serial.print("SystemPS term: ");
-        Serial.print(t1);
+        Serial.print(i);
         Serial.print("\t");
-        Serial.print(PS_Array[t1]);
+        Serial.print(PS_Array[i]);
         Serial.print("\t");        
         Serial.print("CR term: ");
-        Serial.print(t1);
+        Serial.print(i);
         Serial.print("\t");
-        Serial.print(CR_Array[t1]);        
+        Serial.print(CR_Array[i]);        
         Serial.println(); 
       }   
     }
-    Serial.println(); 
+    Serial.println();
+
+    /*AD5933.resetAD5933();
+    AD5933.setStartFreq(startFreqHz);
+    AD5933.setIncrement(stepSizeHz);
+    AD5933.setNumofIncrement(numOfIncrements + 1);      
+    AD5933.setSettlingCycles(cycles_base, cycles_multiplier);
+    AD5933.getTemperature();
+    AD5933.setVolPGA(0, 1);*/ 
 
     Serial.print("Sucessful write attempt to c_ac_freq.");
     Serial.println();      
@@ -846,4 +859,18 @@ void resetBLE() {
   digitalWrite(BLE_RESET_PIN, HIGH);
   Serial.println("Reset attempt.");
 }
+
+/*void getGainFactorArray(double startFrequency, double stepSize, uint8_t increments, double *GRarray, double *PSarray) {
+  for(int i = 0; i < increments; i++) {
+  AD5933.setExtClock(false);
+  AD5933.resetAD5933();
+  AD5933.setSettlingCycles(cycles_base,cycles_multiplier);
+  AD5933.setStartFreq(startFrequency + (i * stepSize));
+  AD5933.setVolPGA(0, 1);
+  temp = AD5933.getTemperature();
+  AD5933.getGainFactorC(cal_resistance, cal_samples, GRarray[i], PSarray[i], false);
+  }
+}*/
+
+
 
