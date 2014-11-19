@@ -96,7 +96,7 @@ boolean FREQ_SWEEP_FLAG = false; // Used to toggle frequency sweeps.
 volatile 
 boolean SAMPLE_RATE_FLAG = false;  // Variable to manage sample rate. Managed from interrupt context.
 
-uint8_t bioImpData[9]; // Unsigned integer array to carry data to phone.
+uint8_t bioImpData[10]; // Unsigned integer array to carry data to phone.
 
 uint8_t defaultSampleRate[1] = {
   sampleRate}; // Initialize default sample rate value holder.
@@ -218,7 +218,7 @@ void setup() {
   Serial.println();
 
   Serial.print("System Phase Shift: ");
-  Serial.print(systemPhaseShift);
+  Serial.print(systemPhaseShift, 4);
   Serial.println();
 
   // Write default values for handles once. 
@@ -226,7 +226,7 @@ void setup() {
   delay(20); // Wait 20 ms so async callback isn't blocked.
   ble112.ble_cmd_attributes_write(GATT_HANDLE_C_AC_FREQ, 0, 3, defaultFreqSweep); 
 
-  bioImpData[8] = startFreq; // initialize start frequency data.
+  bioImpData[9] = startFreq; // initialize start frequency data.
 
   CR_Array = new double[1];
   CR_Array[0] = cal_resistance; // initialize CR array;
@@ -262,7 +262,7 @@ void loop() {
 
     // Serial.println(millis());
 
-    bioImpData[8] = startFreq + (currentStep * stepSize);
+    bioImpData[9] = startFreq + (currentStep * stepSize);
     AD5933.tempUpdate();
 
     if(!FREQ_SWEEP_FLAG) { // Repeat frequency, don't sweep.
@@ -312,13 +312,13 @@ void loop() {
     }
     else {
       Z_Value *= 1000;
-      phaseAngle += 0.005;
-      phaseAngle *= 100;
+      phaseAngle += 0.00005;
+      phaseAngle *= 10000;
       updateData((long) Z_Value, (long) phaseAngle, bioImpData);
     }     
 
     //Write notification values to characteristic on ble112. Causes notification to be sent.
-    ble112.ble_cmd_attributes_write(GATT_HANDLE_C_BIOIMPEDANCE_DATA, 0, 9, bioImpData);
+    ble112.ble_cmd_attributes_write(GATT_HANDLE_C_BIOIMPEDANCE_DATA, 0, 10, bioImpData);
     SAMPLE_RATE_FLAG = false; // Switch this flag back to false till timer interrupt switches it back on.     
   }   
   else {
@@ -618,7 +618,7 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
     stepSize = msg -> value.data[1];  
     numOfIncrements = msg -> value.data[2];
 
-    bioImpData[8] = startFreq; // update AC freq value
+    bioImpData[9] = startFreq; // update AC freq value
     currentStep = 0; // reset currentStep for filtering in loop.
 
     startFreqHz = (double)startFreq * 1000;  
@@ -653,7 +653,7 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
       Serial.print("\t");
       Serial.print("SystemPS:");
       Serial.print("\t");
-      Serial.print(systemPhaseShift);
+      Serial.print(systemPhaseShift, 4);
       Serial.print("\t");
       Serial.print("CR: ");
       Serial.print("\t");
@@ -748,7 +748,7 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
         Serial.print("SystemPS term: ");
         Serial.print(i);
         Serial.print("\t");
-        Serial.print(PS_Array[i]);
+        Serial.print(PS_Array[i], 4);
         Serial.print("\t");        
         Serial.print("CR term: ");
         Serial.print(i);
@@ -835,13 +835,17 @@ void notify() {
 void updateData(long magnitude, long phaseAng, uint8_t *values) {
 
   if(phaseAng > 0) {
+    values[8] = phaseAng % 100;
+    phaseAng /= 100;
     values[7] = phaseAng % 100;
     phaseAng /= 100;
     values[6] = phaseAng;
   }
   else {
     phaseAng *= -1;
-    values[7] = -1 * (phaseAng % 100);
+    values[8] =  -1 * (phaseAng % 100);
+    phaseAng /= 100;
+    values[7] = phaseAng % 100;
     phaseAng /= 100;
     values[6] = phaseAng;  
   }  
