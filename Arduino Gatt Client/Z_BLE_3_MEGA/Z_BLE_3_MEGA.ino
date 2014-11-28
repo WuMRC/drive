@@ -8,7 +8,6 @@
 #include "BGLib.h" // BGLib C library for BGAPI communication.
 #include "AD5933.h" //Library for AD5933 functions (must be installed)
 #include "Micro40Timer.h" // Timer function for notifications
-#include "MemoryFree.h"
 
 // uncomment the following line for debug serial output
 #define DEBUG
@@ -19,16 +18,15 @@
 
 #define TWI_FREQ 400000L      // Set TWI/I2C Frequency to 400MHz.
 
-#define cycles_base 10       // Cycles to ignore before a measurement is taken. Max is 511.
+#define cycles_base 15       // Cycles to ignore before a measurement is taken. Max is 511.
 
 #define cycles_multiplier 1    // Multiple for cycles_base. Can be 1, 2, or 4.
 
-#define cal_resistance 356  // Calibration resistance for the gain factor. 
+#define cal_resistance 296.6  // Calibration resistance for the gain factor. 
 
 #define cal_samples 10         // Number of measurements to take of the calibration resistance.
 
-//#define M_PI 3.14159265358979323846	// pi
-//#define M_PI_2 1.57079632679489661923	// pi/2 
+// Define bit clearing and setting variables
 
 #ifndef cbi
 #define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
@@ -109,6 +107,7 @@ uint8_t defaultFreqSweep[3] = {
 // ================================================================
 
 // BLE state machine definitions
+
 #define BLE_STATE_STANDBY           0
 #define BLE_STATE_SCANNING          1
 #define BLE_STATE_ADVERTISING       2
@@ -118,6 +117,7 @@ uint8_t defaultFreqSweep[3] = {
 #define BLE_STATE_TIMED_OUT         6
 
 // BLE state/link status tracker
+
 uint8_t ble_state = BLE_STATE_STANDBY;
 uint8_t ble_encrypted = 0;  // 0 = not encrypted, otherwise = encrypted
 uint8_t ble_bonding = 0xFF; // 0xFF = no bonding, otherwise = bonding handle
@@ -139,7 +139,7 @@ uint8_t ble_bonding = 0xFF; // 0xFF = no bonding, otherwise = bonding handle
 // AltSoftSerial
 
 // create BGLib object:
-//  - use SoftwareSerial por for module comms
+
 //  - use nothing for passthrough comms (0 = null pointer)
 //  - enable packet mode on API protocol since flow control is unavailable
 
@@ -159,15 +159,17 @@ void setup() {
   // For AD5933
   // ================================================================
 
-  Wire.begin();
+  Wire.begin(); // Start Arduino I2C library
+  
   cbi(TWSR, TWPS0);
-  cbi(TWSR, TWPS1);
-  AD5933.setExtClock(false);
-  AD5933.resetAD5933();
-  AD5933.setSettlingCycles(cycles_base,cycles_multiplier);
-  AD5933.setStartFreq(startFreqHz);
-  AD5933.setVolPGA(0, 1);
-  temp = AD5933.getTemperature();
+  cbi(TWSR, TWPS1); // Clear bits in port
+  
+  AD5933.setExtClock(false); 
+  AD5933.resetAD5933(); 
+  AD5933.setSettlingCycles(cycles_base,cycles_multiplier); 
+  AD5933.setStartFreq(startFreqHz); 
+  AD5933.setVolPGA(0, 1); 
+  temp = AD5933.getTemperature(); 
   AD5933.getGainFactorC(cal_resistance, cal_samples, gain_factor, systemPhaseShift, false);
 
   // ================================================================
@@ -198,8 +200,9 @@ void setup() {
 
   ctrReg = AD5933.getByte(0x80);
 
-  // open Arduino USB serial (and wait, if we're using Leonardo)
+  // open Arduino USB serial
   // use 38400 since it works at 8MHz as well as 16MHz
+  
   Serial.begin(38400);
   while (!Serial);
 
@@ -223,7 +226,9 @@ void setup() {
 
   // Write default values for handles once. 
   ble112.ble_cmd_attributes_write(GATT_HANDLE_C_SAMPLE_RATE, 0, 1, defaultSampleRate);
+  
   delay(20); // Wait 20 ms so async callback isn't blocked.
+  
   ble112.ble_cmd_attributes_write(GATT_HANDLE_C_AC_FREQ, 0, 3, defaultFreqSweep); 
 
   bioImpData[9] = startFreq; // initialize start frequency data.
@@ -684,57 +689,53 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
       Serial.println("New Arrays created.");
 
       AD5933.setExtClock(false);
-       AD5933.resetAD5933();
-       AD5933.setStartFreq(startFreqHz);
-       AD5933.setIncrement(stepSizeHz);
-       AD5933.setNumofIncrement(numOfIncrements);      
-       AD5933.setSettlingCycles(cycles_base, cycles_multiplier);
-       AD5933.getTemperature();
-       AD5933.setVolPGA(0, 1);
+      AD5933.resetAD5933();
+      AD5933.setStartFreq(startFreqHz);
+      AD5933.setIncrement(stepSizeHz);
+      AD5933.setNumofIncrement(numOfIncrements);      
+      AD5933.setSettlingCycles(cycles_base, cycles_multiplier);
+      AD5933.getTemperature();
+      AD5933.setVolPGA(0, 1);
 
-       AD5933.getGainFactors_LI(
-       cal_resistance, cal_samples, startFreqHz, endFreqHz,
-       GF_Array[0], GF_Array[numOfIncrements], 
-       PS_Array[0], PS_Array[numOfIncrements]);
-       
-       deltaGF = GF_Array[numOfIncrements] - GF_Array[0];
-       deltaPS = PS_Array[numOfIncrements] - PS_Array[0];
-       
-       AD5933.getArraysLI(
-       deltaGF, deltaPS,
-       stepSizeHz, numOfIncrements,
-       GF_Array[0], PS_Array[0],
-       GF_Array, PS_Array);
+      AD5933.getGainFactors_LI(
+      cal_resistance, cal_samples, startFreqHz, endFreqHz,
+      GF_Array[0], GF_Array[numOfIncrements], 
+      PS_Array[0], PS_Array[numOfIncrements]);
 
-      // AD5933.getGainFactorS_Set(cal_resistance, cal_samples, GF_Array, PS_Array);
-      
-      // getGainFactorArray(startFreqHz, stepSizeHz, numOfIncrements, GF_Array, PS_Array);
+      deltaGF = GF_Array[numOfIncrements] - GF_Array[0];
+      deltaPS = PS_Array[numOfIncrements] - PS_Array[0];
+
+      AD5933.getArraysLI(
+      deltaGF, deltaPS,
+      stepSizeHz, numOfIncrements,
+      GF_Array[0], PS_Array[0],
+      GF_Array, PS_Array);
+
+      //AD5933.getGainFactorS_Set(cal_resistance, cal_samples, GF_Array, PS_Array);
 
       Serial.println("Gain factors gotten.");
 
       Serial.println();
 
       for(int i = 0; i <= numOfIncrements; i++) { // print and set CR filter array.
-      
-         // AD5933.getComplex(GF_Array[i], PS_Array[i], CR_Array[i], phaseAngle);
 
         if(i == 0) {
-         ctrReg = AD5933.getByte(0x80);
-         AD5933.setCtrMode(STAND_BY, ctrReg);
-         AD5933.setCtrMode(INIT_START_FREQ, ctrReg);
-         AD5933.setCtrMode(START_FREQ_SWEEP, ctrReg);
-         AD5933.getComplex(GF_Array[i], PS_Array[i], CR_Array[i], phaseAngle);
-         }
-         
-         else if(i > 0 &&  i < numOfIncrements) {
-         AD5933.getComplex(GF_Array[i], PS_Array[i], CR_Array[i], phaseAngle);
-         AD5933.setCtrMode(INCR_FREQ, ctrReg);
-         }
-         
-         else if(i = numOfIncrements) {
-         AD5933.getComplex(GF_Array[i], PS_Array[i], CR_Array[i], phaseAngle);
-         AD5933.setCtrMode(POWER_DOWN, ctrReg);
-         }
+          ctrReg = AD5933.getByte(0x80);
+          AD5933.setCtrMode(STAND_BY, ctrReg);
+          AD5933.setCtrMode(INIT_START_FREQ, ctrReg);
+          AD5933.setCtrMode(START_FREQ_SWEEP, ctrReg);
+          AD5933.getComplex(GF_Array[i], PS_Array[i], CR_Array[i], phaseAngle);
+        }
+
+        else if(i > 0 &&  i < numOfIncrements) {
+          AD5933.getComplex(GF_Array[i], PS_Array[i], CR_Array[i], phaseAngle);
+          AD5933.setCtrMode(INCR_FREQ, ctrReg);
+        }
+
+        else if(i = numOfIncrements) {
+          AD5933.getComplex(GF_Array[i], PS_Array[i], CR_Array[i], phaseAngle);
+          AD5933.setCtrMode(POWER_DOWN, ctrReg);
+        }
 
         Serial.print("Frequency: ");
         Serial.print("\t");
@@ -758,15 +759,6 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
       }   
     }
     Serial.println();
-
-    /*AD5933.resetAD5933();
-    AD5933.setStartFreq(startFreqHz);
-    AD5933.setIncrement(stepSizeHz);
-    AD5933.setNumofIncrement(numOfIncrements + 1);      
-    AD5933.setSettlingCycles(cycles_base, cycles_multiplier);
-    AD5933.getTemperature();
-    AD5933.setVolPGA(0, 1);*/ 
-
     Serial.print("Sucessful write attempt to c_ac_freq.");
     Serial.println();      
     Serial.print("Start Frequency (KHz): ");  
@@ -778,7 +770,6 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
     Serial.print("Number of increments: ");    
     Serial.print(numOfIncrements);
     Serial.println();
-    Serial.println(freeMemory());  
     Serial.println();
 
     Micro40Timer::set(sampleRatePeriod, notify);
@@ -863,18 +854,3 @@ void resetBLE() {
   digitalWrite(BLE_RESET_PIN, HIGH);
   Serial.println("Reset attempt.");
 }
-
-/*void getGainFactorArray(double startFrequency, double stepSize, uint8_t increments, double *GRarray, double *PSarray) {
-  for(int i = 0; i < increments; i++) {
-  AD5933.setExtClock(false);
-  AD5933.resetAD5933();
-  AD5933.setSettlingCycles(cycles_base,cycles_multiplier);
-  AD5933.setStartFreq(startFrequency + (i * stepSize));
-  AD5933.setVolPGA(0, 1);
-  temp = AD5933.getTemperature();
-  AD5933.getGainFactorC(cal_resistance, cal_samples, GRarray[i], PSarray[i], false);
-  }
-}*/
-
-
-
