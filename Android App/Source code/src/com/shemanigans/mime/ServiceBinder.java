@@ -29,21 +29,27 @@ import android.util.Log;
 public class ServiceBinder extends Service {
 
 	private final static String TAG = BluetoothLeService.class.getSimpleName();
-	public String mDeviceName;
-	private int arraySize = 65000;
-	public double[] values = {1, 2, 3, 4};
-	private String data;
-	private String[] imp = new String[arraySize];
-	private int i = 0;
-	private int j = 0;
-	private int k = 0;
-	Calendar c = Calendar.getInstance();
-	private File DataDir = new File(Environment.getExternalStorageDirectory() + "/Biohm/");
-	private File duodecimalMinute = new File(DataDir, "duodecimalMinute.txt");
-	private File monoHour  = new File(DataDir, "monoHour.txt");
 
 	private final String LIST_NAME = "NAME";
 	private final String LIST_UUID = "UUID";
+
+	public String mDeviceName;
+	private String data;
+
+	private int i = 0;
+	private int j = 0;
+	private int k = 0;
+	private int arraySize = 65000;
+
+	public double[] values = {1, 2, 3, 4};
+
+	private String[] imp = new String[arraySize];
+
+	Calendar c = Calendar.getInstance();
+
+	private File DataDir = new File(Environment.getExternalStorageDirectory() + "/Biohm/");
+	private File duodecimalMinute = new File(DataDir, "duodecimalMinute.txt");
+	private File monoHour  = new File(DataDir, "monoHour.txt");
 
 	private BluetoothLeService mBluetoothLeService;
 
@@ -53,6 +59,7 @@ public class ServiceBinder extends Service {
 	private BluetoothGattCharacteristic mSampleRateCharacteristic;
 	private BluetoothGattCharacteristic mACFrequencyCharacteristic;
 
+	// Service connection to bind to BluetoothLeService
 	private final ServiceConnection mServiceConnection = new ServiceConnection() {
 
 		@Override
@@ -74,8 +81,8 @@ public class ServiceBinder extends Service {
 		public void onReceive(Context context, Intent intent) {
 			final String action = intent.getAction();
 
+			// Get all the supported services and characteristics.
 			if (BluetoothLeService.ACTION_GATT_SERVICES_DISCOVERED.equals(action)) {
-				// Show all the supported services and characteristics on the user interface.
 				getGattServices(mBluetoothLeService.getSupportedGattServices());
 			} 
 
@@ -100,7 +107,7 @@ public class ServiceBinder extends Service {
 
 				if(j >= 5) {
 					// 12 minutes, 5 times gives an hour of data.
-					// Delete and replace hourly data and copy file to daily as needed.
+					// Delete and replace hourly data and copy file to "daily file" as needed.
 					j = 0;
 					k++;
 					updateData();
@@ -166,12 +173,30 @@ public class ServiceBinder extends Service {
 		mBluetoothLeService.clientDisconnected();
 	}
 
+	// Called when the service is first started to clear old data.
+	public void exportToTextInitial() {
+		// write files to SD
+		try {
+			FileOutputStream fOutHourly = new FileOutputStream(duodecimalMinute, true);
+			OutputStreamWriter myOutWriter = new OutputStreamWriter(fOutHourly);
+			duodecimalMinute = new File(DataDir, "duodecimalMinute.txt");
+			myOutWriter.append(tableTitle());
+			myOutWriter.close();
+			fOutHourly.close();
+		} 
+		catch (Exception e) {
+			Log.i(TAG, e.getMessage());
+			//Toast.makeText(getBaseContext(), e.getMessage(),
+			//Toast.LENGTH_SHORT).show();
+		}
+	}
+	
+	// write on SD card file data in the text box
 	public void exportToText(String[] value, File file) {
-		// write on SD card file data in the text box
-
 		final String[] writer = value;
 		final File exported = file;
 
+		// Run on new thread so UI thread isn't blocked.
 		new Thread(new Runnable() {
 			public void run() {
 				try {
@@ -199,11 +224,12 @@ public class ServiceBinder extends Service {
 			public void run() {
 				try {
 					if(fileCheck(monoHour)) {
-						//check if daily exists. if so, delete hourly data.
+						//check if daily exists. if so, delete new hourly data...
+						// ... as data was already appended to hourly data (monoHour).
 						duodecimalMinute.delete();
 						fileCheckInitial();
 					}
-					// else, copy
+					// else, copy (first time hourly data is created). 
 					else {
 						copyFile(duodecimalMinute, monoHour);
 						duodecimalMinute.delete();
@@ -216,39 +242,9 @@ public class ServiceBinder extends Service {
 			}
 		}).start();		
 	}
-
-	public void exportToTextInitial() {
-		// write files to SD
-		try {
-			FileOutputStream fOutHourly = new FileOutputStream(duodecimalMinute, true);
-			OutputStreamWriter myOutWriter = new OutputStreamWriter(fOutHourly);
-			duodecimalMinute = new File(DataDir, "duodecimalMinute.txt");
-			myOutWriter.append(tableTitle());
-			myOutWriter.close();
-			fOutHourly.close();
-		} 
-		catch (Exception e) {
-			Log.i(TAG, e.getMessage());
-			//Toast.makeText(getBaseContext(), e.getMessage(),
-			//Toast.LENGTH_SHORT).show();
-		}
-	}
-
-	public void fileCheckInitial() {
-		if(duodecimalMinute.exists() == false) {
-			exportToTextInitial();
-		}
-	}
-
-	public boolean fileCheck(File check) {
-		if(check.exists() == false) {
-			return false;
-		}
-		else {
-			return true;
-		}
-	}
-
+	
+	// Copies a file.
+	// Used when the initial array is full and needs to be saved.
 	public void copyFile(File source, File dest)
 			throws IOException {
 		FileChannel inputChannel = null;
@@ -266,7 +262,22 @@ public class ServiceBinder extends Service {
 		}
 	}
 
-	/* Checks if external storage is available for read and write */
+	public void fileCheckInitial() {
+		if(duodecimalMinute.exists() == false) {
+			exportToTextInitial();
+		}
+	}
+
+	public boolean fileCheck(File check) {
+		if(!check.exists()) {
+			return false;
+		}
+		else {
+			return true;
+		}
+	}
+
+	// Checks if external storage is available for read and write.
 	public boolean isExternalStorageWritable() {
 		String state = Environment.getExternalStorageState();
 		if (Environment.MEDIA_MOUNTED.equals(state)) {
@@ -275,7 +286,7 @@ public class ServiceBinder extends Service {
 		return false;
 	}
 
-	/* Checks if external storage is available to at least read */
+	// Checks if external storage is available to at least read.
 	public boolean isExternalStorageReadable() {
 		String state = Environment.getExternalStorageState();
 		if (Environment.MEDIA_MOUNTED.equals(state) ||
@@ -290,7 +301,7 @@ public class ServiceBinder extends Service {
 				+ fixedLengthString("Y", 6)
 				+ fixedLengthString("Z", 6)
 				+ fixedLengthString("Ω", 9)
-				+ fixedLengthString("θ", 6)
+				+ fixedLengthString("θ", 8)
 				+ fixedLengthString("KHz", 4)
 				+ "\n";
 	}
@@ -299,14 +310,17 @@ public class ServiceBinder extends Service {
 		return String.format("%-"+length+ "s", string);
 	}
 
+	// Writes a value 1 byte in length to the sample rate characteristic.
 	public void writeSampleRateCharacteristic(int value) {
 		mBluetoothLeService.writeCharacteristic(mSampleRateCharacteristic, value);
 	}
 
+	// Writes a value 3 bytes in length to the AC frequency characteristic. 
 	public void writeFrequencySweepCharacteristic(byte[] values) {
 		mBluetoothLeService.writeCharacteristicArray(mACFrequencyCharacteristic, values);
 	}
 
+	// Finds a characteristic by comparing bytes.
 	private boolean findCharacteristic(String characteristicUUID, String referenceUUID) {
 		byte[]characteristic;
 		byte[] reference;
@@ -324,7 +338,7 @@ public class ServiceBinder extends Service {
 		}
 		return check;
 	}
-	
+
 	private static IntentFilter makeGattUpdateIntentFilter() {
 		final IntentFilter intentFilter = new IntentFilter();
 		intentFilter.addAction(BluetoothLeService.ACTION_GATT_CONNECTED);
@@ -391,8 +405,6 @@ public class ServiceBinder extends Service {
 			mGattCharacteristics.add(charas);
 			gattCharacteristicData.add(gattCharacteristicGroupData);
 		}
-
-
 	}
 
 }

@@ -16,87 +16,47 @@ import android.widget.TextView;
 
 public class ActAndPair extends ActionBarActivity {
 
+	// Declare final integers
+	private final int REQUEST_ENABLE_BT = 2;
+	private final int BLUETOOTH_ALREADY_ON = 10;
+
+	// Declare UI elements
+	private TextView infoText;
+	private ProgressBar bluetoothAttempt;
+	private TextView pairText;
+	private Button pairButton;
+	private View divider;
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_act_and_pair);
-		
-		getSupportActionBar().setTitle("Scan Request");		
+		getSupportActionBar().setTitle("Scan Request");	
 
-		// Get the message from the intent
-		TextView textView = (TextView) findViewById(R.id.bluetooth_prompt);
-		textView.setTextSize(20);
-		textView.setText("Attempting to turn on Bluetooth...");
-
+		initializeViewComponents();
+		infoText.setText(R.string.bt_attempt);
 
 		// Show the Up button in the action bar.
-	    getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+		getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
 		final BluetoothManager bluetoothManager =
 				(BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+
 		BluetoothAdapter mBluetoothAdapter = bluetoothManager.getAdapter();
 
 		Intent enableBtIntent = new Intent();
-		int REQUEST_ENABLE_BT = 2;
-		int BLUETOOTH_ALREADY_ON = 10;
 
-
+		// Check if BT is on, if not request to turn it on
 		if (mBluetoothAdapter == null || !mBluetoothAdapter.isEnabled()) {
 			enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
 			startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT);
-			setResult (RESULT_OK, enableBtIntent);		
 		}
-
+		
+		// if BT is already on, prompt user to go ahead and scan
 		else if (mBluetoothAdapter.isEnabled() == true) {
-			textView.setText("Bluetooth is already on.");	
+			infoText.setText(R.string.bt_already_on);	
 			onActivityResult(REQUEST_ENABLE_BT, BLUETOOTH_ALREADY_ON, enableBtIntent);
 		}
-	}
-
-	/**
-	 * Set up the {@link android.app.ActionBar}.
-	 */
-
-	protected void onActivityResult (int requestCode, int resultCode, Intent data) {
-
-		if (requestCode == 2 && resultCode == RESULT_OK) {
-			TextView textView = (TextView) findViewById(R.id.bluetooth_prompt);
-			textView.setTextSize(20);
-			textView.setText("Bluetooth was sucessfully turned on.");
-			ProgressBar bluetoothAttempt = (ProgressBar) findViewById(R.id.bluetooth_prompt_progressbar);
-
-			TextView pairText = (TextView) findViewById(R.id.pairing_prompt);
-			Button pairButton = (Button) findViewById(R.id.button_pair);
-			pairButton.setVisibility(View.VISIBLE); // Correct to VISIBLE sometime
-			pairText.setVisibility(View.VISIBLE); // Correct to VISIBLE sometime
-			bluetoothAttempt.setVisibility(View.GONE); // Correct to GONE sometime
-		}
-
-		else if (requestCode == 2 && resultCode == 10) {
-			TextView textView = (TextView) findViewById(R.id.bluetooth_prompt);
-			textView.setTextSize(20);
-			textView.setText("Bluetooth is already on.");
-			ProgressBar bluetoothAttempt = (ProgressBar) findViewById(R.id.bluetooth_prompt_progressbar);
-
-			TextView pairText = (TextView) findViewById(R.id.pairing_prompt);
-			Button pairButton = (Button) findViewById(R.id.button_pair);
-			View divider = (View ) findViewById(R.id.divider);
-			divider.setVisibility(View.VISIBLE);
-			pairButton.setVisibility(View.VISIBLE); // Correct to VISIBLE sometime
-			pairText.setVisibility(View.VISIBLE); // Correct to VISIBLE sometime
-			bluetoothAttempt.setVisibility(View.GONE); // Correct to GONE sometime
-		}
-
-		else {
-			TextView textView = (TextView) findViewById(R.id.bluetooth_prompt);
-			ProgressBar bluetoothAttempt = (ProgressBar) findViewById(R.id.bluetooth_prompt_progressbar);
-
-			textView.setTextSize(20);
-			textView.setText("It's either you denied the bluetooth request, or there is a problem with your bluetooth adapter. Please try again later.");
-			bluetoothAttempt.setVisibility(8); // Correct to GONE sometime
-
-		}
-
 	}
 
 	@Override
@@ -122,12 +82,42 @@ public class ActAndPair extends ActionBarActivity {
 		}
 		return super.onOptionsItemSelected(item);
 	}
-
+	
+	// Launch scan activity
 	public void bluetoothScan(View view) {
-		// Do something in response to button
 		Intent intent = new Intent(this, Scan.class);
 		startActivity(intent);
 	}
 
+	private void initializeViewComponents() {
+		infoText = (TextView) findViewById(R.id.bluetooth_prompt);
+		bluetoothAttempt = (ProgressBar) findViewById(R.id.bluetooth_prompt_progressbar);
+		pairText = (TextView) findViewById(R.id.pairing_prompt);
+		pairButton = (Button) findViewById(R.id.button_pair);
+		divider = (View ) findViewById(R.id.divider);
+	}
 
+	// Processes BT request result
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+
+		if (requestCode == REQUEST_ENABLE_BT && resultCode == RESULT_OK) {
+			infoText.setText(R.string.bt_turned_on);
+			pairButton.setVisibility(View.VISIBLE); 
+			pairText.setVisibility(View.VISIBLE); 
+			bluetoothAttempt.setVisibility(View.GONE); 
+		}
+
+		else if (requestCode == REQUEST_ENABLE_BT && resultCode == BLUETOOTH_ALREADY_ON) {
+			infoText.setText(R.string.bt_already_on);
+			divider.setVisibility(View.VISIBLE);
+			pairButton.setVisibility(View.VISIBLE);
+			pairText.setVisibility(View.VISIBLE); 
+			bluetoothAttempt.setVisibility(View.GONE); 
+		}
+
+		else {
+			infoText.setText(R.string.bt_denied);
+			bluetoothAttempt.setVisibility(View.GONE);
+		}
+	}
 }

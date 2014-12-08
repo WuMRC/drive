@@ -60,20 +60,18 @@ NameTextFileFragment.NameTextFileListener,
 SampleRateFragment.SampleRateListener,
 FrequencySweepFragment.FrequencySweepListener{
 
-	//	implements NameTextFileFragment.NameTextFileListener
-
 	private final static String TAG = DeviceControlActivity.class.getSimpleName();
 
 	public static final String EXTRAS_DEVICE_NAME = "DEVICE_NAME";
 	public static final String EXTRAS_DEVICE_ADDRESS = "DEVICE_ADDRESS";
 
+	// Final strings used to identify arguments passed from one class to another
 	public static final String EXTRA_DEVICE_NAME_BINDER = "DEVICE_NAME_BINDER";
 	public static final String EXTRA_DEVICE_ADDRESS_BINDER = "DEVICE_ADDRESS_BINDER";
 	public static final String EXTRA_SAMPLE_RATE_BINDER = "SAMPLE_RATE_BINDER";
 	public static final String EXTRA_START_FREQ_BINDER = "START_FREQ_BINDER";
 	public static final String EXTRA_STEP_SIZE_BINDER = "STEP_SIZE_BINDER";
 	public static final String EXTRA_NUM_OF_INCREMENTS_BINDER = "NUM_OF_INCREMENTS_BINDER";
-	//public final static String EXTRA_MESSAGE = "EXPORT_TO_TEXT";
 
 	private String mDeviceName;
 	private String mDeviceAddress;
@@ -87,7 +85,7 @@ FrequencySweepFragment.FrequencySweepListener{
 	private BluetoothGattCharacteristic mACFrequencyCharacteristic;
 
 	public ArrayList<String> textFile = new ArrayList<String>();	
-	private String textFileName = "AccelData";	
+	private String textFileName = "BIdata";	
 	private Calendar c = Calendar.getInstance();
 	private boolean checkNamedTextFile = false;
 	private double[] imp = {1, 2, 3, 4};
@@ -96,6 +94,7 @@ FrequencySweepFragment.FrequencySweepListener{
 	private byte stepSize = 0;
 	private byte numOfIncrements = 0;
 
+	// Declare UI references	
 	private TextView mConnectionState;
 	private TextView mDataField;
 	private TextView mDeviceAddressTextView;
@@ -117,7 +116,6 @@ FrequencySweepFragment.FrequencySweepListener{
 	private PendingIntent activityPendingIntent;
 
 	// Graph variables
-
 	private static final int HISTORY_SIZE = 360;
 	private XYPlot bioimpedancePlot = null;
 	private SimpleXYSeries accelXseries = null;
@@ -134,7 +132,7 @@ FrequencySweepFragment.FrequencySweepListener{
 	private final String LIST_UUID = "UUID";
 	private final int ONGOING_NOTIFICATION_ID = 1;
 
-	// Code to manage Service lifecycle.
+	// Service life-cycle management.
 	private final ServiceConnection mServiceConnection = new ServiceConnection() {
 
 		@Override
@@ -162,8 +160,11 @@ FrequencySweepFragment.FrequencySweepListener{
 	// ACTION_GATT_CONNECTED: connected to a GATT server.
 	// ACTION_GATT_DISCONNECTED: disconnected from a GATT server.
 	// ACTION_GATT_SERVICES_DISCOVERED: discovered GATT services.
+	// ACTION_DATA_AVAILABLE_SAMPLE_RATE: read sample rate of GATT client.
+	// ACTION_DATA_AVAILABLE_FREQUENCY_PARAMS: read frequency parameters of GATT client.
+	// ACTION_DATA_AVAILABLE_BIOIMPEDANCE: Received data from BI characteristic.
 	// ACTION_DATA_AVAILABLE: received data from the device.  This can be a result of read
-	// or notification operations.
+	// or notification operations from other characteristics.
 
 	private final BroadcastReceiver mGattUpdateReceiver = new BroadcastReceiver() {
 		@Override
@@ -272,7 +273,7 @@ FrequencySweepFragment.FrequencySweepListener{
 		mDeviceName = intent.getStringExtra(EXTRAS_DEVICE_NAME);
 		mDeviceAddress = intent.getStringExtra(EXTRAS_DEVICE_ADDRESS);
 
-		// Sets up UI references.
+		// Set up UI references.
 		initializeViewComponents();
 		mDeviceAddressTextView.setText(mDeviceAddress);
 		mGattServicesList.setOnChildClickListener(servicesListClickListner);
@@ -281,7 +282,7 @@ FrequencySweepFragment.FrequencySweepListener{
 		getSupportActionBar().setTitle(mDeviceName);
 		getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-		// Set up bioimpedance plots
+		// Set up BI plots
 		setupPlot();
 	}
 
@@ -309,22 +310,19 @@ FrequencySweepFragment.FrequencySweepListener{
 	protected void onDestroy() {
 		super.onDestroy();
 		unbindService(mServiceConnection);
-		if(mBluetoothLeService.getNumberOfBoundClients() == 2) {
+		/*if(mBluetoothLeService.getNumberOfBoundClients() == 2) {
 			mBluetoothLeService.setDeviceName(mDeviceName);
 			mBluetoothLeService.setDeviceAdress(mDeviceAddress);
 			Log.i(TAG, "Names have been saved.");
-		}
+		}*/
 		Log.i(TAG, "Activity destroyed.");
-		//mBluetoothLeService = null;
 	}
 
 	@Override
 	public void onSaveInstanceState(Bundle savedInstanceState) {
-		mBluetoothLeService.setDeviceName(mDeviceName);
-		mBluetoothLeService.setDeviceAdress(mDeviceAddress);
+		// mBluetoothLeService.setDeviceName(mDeviceName);
+		// mBluetoothLeService.setDeviceAdress(mDeviceAddress);
 		Log.i(TAG, "Attempted state and name save.");
-		// Save the user's current game state
-		// Always call the superclass so it can save the view hierarchy state
 		super.onSaveInstanceState(savedInstanceState);
 	}
 
@@ -381,6 +379,8 @@ FrequencySweepFragment.FrequencySweepListener{
 	// demonstrates 'Read' and 'Notify' features.  See
 	// http://d.android.com/reference/android/bluetooth/BluetoothGatt.html for the complete
 	// list of supported characteristic features.
+	
+	// This ExpandableListView is always hidden. Code is kept for posterity
 
 	private final ExpandableListView.OnChildClickListener servicesListClickListner =
 			new ExpandableListView.OnChildClickListener() {
@@ -420,7 +420,6 @@ FrequencySweepFragment.FrequencySweepListener{
 					mNotifyCharacteristic = characteristic;
 				}
 				if ((charaProp & BluetoothGattCharacteristic.PROPERTY_WRITE) > 0) {
-					//Log.i(TAG, characteristic.getUuid().toString());
 				}
 				return true;
 			}
@@ -470,14 +469,14 @@ FrequencySweepFragment.FrequencySweepListener{
 			// set checkNamedTextFile back to false to revert back to default naming scheme.
 			checkNamedTextFile = false;
 
-			File accelDataDir = new File(Environment.getExternalStorageDirectory() + "/Biohm/");	
+			File bioImpDataDir = new File(Environment.getExternalStorageDirectory() + "/Biohm/");	
 
-			accelDataDir.mkdirs();			
+			bioImpDataDir.mkdirs();			
 
-			File accelData = new File(accelDataDir, textFileName + ".txt");			
+			File bioImpData = new File(bioImpDataDir, textFileName + ".txt");			
 
-			accelData.createNewFile();
-			FileOutputStream fOut = new FileOutputStream(accelData);
+			bioImpData.createNewFile();
+			FileOutputStream fOut = new FileOutputStream(bioImpData);
 			OutputStreamWriter myOutWriter = new OutputStreamWriter(fOut);
 
 			myOutWriter.append(
@@ -485,7 +484,7 @@ FrequencySweepFragment.FrequencySweepListener{
 					+ fixedLengthString("Y", 6)
 					+ fixedLengthString("Z", 6)
 					+ fixedLengthString("Ω", 9)
-					+ fixedLengthString("Θ", 6)
+					+ fixedLengthString("Θ", 8)
 					+ fixedLengthString("KHz", 4)
 					+ "\n");
 			for (int i = 0; i < textFile.size(); i++) {
@@ -546,9 +545,7 @@ FrequencySweepFragment.FrequencySweepListener{
 	}
 
 
-	// Demonstrates how to iterate through the supported GATT Services/Characteristics.
-	// In this sample, we populate the data structure that is bound to the ExpandableListView
-	// on the UI.
+	// Iterates through and identifies the supported GATT Services/Characteristics.
 
 	private void displayGattServices(List<BluetoothGattService> gattServices) {
 		if (gattServices == null) return;
@@ -567,9 +564,7 @@ FrequencySweepFragment.FrequencySweepListener{
 			HashMap<String, String> currentServiceData = new HashMap<String, String>();
 			uuid = gattService.getUuid().toString();
 
-			currentServiceData.put(
-					LIST_NAME, SampleGattAttributes.lookup(uuid, unknownServiceString));
-
+			currentServiceData.put(LIST_NAME, SampleGattAttributes.lookup(uuid, unknownServiceString));
 			currentServiceData.put(LIST_UUID, uuid);
 			gattServiceData.add(currentServiceData);
 
@@ -584,13 +579,13 @@ FrequencySweepFragment.FrequencySweepListener{
 
 			// Loops through available Characteristics.
 			for (BluetoothGattCharacteristic gattCharacteristic : gattCharacteristics) {	
-				if ((gattCharacteristic.getProperties() & BluetoothGattCharacteristic.PROPERTY_NOTIFY) > 0) {
+				if((gattCharacteristic.getProperties() & BluetoothGattCharacteristic.PROPERTY_NOTIFY) > 0) {
 					if(findCharacteristic(gattCharacteristic.getUuid().toString(), 
 							SampleGattAttributes.BIOIMPEDANCE_DATA)) {
 						mNotifyCharacteristic = gattCharacteristic;	
 					}
 				}
-				if (
+				if(
 						(gattCharacteristic.getProperties() & BluetoothGattCharacteristic.PROPERTY_WRITE) > 0
 						&&
 						(gattCharacteristic.getProperties() & BluetoothGattCharacteristic.PROPERTY_READ) > 0) {
@@ -729,7 +724,7 @@ FrequencySweepFragment.FrequencySweepListener{
 			startFreq = (byte) (Integer.parseInt(freqValuesString[0]));
 			stepSize = (byte) (Integer.parseInt(freqValuesString[1]));
 			numOfIncrements = (byte) (Integer.parseInt(freqValuesString[2]));
-			if(startFreq + (stepSize * numOfIncrements) > 100) {
+			if((startFreq + (stepSize * numOfIncrements) > 120) || stepSize > 125 || numOfIncrements < 0) {
 				throw new IllegalArgumentException();
 			}
 			if(startFreq == 0 || stepSize == 0 || numOfIncrements == 0) {
@@ -797,7 +792,7 @@ FrequencySweepFragment.FrequencySweepListener{
 		}
 		return false;
 	}
-	
+
 	private void initializeViewComponents() {	
 		startButton = (Button) findViewById(R.id.begin);
 		startButtonBar = (View) findViewById(R.id.begin_bar);
@@ -819,7 +814,7 @@ FrequencySweepFragment.FrequencySweepListener{
 
 	private void updatePendingIntent(PendingIntent activityPendingIntent) {			
 		activityIntent = new Intent(this, LongTerm.class);
-		
+
 		activityIntent.removeExtra(EXTRA_SAMPLE_RATE_BINDER);
 		activityIntent.removeExtra(EXTRA_START_FREQ_BINDER);
 		activityIntent.removeExtra(EXTRA_STEP_SIZE_BINDER);
@@ -829,7 +824,7 @@ FrequencySweepFragment.FrequencySweepListener{
 		activityIntent.putExtra(EXTRA_START_FREQ_BINDER, startFreq);
 		activityIntent.putExtra(EXTRA_STEP_SIZE_BINDER, stepSize);
 		activityIntent.putExtra(EXTRA_NUM_OF_INCREMENTS_BINDER, numOfIncrements);
-		
+
 		activityPendingIntent = PendingIntent.getActivity(this, 0, activityIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 	}
 
@@ -951,12 +946,12 @@ FrequencySweepFragment.FrequencySweepListener{
 		intentFilter.addAction(BluetoothLeService.ACTION_DATA_AVAILABLE_BIOIMPEDANCE);
 		return intentFilter;
 	}
-	
+
 	private static String getStackTrace(final Throwable throwable) {
-	     final StringWriter sw = new StringWriter();
-	     final PrintWriter pw = new PrintWriter(sw, true);
-	     throwable.printStackTrace(pw);
-	     return sw.getBuffer().toString();
+		final StringWriter sw = new StringWriter();
+		final PrintWriter pw = new PrintWriter(sw, true);
+		throwable.printStackTrace(pw);
+		return sw.getBuffer().toString();
 	}
 
 }

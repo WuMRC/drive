@@ -18,12 +18,12 @@ import android.widget.EditText;
 @SuppressLint("InflateParams")
 public class FrequencySweepFragment extends DialogFragment{
 
+	private final static String TAG = FrequencySweepFragment.class.getSimpleName();
 	public boolean selection = false;
 	public String[] value = {"0", "0", "0"};
 	EditText startFreq;
 	EditText stepSize;
 	EditText numOfIncrements;
-	private final static String TAG = FrequencySweepFragment.class.getSimpleName();
 
 	@Override
 	public Dialog onCreateDialog(Bundle savedInstanceState) {

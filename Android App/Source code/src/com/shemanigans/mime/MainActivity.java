@@ -25,17 +25,16 @@ public class MainActivity extends ActionBarActivity {
 	}
 
 
-	/** Called when the user clicks the Yes button to turn on Bluetooth*/
+	// Called when the user clicks the "Yes" button
+	
 	public void buttonYes(View view) {
-		// Do something in response to button
 		Intent intent = new Intent(this, ActAndPair.class);
-		String message = "Requesting to turn on Bluetooth...";
-		intent.putExtra(EXTRA_MESSAGE, message);
 		startActivity(intent);
 	}
 	
+	// Called when the user clicks the "No" button
+
 	public void buttonNo(View view) {
-		// Do something in response to button
 		Intent intent = new Intent(this, ButtonNo.class);
 		startActivity(intent);
 	}

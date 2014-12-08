@@ -40,10 +40,7 @@ BioimpFragment.OnButtonClickedListener,
 SampleRateFragment.SampleRateListener,
 FrequencySweepFragment.FrequencySweepListener{
 
-	/**
-	 * Fragment managing the behaviors, interactions and presentation of the navigation drawer.
-	 */
-	private NavigationDrawerFragment mNavigationDrawerFragment;
+	private NavigationDrawerFragment mNavigationDrawerFragment; // Fragment managing the behaviors, interactions and presentation of the navigation drawer.
 	private NameTextFileFragment nameTextFileDialog;
 	private SampleRateFragment sampleRateDialog;
 	private FrequencySweepFragment frequencySweepDialog;
@@ -52,24 +49,21 @@ FrequencySweepFragment.FrequencySweepListener{
 	 * Used to store the last screen title. For use in {@link #restoreActionBar()}.
 	 */
 	private CharSequence mTitle;
+	
 	private final static String TAG = LongTerm.class.getSimpleName();
-	private BluetoothLeService mBluetoothLeService;
-	private ServiceBinder mServiceBinder;
+	
 	private static final String LIVE_DATA_TAG = "LIVE_DATA_TAG";
 	private static final String PAST_HOUR_TAG = "PAST_HOUR_TAG";
 	private static final String PAST_DAY_TAG = "PAST_DAY_TAG";
 	private static final String EXPORT_DATA_TAG = "EXPORT_DATA_TAG";
 	private static final String SCAN_TAG = "SCAN_TAG";
-
-
-	public double[] values = {1, 2, 3, 4};
-	private boolean checkNamedTextFile = false;
-	public ArrayList<String> textFile = new ArrayList<String>();
-	private String textFileName = "AccelData";
-	private Calendar c = Calendar.getInstance();
+	
 	private String mDeviceName;
 	private String mDeviceAddress;
-	private boolean mConnected = true;
+	private String textFileName = "BIdata";
+
+	public ArrayList<String> textFile = new ArrayList<String>();
+	private Calendar c = Calendar.getInstance();
 	
 	private BioimpFragment bioimpFrag;
 
@@ -77,8 +71,16 @@ FrequencySweepFragment.FrequencySweepListener{
 	private byte startFreq = 0;
 	private byte stepSize = 0;
 	private byte numOfIncrements = 0;
+	
+	private boolean checkNamedTextFile = false;
+	private boolean mConnected = true;
+	
+	public double[] values = {1, 2, 3, 4};
+	
+	private BluetoothLeService mBluetoothLeService;
+	private ServiceBinder mServiceBinder;
 
-	// Code to manage Service lifecycle.
+	// Code to manage Service life-cycle for BluetoothLeService.
 	private final ServiceConnection mServiceConnectionBLE = new ServiceConnection() {
 
 		@Override
@@ -93,7 +95,7 @@ FrequencySweepFragment.FrequencySweepListener{
 		}
 	};
 
-	// Code to manage Service lifecycle.
+	// Code to manage Service life-cycle for ServiceBinder.
 	private final ServiceConnection mServiceConnectionBioImp = new ServiceConnection() {
 
 		@Override
@@ -137,6 +139,7 @@ FrequencySweepFragment.FrequencySweepListener{
 		setContentView(R.layout.activity_long_term);
 		Intent intent = getIntent();
 
+		// Get client information from pendingIntent in DeviceControlActivity
 		mDeviceAddress = intent.getStringExtra(DeviceControlActivity.EXTRA_DEVICE_ADDRESS_BINDER);
 		mDeviceName = intent.getStringExtra(DeviceControlActivity.EXTRA_DEVICE_NAME_BINDER);
 		sampleRate = intent.getIntExtra(DeviceControlActivity.EXTRA_SAMPLE_RATE_BINDER, 10);
@@ -154,7 +157,7 @@ FrequencySweepFragment.FrequencySweepListener{
 				getSupportFragmentManager().findFragmentById(R.id.navigation_drawer);
 		mTitle = getTitle();
 
-		// Set up the drawer.
+		// Set up the navigation drawer.
 		mNavigationDrawerFragment.setUp(
 				R.id.navigation_drawer,
 				(DrawerLayout) findViewById(R.id.drawer_layout));
@@ -176,7 +179,7 @@ FrequencySweepFragment.FrequencySweepListener{
 
 	@Override
 	public void onNavigationDrawerItemSelected(int position) {
-		// update the main content by replacing fragments
+		// update the main content by updating the fragment BioimpFragment
 		FragmentManager fragmentManager = getSupportFragmentManager();
 		FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
 		switch (position) {
@@ -365,20 +368,13 @@ FrequencySweepFragment.FrequencySweepListener{
 			// set checkNamedTextFile back to false to revert back to default naming scheme.
 			checkNamedTextFile = false;
 
-			//			File accelData = new File(Environment.getExternalStorageDirectory() 
-			//					+ textFileName + ".txt");
+			File bioImpDataDir = new File(Environment.getExternalStorageDirectory() + "/Mime/");	
 
-			File accelDataDir = new File(Environment.getExternalStorageDirectory() + "/Mime/");	
+			bioImpDataDir.mkdirs();			
 
-			accelDataDir.mkdirs();			
-
-			File accelData = new File(accelDataDir, textFileName + ".txt");			
-
-			//			File accelData = new File("/sdcard/" 
-			//					+ textFileName + ".txt");
-
-			accelData.createNewFile();
-			FileOutputStream fOut = new FileOutputStream(accelData);
+			File bioImpData = new File(bioImpDataDir, textFileName + ".txt");			
+			bioImpData.createNewFile();
+			FileOutputStream fOut = new FileOutputStream(bioImpData);
 			OutputStreamWriter myOutWriter = new OutputStreamWriter(fOut);
 
 			myOutWriter.append(
@@ -386,7 +382,7 @@ FrequencySweepFragment.FrequencySweepListener{
 					+ fixedLengthString("Y", 6)
 					+ fixedLengthString("Z", 6)
 					+ fixedLengthString("Ω", 9)
-					+ fixedLengthString("θ", 6)
+					+ fixedLengthString("θ", 8)
 					+ fixedLengthString("KHz", 4)
 					+ "\n");
 			for (int i = 0; i < textFile.size(); i++) {
@@ -488,7 +484,7 @@ FrequencySweepFragment.FrequencySweepListener{
 			startFreq = (byte) (Integer.parseInt(freqValuesString[0]));
 			stepSize = (byte) (Integer.parseInt(freqValuesString[1]));
 			numOfIncrements = (byte) (Integer.parseInt(freqValuesString[2]));
-			if(startFreq + (stepSize * numOfIncrements) > 100) {
+			if((startFreq + (stepSize * numOfIncrements) > 120) || stepSize > 125 || numOfIncrements < 0) {
 				throw new IllegalArgumentException();
 			}
 			if(startFreq == 0 || stepSize == 0 || numOfIncrements == 0) {

@@ -18,9 +18,9 @@ public class SampleRateFragment extends DialogFragment {
 
 	private boolean selection = false;
 	private String value;
+	private int sampleRate = 0;	  
 	private TextView sampleRatetext;
 	private SeekBar seekBar;
-	private int sampleRate = 0;	  
 
 	@Override
 	public Dialog onCreateDialog(Bundle savedInstanceState) {

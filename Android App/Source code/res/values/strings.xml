@@ -60,6 +60,11 @@
     <string name="num_of_increments">N.O.I</string>
     <string name="not_applicable">-</string>
     <string name="parameter_summary">Parameter Summary</string>
+    <string name="bt_attempt">Attempting to turn on Bluetooth&#8230;</string>
+    <string name="bt_already_on">Bluetooth is already on.</string>
+    <string name="bt_turned_on">Bluetooth was successfully turned on.</string>
+    <string name="bt_denied">It\'s either you denied the bluetooth request, 
+        or there is a problem with your bluetooth adapter. Please try again later.</string>
 
     <string-array name="LongTermOptionsArray">
         <item>Live Data</item>

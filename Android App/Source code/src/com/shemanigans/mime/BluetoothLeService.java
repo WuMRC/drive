@@ -37,10 +37,17 @@ public class BluetoothLeService extends Service {
 	private int mConnectionState = STATE_DISCONNECTED;
 	private static int sNumBoundClients = 0;
 	private static int GATT_INDETERMINATE = 8;
-
-	public int getmConnectionState() { 
-		return mConnectionState; 
-	} 
+	
+	// BioImpedance data parsing variables
+	
+	private byte ACfrequency = 0;
+	private int phaseAngleUnit = 0;
+	private int phaseAngleTenth = 0;
+	private int phaseAngleThousandth = 0;
+	private int arrayStepper = 0;
+	private double phaseAngleWhole = 0;
+	
+	public final static double[] Z_BLE = {1, 2, 3, 4};
 
 	private static final int STATE_DISCONNECTED = 0;
 	private static final int STATE_CONNECTING = 1;
@@ -72,7 +79,7 @@ public class BluetoothLeService extends Service {
 			"com.example.bluetooth.le.EXTRA_DATA_SAMPLE_RATE";
 	public final static String EXTRA_DATA_FREQUENCY_PARAMS =
 			"com.example.bluetooth.le.EXTRA_DATA_FREQUENCY_PARAMS";
-	public final static double[] Z_BLE = {1, 2, 3, 4};
+	
 	public final static UUID UUID_HEART_RATE_MEASUREMENT =
 			UUID.fromString(SampleGattAttributes.HEART_RATE_MEASUREMENT);
 	public final static UUID UUID_BIOIMPEDANCE_DATA = 
@@ -82,7 +89,7 @@ public class BluetoothLeService extends Service {
 	public final static UUID UUID_AC_FREQUENCY = 
 			UUID.fromString(SampleGattAttributes.AC_FREQ);
 
-	//private Queue<BluetoothGattDescriptor> descriptorWriteQueue = new LinkedList<BluetoothGattDescriptor>();
+	// Queue for reading multiple characteristics due to delay induced by callback.
 	private Queue<BluetoothGattCharacteristic> characteristicReadQueue = new LinkedList<BluetoothGattCharacteristic>();
 
 	// Implements callback methods for GATT events that the app cares about.  For example,
@@ -124,6 +131,7 @@ public class BluetoothLeService extends Service {
 		}
 
 		@Override
+		// Checks queue for characteristics to be read and reads them
 		public void onCharacteristicRead(BluetoothGatt gatt,
 				BluetoothGattCharacteristic characteristic,
 				int status) {
@@ -214,18 +222,14 @@ public class BluetoothLeService extends Service {
 			if (data != null && data.length > 0) {
 				final StringBuilder stringBuilder = new StringBuilder(data.length);
 				final StringBuilder impVal = new StringBuilder(data.length);
-				int phaseAngleUnit = 0;
-				int phaseAngleDecimal = 0;
-				double phaseAngleWhole = 0;
-				byte freq = 0;
-				int c = 0;
+				
 				for(byte byteChar : data) {
-
-					if(c <= 2) {
-						Z_BLE[c] = byteChar;
+					
+					if(arrayStepper <= 2) {
+						Z_BLE[arrayStepper] = byteChar;
 						stringBuilder.append(fixedLengthString(String.valueOf(byteChar), 6));
 					}
-					if(c > 2 && c <= 5) {
+					else if(arrayStepper > 2 && arrayStepper <= 5) {
 						if(String.valueOf(byteChar).length() == 1) {
 							impVal.append("0" + String.valueOf(byteChar));
 						}
@@ -233,34 +237,42 @@ public class BluetoothLeService extends Service {
 							impVal.append(String.valueOf(byteChar));
 						}							
 					}
-					if(c == 6) {
+					else if(arrayStepper == 6) {
 						phaseAngleUnit = byteChar;
 					}
-					if(c == 7) {
-						phaseAngleDecimal = byteChar;
+					else if(arrayStepper == 7) {
+						phaseAngleTenth = byteChar;
 					}
-					if(c > 7) {
-						freq = byteChar;
+					else if(arrayStepper == 8) {
+						phaseAngleThousandth = byteChar;
 					}
-					c++;
+					else if(arrayStepper > 8) {
+						ACfrequency = byteChar;
+					}
+					arrayStepper++;
 				}
-				c = 0;
-				if(phaseAngleDecimal > 0) {
-					phaseAngleWhole = (phaseAngleUnit * 100);
-					phaseAngleWhole += phaseAngleDecimal;
-					phaseAngleWhole /= 100;
+				arrayStepper = 0;
+				
+				if(phaseAngleThousandth > 0) {
+					phaseAngleWhole = (phaseAngleUnit * 10000);
+					phaseAngleTenth *= 100;
+					phaseAngleWhole += phaseAngleTenth;
+					phaseAngleWhole += phaseAngleThousandth;
+					phaseAngleWhole /= 10000;
 				}
 				else {
-					phaseAngleWhole = (phaseAngleUnit * 100);
-					phaseAngleWhole += Math.abs(phaseAngleDecimal);
-					phaseAngleWhole /= -100;
+					phaseAngleWhole = (phaseAngleUnit * 10000);
+					phaseAngleTenth *= 100;
+					phaseAngleWhole += phaseAngleTenth;
+					phaseAngleWhole += Math.abs(phaseAngleThousandth);
+					phaseAngleWhole /= -10000;
 				}
 				double actualVal = Double.parseDouble(impVal.toString());
 				actualVal = actualVal / 1000;
 				Z_BLE[3] = actualVal;
 				stringBuilder.append(fixedLengthString(String.valueOf(actualVal), 9));
-				stringBuilder.append(fixedLengthString(String.valueOf(phaseAngleWhole), 6));
-				stringBuilder.append(fixedLengthString(String.valueOf(freq), 4));
+				stringBuilder.append(fixedLengthString(String.valueOf(phaseAngleWhole), 8));
+				stringBuilder.append(fixedLengthString(String.valueOf(ACfrequency), 4));
 				intent.putExtra(EXTRA_DATA_BIOIMPEDANCE_STRING, new String(stringBuilder.toString()));
 				intent.putExtra(EXTRA_DATA_BIOIMPEDANCE_DOUBLE, Z_BLE);
 			}
@@ -320,7 +332,7 @@ public class BluetoothLeService extends Service {
 	private final IBinder mBinder = new LocalBinder();
 
 	/**
-	 * Initializes a reference to the local Bluetooth adapter.
+	 * Initializes a reference to the local BT adapter.
 	 *
 	 * @return Return true if the initialization is successful.
 	 */
@@ -393,6 +405,10 @@ public class BluetoothLeService extends Service {
 	public static String fixedLengthString(String string, int length) {
 		return String.format("%-"+length+ "s", string);
 	}
+	
+	public int getmConnectionState() { 
+		return mConnectionState; 
+	} 
 
 	/**
 	 * Disconnects an existing connection or cancel a pending connection. The disconnection result
@@ -471,7 +487,7 @@ public class BluetoothLeService extends Service {
 	}
 
 	/**
-	 * Enables or disables notification on a give characteristic.
+	 * Enables or disables notification on a given characteristic.
 	 *
 	 * @param characteristic Characteristic to act on.
 	 * @param enabled If true, enable notification.  False otherwise.
@@ -500,6 +516,8 @@ public class BluetoothLeService extends Service {
 		}
 	}
 
+	// Method for indications if desired. Not used currently.
+	
 	public void setCharacteristicIndication(BluetoothGattCharacteristic characteristic,
 			boolean enabled) {
 		if (mBluetoothAdapter == null || mBluetoothGatt == null) {

@@ -20,7 +20,8 @@
             android:layout_height="wrap_content"
             android:layout_weight="2"
             android:text="@string/hello_world"
-            android:textIsSelectable="true" />
+            android:textIsSelectable="true"
+            android:textSize="20sp" />
     </LinearLayout>
 
     <LinearLayout

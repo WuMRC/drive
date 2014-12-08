@@ -16,7 +16,7 @@ import com.androidplot.xy.LineAndPointFormatter;
 import com.androidplot.xy.SimpleXYSeries;
 import com.androidplot.xy.XYPlot;
 
-public class BioimpFragment extends Fragment{
+public class BioimpFragment extends Fragment{ // This fragment presents information for the class LongTerm
 
 	/**
 	 * The fragment argument representing the section number for this

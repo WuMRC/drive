@@ -15,7 +15,7 @@
         android:digits="1234567890"
         android:hint="@string/set_start_freq"
         android:inputType="phone"
-        android:maxLength="2" />
+        android:maxLength="3" />
 
     <EditText
         android:id="@+id/set_step_size"
@@ -41,6 +41,6 @@
         android:digits="1234567890"
         android:hint="@string/set_num_of_increments"
         android:inputType="phone"
-        android:maxLength="1" />
+        android:maxLength="3" />
 
 </LinearLayout>

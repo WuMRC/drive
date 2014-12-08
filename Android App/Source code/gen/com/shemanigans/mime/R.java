@@ -2539,14 +2539,18 @@ containing a value of this type.
         /**  Description of a share target (both in the list of such or the default share button) in a ShareActionProvider (share UI). [CHAR LIMIT=NONE] 
          */
         public static final int abc_shareactionprovider_share_with_application=0x7f0b000d;
-        public static final int action_example=0x7f0b006e;
+        public static final int action_example=0x7f0b0072;
         public static final int action_settings=0x7f0b0016;
         public static final int app_name=0x7f0b0015;
-        public static final int back_to_scan=0x7f0b006a;
+        public static final int back_to_scan=0x7f0b006e;
         public static final int back_to_scanning=0x7f0b0047;
         /**  Imported strings fron example 
          */
-        public static final int ble_not_supported=0x7f0b004e;
+        public static final int ble_not_supported=0x7f0b0052;
+        public static final int bt_already_on=0x7f0b0050;
+        public static final int bt_attempt=0x7f0b004e;
+        public static final int bt_denied=0x7f0b0051;
+        public static final int bt_turned_on=0x7f0b004f;
         public static final int buttonNo=0x7f0b0028;
         public static final int button_no=0x7f0b001c;
         public static final int button_scan=0x7f0b0020;
@@ -2556,34 +2560,34 @@ containing a value of this type.
         public static final int cancelled=0x7f0b002e;
         public static final int check_value=0x7f0b0044;
         public static final int clearTextFile=0x7f0b002a;
-        public static final int connected=0x7f0b0054;
-        public static final int connecting=0x7f0b0055;
-        public static final int data_export=0x7f0b0069;
+        public static final int connected=0x7f0b0058;
+        public static final int connecting=0x7f0b0059;
+        public static final int data_export=0x7f0b006d;
         public static final int desc=0x7f0b0034;
         public static final int disable=0x7f0b003e;
-        public static final int disconnected=0x7f0b0056;
+        public static final int disconnected=0x7f0b005a;
         public static final int edit_message=0x7f0b0018;
         public static final int enable=0x7f0b003d;
         public static final int enableNotifications=0x7f0b002b;
         public static final int enable_frequency_sweep=0x7f0b0039;
-        public static final int error_bluetooth_not_supported=0x7f0b0058;
+        public static final int error_bluetooth_not_supported=0x7f0b005c;
         public static final int exportToText=0x7f0b0029;
         public static final int freq_sweep_disabled=0x7f0b0043;
         public static final int freq_sweep_enabled=0x7f0b0042;
         public static final int hello_world=0x7f0b0017;
-        public static final int label_data=0x7f0b004f;
-        public static final int label_device_address=0x7f0b0050;
-        public static final int label_device_name=0x7f0b0051;
-        public static final int label_state=0x7f0b0052;
-        public static final int live_data=0x7f0b0066;
+        public static final int label_data=0x7f0b0053;
+        public static final int label_device_address=0x7f0b0054;
+        public static final int label_device_name=0x7f0b0055;
+        public static final int label_state=0x7f0b0056;
+        public static final int live_data=0x7f0b006a;
         public static final int main_splash_screen=0x7f0b001e;
         /**  Menu items 
          */
-        public static final int menu_connect=0x7f0b005c;
-        public static final int menu_disconnect=0x7f0b005d;
-        public static final int menu_refresh=0x7f0b0060;
-        public static final int menu_scan=0x7f0b005e;
-        public static final int menu_stop=0x7f0b005f;
+        public static final int menu_connect=0x7f0b0060;
+        public static final int menu_disconnect=0x7f0b0061;
+        public static final int menu_refresh=0x7f0b0064;
+        public static final int menu_scan=0x7f0b0062;
+        public static final int menu_stop=0x7f0b0063;
         public static final int mime_options=0x7f0b0035;
         public static final int monitor=0x7f0b0030;
         /**  Content description of a MediaRouteButton for accessibility support.
@@ -2606,17 +2610,17 @@ containing a value of this type.
          */
         public static final int mr_user_route_category_name=0x7f0b0010;
         public static final int multi_freq=0x7f0b0040;
-        public static final int name_text_file=0x7f0b0064;
-        public static final int navigation_drawer_close=0x7f0b006d;
-        public static final int navigation_drawer_open=0x7f0b006c;
-        public static final int no_data=0x7f0b0053;
+        public static final int name_text_file=0x7f0b0068;
+        public static final int navigation_drawer_close=0x7f0b0071;
+        public static final int navigation_drawer_open=0x7f0b0070;
+        public static final int no_data=0x7f0b0057;
         public static final int no_zero=0x7f0b0045;
         public static final int not_applicable=0x7f0b004c;
         public static final int num_of_increments=0x7f0b004b;
         public static final int ok=0x7f0b002c;
         public static final int parameter_summary=0x7f0b004d;
-        public static final int past_12=0x7f0b0068;
-        public static final int past_hour=0x7f0b0067;
+        public static final int past_12=0x7f0b006c;
+        public static final int past_hour=0x7f0b006b;
         public static final int sample_rate=0x7f0b0048;
         public static final int sample_rate_options=0x7f0b0037;
         public static final int sampling_data=0x7f0b002f;
@@ -2629,29 +2633,29 @@ containing a value of this type.
         public static final int set_sample_rate=0x7f0b0036;
         public static final int set_start_freq=0x7f0b003a;
         public static final int set_step_size=0x7f0b003b;
-        public static final int set_time=0x7f0b0063;
+        public static final int set_time=0x7f0b0067;
         public static final int showGraph=0x7f0b0032;
         public static final int showMain=0x7f0b0031;
         public static final int single_freq=0x7f0b003f;
         public static final int start=0x7f0b0046;
         public static final int start_freq=0x7f0b0049;
         public static final int step_size=0x7f0b004a;
-        public static final int text_file_name=0x7f0b0065;
-        public static final int title_activity_accelerometer_data_parser=0x7f0b0062;
+        public static final int text_file_name=0x7f0b0069;
+        public static final int title_activity_accelerometer_data_parser=0x7f0b0066;
         public static final int title_activity_act_and_pair=0x7f0b0021;
-        public static final int title_activity_button_no=0x7f0b0061;
+        public static final int title_activity_button_no=0x7f0b0065;
         public static final int title_activity_device_control=0x7f0b0025;
         public static final int title_activity_device_scan=0x7f0b0024;
         public static final int title_activity_display_message=0x7f0b001a;
-        public static final int title_activity_long_term=0x7f0b006f;
+        public static final int title_activity_long_term=0x7f0b0073;
         public static final int title_activity_pair=0x7f0b0022;
         public static final int title_activity_scan=0x7f0b0023;
-        public static final int title_activity_test=0x7f0b006b;
-        public static final int title_devices=0x7f0b0057;
+        public static final int title_activity_test=0x7f0b006f;
+        public static final int title_devices=0x7f0b005b;
         public static final int uc=0x7f0b0033;
-        public static final int unknown_characteristic=0x7f0b005a;
-        public static final int unknown_device=0x7f0b0059;
-        public static final int unknown_service=0x7f0b005b;
+        public static final int unknown_characteristic=0x7f0b005e;
+        public static final int unknown_device=0x7f0b005d;
+        public static final int unknown_service=0x7f0b005f;
     }
     public static final class style {
         /**  the theme applied to the application or activity 
