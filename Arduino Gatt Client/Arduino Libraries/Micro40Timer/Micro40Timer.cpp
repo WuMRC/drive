@@ -20,6 +20,7 @@
 */
 
 #include <Micro40Timer.h>
+#include <Arduino.h>  
 
 unsigned long Micro40Timer::microSeconds;
 void (*Micro40Timer::func)();
