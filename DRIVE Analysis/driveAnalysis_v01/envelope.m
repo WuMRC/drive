@@ -1,7 +1,7 @@
 function [dataEnv] = envelope(dataX, dataY, side, nPoints, interp) 
 %ENVELOPE   Gets the envelope of a signal from a chosen side (top or bottom)
 %
-%   [dataEnv] = envelope(dataX, dataY, side, nPoints) returns the top or
+%   [dataEnv] = envelope(dataX, dataY, side, nPoints, interp) returns the top or
 %   bottom envelope of a chosen signal as a vector of the same length by
 %   finding local maxima around a number of points and interpolating
 %   between them over the original length of the x-data
@@ -11,6 +11,7 @@ function [dataEnv] = envelope(dataX, dataY, side, nPoints, interp)
 %   dataY - the y-data
 %   side - the chosen side (either 'top' or 'bottom')
 %   nPoints - the size of the region of interest to observe maxima/minima
+%   interp - method of interpolation between points
 %
 % Original author: Andreas Martin, Volkswagen AG, Germany
 % Modified by Barry Belmont, WuMRC, USA
