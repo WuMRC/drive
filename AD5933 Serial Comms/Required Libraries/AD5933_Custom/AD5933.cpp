@@ -1,4 +1,6 @@
 // Library Code Section of AD5933
+// Author: Il-Taek Kwon
+// Modifications: Adetunji Dahunsi
 
 #include "AD5933.h"
 //#include <WProgram.h>

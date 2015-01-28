@@ -1,4 +1,6 @@
 // Header File for AD5933 Library
+// Author: Il-Taek Kwon
+// Modifications: Adetunji Dahunsi
 #ifndef AD5933_Head // Pre-Processing code to prevent from duplicate declaration.
 #define AD5933_Head
 
