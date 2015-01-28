@@ -2,13 +2,14 @@
 // AD5933 library implementation via Arduino serial monitor by Adetunji Dahunsi <tunjid.com>
 // Updates should (hopefully) always be available at https://github.com/WuMRC
 
+// NOTE: Even though the sampling rate may be set to a certain value, printing to the serial monitior takes some time...
+// therefore the elapsed time shown will not correspond closely to the sample rate.
+// Should you save the data to a SD card however, the sample rate is better reflected.
+
 #include "Wire.h"
 #include "Math.h"
 #include "Micro40Timer.h" // Timer function for notifications
 #include "AD5933.h" //Library for AD5933 functions (must be installed)
-
-// uncomment the following line for debug serial output
-#define DEBUG
 
 // ================================================================
 // Constants
@@ -47,7 +48,7 @@
 
 int ctrReg = 0; // Initialize control register variable.
 
-int incomingByte = 0 // Bytes read from the serial monitor.
+int incomingByte = 0; // Bytes read from the serial monitor.
 
 int firstByte = 0; // First byte read from the serial monitor. Used to set AD5933 mode.
 
@@ -111,6 +112,7 @@ volatile
 boolean SAMPLE_RATE_FLAG = false;  // Variable to manage sample rate. Managed from interrupt context.
 
 void setup() {
+
   // ================================================================
   // For AD5933
   // ================================================================
@@ -129,6 +131,9 @@ void setup() {
   temp = AD5933.getTemperature(); 
   AD5933.getGainFactorC(cal_resistance, cal_samples, gain_factor, systemPhaseShift, false);
 
+  Serial.println();
+  Serial.println();
+  Serial.println();
   Serial.println("Welcome! Please use the following syntax to input commands:");
   Serial.println("All AC frequencies are in kilohertz.");
   Serial.println("Sample rate frequency is in hertz.");
@@ -152,9 +157,13 @@ void setup() {
 
 void loop() {
 
+
+  // For Serial Monitor input
+  // ================================================================
+
   if (Serial.available() > 0) {
     Micro40Timer::stop(); 
-    delay(15);
+    delay(15); // Delay because Arduino serial buffer will return 1 if queried too quickly.
     bytesAvailable = Serial.available();
     firstByte = Serial.read();
     rIncrement = 0;
@@ -167,7 +176,7 @@ void loop() {
     inputSucess = false; 
 
     switch(firstByte) {
-      
+
     case B:
       NOTIFICATIONS_FLAG = true;
       Micro40Timer::set(sampleRatePeriod, notify);
@@ -197,7 +206,7 @@ void loop() {
         rIncrement++;
 
         if(incomingByte == 44) {
-          // This is the comma
+          numberOfCommas++;
         }
 
         else if (incomingByte > 47 && incomingByte < 58){
@@ -207,12 +216,11 @@ void loop() {
         }
 
         else {
-          Serial.println("Error. Please check your syntax.");
           inputSucess = false;
         }
 
-        if(inputSucess = true) {
-          sampleRate = sampleRateHolder;
+        if(numberOfCommas > 1) {
+          inputSucess = false;
         }
 
         break;
@@ -250,14 +258,12 @@ void loop() {
           }
 
           else {
-            Serial.println("Error. Please check your syntax (Parse error).");
             inputSucess = false;
+            break;
           }
 
-          if(inputSucess = true) {
-            startFreq = startFreqHolder;
-            stepSize = stepSizeHolder;
-            numOfIncrements = numOfIncrementsHolder;
+          if(numberOfCommas != 3) {
+            inputSucess = false;
           }
         }
         break;
@@ -265,24 +271,33 @@ void loop() {
     }
 
     if(inputSucess == true) {
-      
       switch(firstByte) {
       case R:
+        sampleRate = sampleRateHolder;
         adjustAD5933(firstByte, sampleRate, 0, 0);
         break;
       case FR:
+        startFreq = startFreqHolder;
+        stepSize = stepSizeHolder;
+        numOfIncrements = numOfIncrementsHolder;
         adjustAD5933(firstByte, startFreq, stepSize, numOfIncrements);
         break;
       }
-      
     }
+
+    else {
+      Serial.println("Error. Please check your syntax.");
+    }
+
   }
-  // Check if GATT Client (Smartphone) is subscribed to notifications.
+
+  // End Serial Monitor input
+  // ================================================================
+
+  // Program proper
+  // ================================================================
 
   if (SAMPLE_RATE_FLAG) { // this flag is toggled from the timer's interrupt context. It controls the sample rate. 
-
-    // For AD5933
-    // =================================================== 
 
     AD5933.tempUpdate();
 
@@ -312,9 +327,6 @@ void loop() {
       }
     }
 
-    Z_Value += 0.00005;
-    phaseAngle += 0.00005;
-
     Serial.print("Elapsed time (ms): ");
     Serial.print(millis());
     Serial.print("\tCurrent Frequency: ");
@@ -332,13 +344,12 @@ void loop() {
 
   else {
     // Do zilch, zip, nada, nothing if notifications are not enabled.
-    //AD5933.setCtrMode(POWER_DOWN, ctrReg);
   } 
 
 }
 
 void adjustAD5933(int purpose, int v1, int v2, int v3) {
-  
+
   Micro40Timer::stop(); // stop Timer interrupts as soon as this is called.
 
   // check for data written to "c_sample_rate" handle
@@ -359,6 +370,7 @@ void adjustAD5933(int purpose, int v1, int v2, int v3) {
     Micro40Timer::set(sampleRatePeriod, notify); 
     Micro40Timer::start();
   }
+
   // check for data written to "c_ac_freq" handle  
   if (purpose == FR) {
 
@@ -517,6 +529,15 @@ void notify() {
     SAMPLE_RATE_FLAG = true; 
   }
 }
+
+
+
+
+
+
+
+
+
 
 
 
