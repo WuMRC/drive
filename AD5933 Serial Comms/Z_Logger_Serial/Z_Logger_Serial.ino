@@ -2,9 +2,15 @@
 // AD5933 library implementation via Arduino serial monitor by Adetunji Dahunsi <tunjid.com>
 // Updates should (hopefully) always be available at https://github.com/WuMRC
 
-// NOTE: Even though the sampling rate may be set to a certain value, printing to the serial monitior takes some time...
+// NOTE: Even though the sampling rate may be set to a certain value, printing to the serial monitior takes some time
 // therefore the elapsed time shown will not correspond closely to the sample rate.
 // Should you save the data to a SD card however, the sample rate is better reflected.
+
+// NOTE 2: The max sample rate is totally dependent on your processor. Please use caution when choosing this value.
+// Conservatively, the max is 100 HZ. Feel free to modify this for your applications.
+
+// NOTE 3: This sketch is best used with an Arduino MEGA. The UNO does not have the memory to store
+// values for the gain factor, phase shift, and calibration resistor arrays for over 25 increments.
 
 #include "Wire.h"
 #include "Math.h"
@@ -25,13 +31,15 @@
 
 #define cal_samples 10         // Number of measurements to take of the calibration resistance.
 
-#define B 98
+#define B 98 // Begin
 
-#define S 115
+#define S 115 // Stop
 
-#define R 114
+#define R 114 // Sample Rate
 
-#define FR 102
+#define FR 102// Frequency sweeps
+
+#define max_sample_rate 100
 
 // Define bit clearing and setting variables
 
@@ -134,15 +142,29 @@ void setup() {
   Serial.println();
   Serial.println();
   Serial.println();
-  Serial.println("Welcome! Please use the following syntax to input commands:");
-  Serial.println("All AC frequencies are in kilohertz.");
-  Serial.println("Sample rate frequency is in hertz.");
-  Serial.println("For frequency sweeps, it is necessary to pad all values with zero to make up 3 bytes each.");
-  Serial.println("Input is comma delimited with no spaces.");
-  Serial.println("b - begin sampling.");
-  Serial.println("s - stop sampling");
-  Serial.println("r,samplerate  - change sample rate.");
-  Serial.println("f,frequency,stepSize,numberOfIncrements - set frequency sweep. values must be between 1 and 100");
+  Serial.println("Welcome! Please note the following:");
+  Serial.println();
+  Serial.print(1, DEC);
+  Serial.println("\tAll AC frequencies are in kilohertz.");
+  Serial.print(2, DEC);
+  Serial.println("\tSample rate frequency is in hertz.");
+  Serial.print(3, DEC);
+  Serial.println("\tFor frequency sweeps, it is necessary to pad all values with zero to make up 3 bytes each.");
+  Serial.print(4, DEC);
+  Serial.println("\tTo turn off frequency sweeps, supply the step size with 0 (3 zeros).");
+  Serial.print(5, DEC);
+  Serial.println("\tInput is comma delimited with no spaces.");
+  Serial.println();
+  Serial.println("\tPlease use the following syntax to input commands:");
+  Serial.println();
+  Serial.print(1, DEC);
+  Serial.println("\tb - begin sampling.");
+  Serial.print(2, DEC);
+  Serial.println("\ts - stop sampling");
+  Serial.print(3, DEC);
+  Serial.println("\tr,samplerate  - change sample rate.");
+  Serial.print(4, DEC);
+  Serial.println("\tf,startFrequency,stepSize,numberOfIncrements - set frequency sweep. values must be between 1 and 100");
   Serial.println();
 
   // ================================================================
@@ -179,12 +201,14 @@ void loop() {
 
     case B:
       NOTIFICATIONS_FLAG = true;
+      inputSucess = true; 
       Micro40Timer::set(sampleRatePeriod, notify);
       Micro40Timer::start(); 
       break;
 
     case S:
       NOTIFICATIONS_FLAG = false; 
+      inputSucess = true; 
       Micro40Timer::set(sampleRatePeriod, notify);
       Micro40Timer::start(); 
       break;
@@ -220,6 +244,10 @@ void loop() {
         }
 
         if(numberOfCommas > 1) {
+          inputSucess = false;
+        }
+
+        if(sampleRateHolder > max_sample_rate) {
           inputSucess = false;
         }
 
@@ -529,6 +557,7 @@ void notify() {
     SAMPLE_RATE_FLAG = true; 
   }
 }
+
 
 
 
