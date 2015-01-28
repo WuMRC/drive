@@ -1,5 +1,5 @@
 
-// AD5933 library implementation by Adetunji Dahunsi <tunjid.com>
+// AD5933 library implementation via Arduino serial monitor by Adetunji Dahunsi <tunjid.com>
 // Updates should (hopefully) always be available at https://github.com/WuMRC
 
 #include "Wire.h"
@@ -32,13 +32,6 @@
 
 #define FR 102
 
-#ifndef cbi
-#define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
-#endif
-#ifndef sbi
-#define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
-#endif   
-
 // Define bit clearing and setting variables
 
 #ifndef cbi
@@ -53,22 +46,36 @@
 // ================================================================
 
 int ctrReg = 0; // Initialize control register variable.
-int incomingByte = 0;
-int firstByte = 0;
-int bytesAvailable = 0;
-int sIncrement = 0;
-int fIncrement = 0;
-int sampleRate = 50;
-int startFreq = 50;       
-int stepSize = 0;      
-int numOfIncrements = 0; 
-int sampleRateHolder = 0;
-int startFreqHolder = 0;       
-int stepSizeHolder = 0;      
-int numOfIncrementsHolder = 0; 
-int castHolder = 0;
-int numberOfCommas = 0;
-long sampleRatePeriod = 0; // Android app sample rate period (microseconds).
+
+int incomingByte = 0 // Bytes read from the serial monitor.
+
+int firstByte = 0; // First byte read from the serial monitor. Used to set AD5933 mode.
+
+int bytesAvailable = 0; // Bytes available to read.
+
+int rIncrement = 0; // Increments in sample rate serial reading. For parsing.
+
+int fIncrement = 0; // Increments in frequency sweep serial reading. For parsing.
+
+int sampleRate = 50; // App sample rate in hertz.
+
+int startFreq = 50; // AC start frequency in kilohertz.
+
+int stepSize = 0;  // Step size of AC frequency sweep in kilohertz.
+
+int numOfIncrements = 0;  // Number of increments in frequency sweep.
+
+int sampleRateHolder = 0; // Holds value of input prior to check of input syntax.
+
+int startFreqHolder = 0; // Holds value of input prior to check of input syntax.
+
+int stepSizeHolder = 0; // Holds value of input prior to check of input syntax.    
+
+int numOfIncrementsHolder = 0; // Holds value of input prior to check of input syntax.
+
+int numberOfCommas = 0; // Number of commas. Used to parse frequency sweeps.
+
+long sampleRatePeriod = 0; // Sample rate period (microseconds).
 
 uint8_t currentStep = 0; // Used to loop frequency sweeps.
 
@@ -103,14 +110,13 @@ boolean FREQ_SWEEP_FLAG = false; // Used to toggle frequency sweeps.
 volatile 
 boolean SAMPLE_RATE_FLAG = false;  // Variable to manage sample rate. Managed from interrupt context.
 
-void setup()
-{
+void setup() {
   // ================================================================
   // For AD5933
   // ================================================================
 
   Wire.begin(); // Start Arduino I2C library
-  Serial.begin(38400);
+  Serial.begin(38400); // Open serial port
 
   cbi(TWSR, TWPS0);
   cbi(TWSR, TWPS1); // Clear bits in port
@@ -123,15 +129,15 @@ void setup()
   temp = AD5933.getTemperature(); 
   AD5933.getGainFactorC(cal_resistance, cal_samples, gain_factor, systemPhaseShift, false);
 
-  Serial.flush();
   Serial.println("Welcome! Please use the following syntax to input commands:");
   Serial.println("All AC frequencies are in kilohertz.");
   Serial.println("Sample rate frequency is in hertz.");
   Serial.println("For frequency sweeps, it is necessary to pad all values with zero to make up 3 bytes each.");
-  Serial.println("b: begin sampling.");
-  Serial.println("s: stop sampling");
-  Serial.println("r,samplerate: change sample rate.");
-  Serial.println("f,frequency,stepSize,numberOfIncrements: set multiple frequency sweep. values must be between 1 and 100, pad values with zero where necessary. No spaces.");
+  Serial.println("Input is comma delimited with no spaces.");
+  Serial.println("b - begin sampling.");
+  Serial.println("s - stop sampling");
+  Serial.println("r,samplerate  - change sample rate.");
+  Serial.println("f,frequency,stepSize,numberOfIncrements - set frequency sweep. values must be between 1 and 100");
   Serial.println();
 
   // ================================================================
@@ -142,7 +148,6 @@ void setup()
   sampleRatePeriod = 20000;
   Micro40Timer::set(sampleRatePeriod, notify); // 20000 microsecond period -> 50 hertz frequency
   Micro40Timer::start();
-
 }
 
 void loop() {
@@ -152,7 +157,7 @@ void loop() {
     delay(15);
     bytesAvailable = Serial.available();
     firstByte = Serial.read();
-    sIncrement = 0;
+    rIncrement = 0;
     fIncrement = 0;
     sampleRateHolder = 0;
     startFreqHolder = 0;       
@@ -162,6 +167,7 @@ void loop() {
     inputSucess = false; 
 
     switch(firstByte) {
+      
     case B:
       NOTIFICATIONS_FLAG = true;
       Micro40Timer::set(sampleRatePeriod, notify);
@@ -188,16 +194,15 @@ void loop() {
       switch(firstByte) {
 
       case R:
-        sIncrement++;
+        rIncrement++;
 
         if(incomingByte == 44) {
-          Serial.println("Comma.");
+          // This is the comma
         }
 
         else if (incomingByte > 47 && incomingByte < 58){
           //Parse ASCII char value to int and cocatenate to form sample Rate
-          castHolder = (char) incomingByte;
-          sampleRateHolder += ((pow(10, ((double) (bytesAvailable - sIncrement - 1)))) * (castHolder - 48)) + 0.5; 
+          sampleRateHolder += ((pow(10, ((double) (bytesAvailable - rIncrement - 1)))) * (incomingByte - 48)) + 0.5; 
           inputSucess = true;
         }
 
@@ -228,22 +233,19 @@ void loop() {
 
           else if (numberOfCommas == 1 && incomingByte > 47 && incomingByte < 58){
             //Parse ASCII char value to int and cocatenate to form start frequency
-            castHolder = (char) incomingByte;
-            startFreqHolder += ((pow(10, ((double) (bytesAvailable - fIncrement - 10)))) * (castHolder - 48)) + 0.5;
+            startFreqHolder += ((pow(10, ((double) (bytesAvailable - fIncrement - 10)))) * (incomingByte - 48)) + 0.5;
             inputSucess = true; 
           }
 
           else if (numberOfCommas == 2 && incomingByte > 47 && incomingByte < 58){
-            //Parse ASCII char value to int and cocatenate to form step seiz
-            castHolder = (char) incomingByte;
-            stepSizeHolder += ((pow(10, ((double) (bytesAvailable - fIncrement - 10)))) * (castHolder - 48)) + 0.5;
+            //Parse ASCII char value to int and cocatenate to form step size
+            stepSizeHolder += ((pow(10, ((double) (bytesAvailable - fIncrement - 10)))) * (incomingByte - 48)) + 0.5;
             inputSucess = true; 
           }
 
           else if (numberOfCommas == 3 && incomingByte > 47 && incomingByte < 58){
             //Parse ASCII char value to int and cocatenate to form number of increments
-            castHolder = (char) incomingByte;
-            numOfIncrementsHolder += ((pow(10, ((double) (bytesAvailable - fIncrement - 10)))) * (castHolder - 48)) + 0.5;
+            numOfIncrementsHolder += ((pow(10, ((double) (bytesAvailable - fIncrement - 10)))) * (incomingByte - 48)) + 0.5;
             inputSucess = true; 
           }
 
@@ -258,13 +260,12 @@ void loop() {
             numOfIncrements = numOfIncrementsHolder;
           }
         }
-
         break;
       }
-
     }
 
     if(inputSucess == true) {
+      
       switch(firstByte) {
       case R:
         adjustAD5933(firstByte, sampleRate, 0, 0);
@@ -273,6 +274,7 @@ void loop() {
         adjustAD5933(firstByte, startFreq, stepSize, numOfIncrements);
         break;
       }
+      
     }
   }
   // Check if GATT Client (Smartphone) is subscribed to notifications.
@@ -289,7 +291,7 @@ void loop() {
       AD5933.getComplex(gain_factor, systemPhaseShift, Z_Value, phaseAngle);
     }
 
-    else { // Perform frequency sweep at the speed of the loop determined by SAMPLE_RATE_FLAG.
+    else { // Perform frequency sweep.
 
       // Byte of ctrReg alredy gotten from changing mode to enable freq sweep.
       if(currentStep == 0) {
@@ -329,7 +331,6 @@ void loop() {
 
 
   else {
-    //Serial.println("Not on");
     // Do zilch, zip, nada, nothing if notifications are not enabled.
     //AD5933.setCtrMode(POWER_DOWN, ctrReg);
   } 
@@ -337,6 +338,7 @@ void loop() {
 }
 
 void adjustAD5933(int purpose, int v1, int v2, int v3) {
+  
   Micro40Timer::stop(); // stop Timer interrupts as soon as this is called.
 
   // check for data written to "c_sample_rate" handle
@@ -415,7 +417,11 @@ void adjustAD5933(int purpose, int v1, int v2, int v3) {
       FREQ_SWEEP_FLAG = true;
 
       stepSizeHz = (double)stepSize * 1000;
-      endFreqHz = startFreqHz + ((double)stepSize * ((double) numOfIncrements) * 1000);   
+      endFreqHz = startFreqHz + ((double)stepSize * ((double) numOfIncrements) * 1000);
+      Serial.println(startFreqHz);
+      Serial.println(endFreqHz);
+      Serial.println(stepSizeHz);
+      Serial.println(numOfIncrements);   
 
       // generate gain factor array using two point calibration.
 
@@ -511,11 +517,6 @@ void notify() {
     SAMPLE_RATE_FLAG = true; 
   }
 }
-
-
-
-
-
 
 
 
