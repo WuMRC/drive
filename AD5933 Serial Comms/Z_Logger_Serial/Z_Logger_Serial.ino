@@ -39,7 +39,7 @@
 
 #define FR 102// Frequency sweeps
 
-#define max_sample_rate 100
+#define max_sample_rate 200 // 100 is the default, but I'm taking this thing out for a spin
 
 // Define bit clearing and setting variables
 
@@ -66,7 +66,9 @@ int rIncrement = 0; // Increments in sample rate serial reading. For parsing.
 
 int fIncrement = 0; // Increments in frequency sweep serial reading. For parsing.
 
-int sampleRate = 50; // App sample rate in hertz.
+int sampleRate = 100; // App sample rate in hertz. 
+                      // This is something worth changing on a case-dependent basis
+                      // Above 100 Hz seems to have issues
 
 int startFreq = 50; // AC start frequency in kilohertz.
 
@@ -126,7 +128,7 @@ void setup() {
   // ================================================================
 
   Wire.begin(); // Start Arduino I2C library
-  Serial.begin(38400); // Open serial port
+  Serial.begin(57600); // Open serial port
 
   cbi(TWSR, TWPS0);
   cbi(TWSR, TWPS1); // Clear bits in port
@@ -172,8 +174,8 @@ void setup() {
   // ================================================================
 
   // Start with sampling rate of 50 hertz
-  sampleRatePeriod = 20000;
-  Micro40Timer::set(sampleRatePeriod, notify); // 20000 microsecond period -> 50 hertz frequency
+  sampleRatePeriod = 1000/(sampleRate*0.001); // Sample period in microseconds, based off of default sample rate
+  Micro40Timer::set(sampleRatePeriod, notify); 
   Micro40Timer::start();
 }
 
@@ -355,6 +357,7 @@ void loop() {
       }
     }
 
+/*  TJ's way of printing to the screen
     Serial.print("Elapsed time (ms): ");
     Serial.print(millis());
     Serial.print("\tCurrent Frequency: ");
@@ -365,6 +368,18 @@ void loop() {
     Serial.print(phaseAngle, 4);
     Serial.println();
     Serial.println();
+*/
+// Barry's way, making it easier for data processing
+    Serial.print(millis());
+    Serial.print("\t");
+    Serial.print(startFreqHz + (stepSizeHz * currentStep));
+    Serial.print("\t");
+    Serial.print(Z_Value, 4);
+    Serial.print("\t"); 
+    Serial.print(phaseAngle, 4);
+    Serial.println();
+
+
 
     SAMPLE_RATE_FLAG = false; // Switch this flag back to false till timer interrupt switches it back on.     
   }   
@@ -432,7 +447,7 @@ void adjustAD5933(int purpose, int v1, int v2, int v3) {
       AD5933.getGainFactorC(cal_resistance, cal_samples, gain_factor, systemPhaseShift, false);
       AD5933.getComplex(gain_factor, systemPhaseShift, CR_Array[0], phaseAngle);
 
-      Serial.println("Gain factors gotten.");
+      Serial.println("Gain factors measured.");
 
       Serial.println();
       Serial.print("Frequency:");
@@ -557,23 +572,4 @@ void notify() {
     SAMPLE_RATE_FLAG = true; 
   }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
