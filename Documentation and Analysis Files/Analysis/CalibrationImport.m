@@ -16,3 +16,36 @@ eval([strcat('x',fileNameLCR), ' = ', 'abs(', strcat('z',fileNameLCR), '.*', 'si
 eval([strcat('er',fileName), ' = ', strcat('r',fileNameLCR), ' - ', strcat('r',fileNameAD5933), ';']);
 eval([strcat('ex',fileName), ' = ', strcat('x',fileNameLCR), ' - ', strcat('x',fileNameAD5933), ';']);
 eval(['plot(f', fileName, ',', strcat('er',fileName),',''b'',f', fileName, ',' , strcat('ex',fileName), ',''k'');']);
+
+%%
+[filename, pathname] = uigetfile('*.csv;*.CSV', ...
+    'Choose CSV to work with', pwd, 'MultiSelect', 'off');
+
+addpath(genpath(pathname));
+cd(pathname)
+
+% Need to make data format consistent for analysis
+
+cal = importdata(filename);
+
+% Find relevant columns
+colZ = find(ismember(cal.colheaders,'Impedance'));
+
+Z = cal.data(:,colZ);
+plot(Z)
+
+%
+% for nFile = 1:numberOfFiles
+%     perform analysis nFile
+% end
+
+
+
+% Things to incude in file
+% Resistor values
+% Capacitor values
+% Frequencies
+% Time
+
+% In the name R1,R2,C
+
