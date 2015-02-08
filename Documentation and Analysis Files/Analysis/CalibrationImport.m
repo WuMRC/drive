@@ -15,7 +15,7 @@ eval([strcat('x',fileNameLCR), ' = ', 'abs(', strcat('z',fileNameLCR), '.*', 'si
 
 eval([strcat('er',fileName), ' = ', strcat('r',fileNameLCR), ' - ', strcat('r',fileNameAD5933), ';']);
 eval([strcat('ex',fileName), ' = ', strcat('x',fileNameLCR), ' - ', strcat('x',fileNameAD5933), ';']);
-eval(['plot(f', fileName, ',', strcat('er',fileName),',''b'',f', fileName, ',' , strcat('ex',fileName), ',''k'');']);
+eval(['plot(f', fileName, ',', strcat('er',fileName),',''b-o'',f', fileName, ',' , strcat('ex',fileName), ',''k-o'');']);
 
 %%
 [filename, pathname] = uigetfile('*.csv;*.CSV', ...
