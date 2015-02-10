@@ -4,8 +4,12 @@ Re = 100:100:1000;      % External cellular resistance
 Ri = 100:100:1000;      % Internal cellular resistance
 Cm = (1:1:10).*10.^-9;   % Cell membrane capacitance
 f = (1:100).*1000;
+alpha = 0.2;
 
 tau = zeros(length(Re),length(Ri),length(Cm));
+Rm = zeros(length(Re),length(Ri),length(Cm));
+Xm = zeros(length(Re),length(Ri),length(Cm));
+
 
 for indRe = 1:length(Re)
     R0(indRe) = Re(indRe);
@@ -18,10 +22,10 @@ for indRe = 1:length(Re)
                 (Re(indRe)+Ri(indRi)).*Cm(indCm);
             Rm(indRe,indRi,indCm,1:100) = Rinf(indRe,indRi) ...
                 + (Rrange(indRe,indRi)...
-                ./ (1 + (2*pi * tau(indRe,indRi,indCm) *  f).^2));
+                ./ (1 + (2*pi * tau(indRe,indRi,indCm) *  f).^(2 * alpha)));
             Xm(indRe,indRi,indCm,1:100) = Rrange(indRe,indRi) ...
-                * 2*pi * tau(indRe,indRi,indCm) * f ...
-                ./ (1+ (2*pi * tau(indRe,indRi,indCm) *  f).^2);
+                * ((2*pi*f) * tau(indRe,indRi,indCm)) .^(alpha) ...
+                ./ (1+ (2*pi * tau(indRe,indRi,indCm) *  f).^(2 * alpha));
         end
     end
 end
