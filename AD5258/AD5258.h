@@ -1,5 +1,6 @@
 /***************************************************************************
 This is a library for the AD5258 Potentiometer
+It is based on the library of Adafruit's LSM303 by Kevin Townsend
 By Adetunji Dahunsi <tunjid.com>
 Updates should always be available at https://github.com/WuMRC
 ***************************************************************************/
