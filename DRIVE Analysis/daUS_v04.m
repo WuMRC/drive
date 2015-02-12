@@ -5,13 +5,14 @@
 [ultrasound.data] = dicomTrack_v04;
 
 % Plot IVC changes
-ultrasound.data.resp = smooth(ultrasound.data.pointDist,ultrasound.data.FsUS);%, 'rloess');
+ultrasound.data.resp = smooth(ultrasound.data.pointDist,...
+    ultrasound.data.FsUS);%, 'rloess');
 
 % Respiration Signal from IVC
 subplot(2,1,1), plot(ultrasound.data.timeUS,...
-    ultrasound.data.resp.*ultrasound.data.MM_PER_PIXEL)
+    ultrasound.data.resp)
 hold on, plot(ultrasound.data.timeUS,...
-    ultrasound.data.pointDist.*ultrasound.data.MM_PER_PIXEL,'k')
+    ultrasound.data.pointDist,'k')
 xlabel('Time [s]')
 ylabel('IVC_D [mm]')
 
@@ -24,6 +25,9 @@ ylabel('\Delta IVC_{D,cardiac} [mm]')
 %% Check video
 implay(permute(ultrasound.data.DICOM,[1 2 4 3]))
 
+%% If data is good, save it
+% Need a way of specifying the breathing exercise
+save(strcat('ultrasound-',ultrasound.data.patientID),ultrasound);
 
 %% Stroke Volume Variation Analysis
 hold on
