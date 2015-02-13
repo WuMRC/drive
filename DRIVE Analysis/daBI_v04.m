@@ -9,63 +9,29 @@ cd(pathname)
 bioimp.acq = loadACQ(filename);
 
 % Get patient ID
-patientID = pathname(end-9:end)
+patientID = pathname(end-9:end);
 patientID(ismember(patientID,' ,.:;!/')) = [];
 
-%% STEP 2 - DETERMINE BREATHING EXERCISE
+%% STEP 2 - FILENAME BASED ON MARKER
 
 nMarker = length(bioimp.acq.markers.szText);
 
-for indMarker = 1:nMarker
-    
+for indMarker = 2:nMarker
     markerText = bioimp.acq.markers.szText{:,indMarker};
-    
-    % Normal Breathing
-    if ~isempty(strfind(bioimp.acq.markers.szText{:,indMarker},'nb'))...
-            || ~isempty(strfind(bioimp.acq.markers.szText{:,indMarker},'sb'))...
-            || ~isempty(strfind(bioimp.acq.markers.szText{:,indMarker},'normal'))...
+%     if length(markerText) > 12
+%         markerText = markerText(12:end);
+        saveFilename = strcat('b',patientID,'-',markerText)
         
-    end
-    
-    % Expiratory hold
-    if ~isempty(strfind(bioimp.acq.markers.szText{:,indMarker},'hold'))...
-            || ~isempty(strfind(bioimp.acq.markers.szText{:,indMarker},'held'))
-        
-    end
-    
-    if ~isempty(strfind(bioimp.acq.markers.szText{:,indMarker},'pep'))...
-            || ~isempty(strfind(bioimp.acq.markers.szText{:,indMarker},'positive'))
-        
-    end
-    
-    
-    % IMT
-    if ~isempty(strfind(bioimp.acq.markers.szText{:,indMarker},'imt'))...
-            || ~isempty(strfind(bioimp.acq.markers.szText{:,indMarker},'insp'))
-        
-    end
-    
-end
-
-
-
-
-
-
-
-%%
-if bioimp.acq.markers.lMarkers >= 2
-    
-    timeLength = 15;
+        timeLength = 15;
     % NORMAL BREATHING
-%     if strfind(bioimp.acq.markers.szText{:,markerToInvestigate},'nb') > 0
+%     if strfind(bioimp.acq.markers.szText{:,indMarker},'nb') > 0
         % GET RAW SIGNAL AND SAMPLING DATA
         bioimp.nb.dt = (bioimp.acq.hdr.graph.sample_time)*0.001; % in sec
         bioimp.nb.time = 0:bioimp.nb.dt:15-bioimp.nb.dt;
         bioimp.nb.FsBI = 1/bioimp.nb.dt;
         bioimp.nb.data = bioimp.acq.data(...
-            bioimp.acq.markers.lSample(markerToInvestigate):...
-            bioimp.acq.markers.lSample(markerToInvestigate)...
+            bioimp.acq.markers.lSample(indMarker):...
+            bioimp.acq.markers.lSample(indMarker)...
             +(timeLength*bioimp.nb.FsBI-1),:);
         
         % TOTAL SMOOTHED SIGNAL
@@ -227,10 +193,10 @@ if bioimp.acq.markers.lMarkers >= 2
             -bioimp.nb.legEnv.cardBot(leading:end-lagging)),'r-')
         
         
-        savefig(filename)
+        savefig(saveFilename)
         
         close all
         
-%     else fprintf('Not a normal breathing exercise')
+%     else
 %     end
 end
