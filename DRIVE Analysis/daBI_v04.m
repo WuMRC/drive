@@ -18,8 +18,8 @@ nMarker = length(bioimp.acq.markers.szText);
 
 for indMarker = 2:nMarker
     markerText = bioimp.acq.markers.szText{:,indMarker};
-%     if length(markerText) > 12
-%         markerText = markerText(12:end);
+    if length(markerText) > 12
+        markerText = markerText(11:end);
         saveFilename = strcat('b','-after-',patientID,'-',markerText)
         
         timeLength = 15;
@@ -97,7 +97,9 @@ for indMarker = 2:nMarker
       
         savefig(saveFilename)
         
+        % Want to save data file as well, for later manipulation
+        
         close all
         
-%     end
+    end
 end
