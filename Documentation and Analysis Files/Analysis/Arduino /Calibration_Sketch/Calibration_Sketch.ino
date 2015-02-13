@@ -23,7 +23,7 @@
 
 #define nOfLevels 10 // 10 levels, with 3 factors. Frequency has 99 levesls though.
 
-#define fIncrements 99
+#define fIncrements 98
 
 // Define bit clearing and setting variables
 
@@ -78,9 +78,9 @@ double rw1 = 0; // Rheostat 1's wiper resistance
 
 double rw2 = 0; // Rheostat 2's wiper resistance
 
-double GF_Array[fIncrements]; // gain factor array.
+double GF_Array[fIncrements + 1]; // gain factor array.
 
-double PS_Array[fIncrements]; // phase shift array.
+double PS_Array[fIncrements + 1]; // phase shift array.
 
 double cArray[nOfLevels]; // capacitor values. 
 
@@ -138,7 +138,9 @@ void loop() {
 
       for(int k = 0; k < nOfLevels; k++) {  // r1 loop
 
-        for(int currentStep = 0; currentStep < fIncrements; currentStep++) { // frequency loop
+        //adjustADs933();
+
+        for(int currentStep = 0; currentStep <= fIncrements; currentStep++) { // frequency loop
 
           if(currentStep == 0) {
             AD5933.setCtrMode(STAND_BY, ctrReg);
@@ -148,7 +150,7 @@ void loop() {
 
           AD5933.getComplex(GF_Array[currentStep], PS_Array[currentStep], Z_Value, phaseAngle);
 
-          if(currentStep == numOfIncrements) {
+          if(currentStep == fIncrements) {
             currentStep = 0;
             AD5933.setCtrMode(POWER_DOWN, ctrReg);
           }
@@ -159,8 +161,10 @@ void loop() {
 
           for(int m = 1; m < n; m++) {  // number of samples loop
 
-            AD5933.setCtrMode(REPEAT_FREQ);
+            AD5933.setCtrMode(REPEAT_FREQ); // Repeat measurement
             AD5933.getComplex(gain_factor, systemPhaseShift, Z_Value, phaseAngle);
+
+            // Print
 
           } // end number of samples loop
 
@@ -173,6 +177,32 @@ void loop() {
   } // End capacitor loop
 
 }
+
+void adjustAD5933(int startFreqC, int stepSizeC, int numOfIncrementsC) {
+
+  startFreq = startFreqC; 
+  stepSize = stepSizeC;  
+  numOfIncrements = numOfIncrementsC;
+
+  startFreqHz = (double)startFreq * 1000;  
+
+  stepSizeHz = (double)stepSize * 1000;
+  endFreqHz = startFreqHz + ((double)stepSize * ((double) numOfIncrements) * 1000);  
+
+  AD5933.setExtClock(false);
+  AD5933.resetAD5933();
+  AD5933.setStartFreq(startFreqHz);
+  AD5933.setIncrement(stepSizeHz);
+  AD5933.setNumofIncrement(numOfIncrements);      
+  AD5933.setSettlingCycles(cycles_base, cycles_multiplier);
+  AD5933.getTemperature();
+  AD5933.setVolPGA(0, 1);
+
+  AD5933.getGainFactorS_Set(cal_resistance, cal_samples, GF_Array, PS_Array); 
+}
+
+
+
 
 
 
