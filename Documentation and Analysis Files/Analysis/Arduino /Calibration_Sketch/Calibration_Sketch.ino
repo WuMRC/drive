@@ -138,7 +138,7 @@ void loop() {
 
       for(int k = 0; k < nOfLevels; k++) {  // r1 loop
 
-        //adjustADs933();
+        //adjustAD5933();
 
         for(int currentStep = 0; currentStep <= fIncrements; currentStep++) { // frequency loop
 
@@ -200,6 +200,27 @@ void adjustAD5933(int startFreqC, int stepSizeC, int numOfIncrementsC) {
 
   AD5933.getGainFactorS_Set(cal_resistance, cal_samples, GF_Array, PS_Array); 
 }
+
+String generateMapKey(int fIndex, int r1Index, int r2Index, int cIndex, int level) {
+  String key = "";
+  key += "c";
+  key += cIndex;
+  key += level;
+  key += "r";
+  key += r1Index;
+  key += level;
+  key += "r";
+  key += r2Index;
+  key += level;
+  key += "f";
+  key += fIndex;
+  key += level; 
+
+  return key;
+}
+
+
+
 
 
 
