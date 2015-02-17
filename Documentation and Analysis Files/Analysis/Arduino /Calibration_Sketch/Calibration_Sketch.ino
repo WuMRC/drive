@@ -7,7 +7,7 @@
 #include "Wire.h"
 #include "Math.h"
 #include "AD5933.h" //Library for AD5933 functions (must be installed)
-#include "AD5258.h" //Library for AD5933 functions (must be installed)
+#include "AD5258.h" //Library for AD5258 functions (must be installed)
 
 
 #define TWI_FREQ 400000L      // Set TWI/I2C Frequency to 400MHz.
@@ -20,9 +20,9 @@
 
 #define cal_samples 10         // Number of measurements to take of the calibration resistance.
 
-#define nOfLevels 1 // 10 levels, with 3 factors. Frequency has 99 levels though.
+#define nOfLevels 2 // 10 levels, with 3 factors. Frequency has 99 levels though.
 
-#define fIncrements 3
+#define fIncrements 98
 
 #define nOfSamples 1
 
@@ -159,7 +159,7 @@ void setup() {
 
 void loop() {
 
-  for(int i = 0; i < nOfLevels; i++) { // Capacitor loop
+  for(int cap = 0; cap < nOfLevels; cap++) { // Capacitor loop
 
     Serial.println("Insert capacitor, and enter any key to continue. (Press only one key and enter)");
     digitalWrite(indicator_LED, LOW); 
@@ -170,13 +170,13 @@ void loop() {
     Serial.read();
     digitalWrite(indicator_LED, HIGH);  // Indicates program is running.
 
-    for(int j = 0; j < nOfLevels; j++) {  // r2 loop
+    for(int R2 = 0; R2 < nOfLevels; R2++) {  // r2 loop
       // Serial.println("r2 loop");
-      r2.writeRDAC(j+1);
+      r2.writeRDAC(52 + R2);
 
-      for(int k = 0; k < nOfLevels; k++) {  // r1 loop
+      for(int R1 = 0; R1 < nOfLevels; R1++) {  // r1 loop
         // Serial.println("r1 loop");
-        r1.writeRDAC(k+1);
+        r1.writeRDAC(30 + R1);
 
         for(int currentStep = 0; currentStep <= fIncrements; currentStep++) { // frequency loop
           // Serial.print("currentStep: ");
@@ -195,7 +195,7 @@ void loop() {
             AD5933.setCtrMode(POWER_DOWN, ctrReg);
           }
 
-          for(int m = 0; m < nOfSamples; m++) {  // number of samples loop
+          for(int N = 0; N < nOfSamples; N++) {  // number of samples loop
             // Serial.println("number of samples loop");
             AD5933.setCtrMode(REPEAT_FREQ); // Repeat measurement
             AD5933.getComplex(GF_Array[currentStep], PS_Array[currentStep], Z_Value, phaseAngle);
@@ -203,10 +203,20 @@ void loop() {
             // Print
 
             Serial.print(startFreqHz + (stepSizeHz * currentStep));
-            Serial.print("\t");
+            Serial.print(",");
+            Serial.print(R1);
+            Serial.print(",");
+            Serial.print(R2);
+            Serial.print(",");
+            Serial.print(cArray[cap]);
+            Serial.print(",");
+            Serial.print(generateMapKey(currentStep,R1,R2,cap,N));
+            Serial.print(",");
             Serial.print(Z_Value, 4);
-            Serial.print("\t"); 
-            Serial.print(phaseAngle, 4);
+            Serial.print(",");
+            Serial.print(Z_Value * cos(phaseAngle));
+            Serial.print(",");
+            Serial.print(-1 * Z_Value * sin(phaseAngle));
             Serial.println();
 
           } // end number of samples loop
@@ -220,15 +230,13 @@ String generateMapKey(int fIndex, int r1Index, int r2Index, int cIndex, int leve
   String key = "";
   key += "c";
   key += cIndex;
-  key += level;
   key += "r";
   key += r1Index;
-  key += level;
   key += "r";
   key += r2Index;
-  key += level;
   key += "f";
   key += fIndex;
+  key += "l";
   key += level; 
 
   return key;
