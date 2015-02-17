@@ -58,7 +58,7 @@ void loop() {
           numberOfCommas++;
         }
         else if (incomingByte > 47 && incomingByte < 58){
-          //Parse ASCII char value to int and cocatenate to form sample Rate
+          //Parse ASCII char value to int and cocatenate to form WiperPosition
           wiperPositionHolder += ((pow(10, ((double) (bytesAvailable - increment - 1)))) * (incomingByte - 48)) + 0.5; 
           inputSucess = true;
         }

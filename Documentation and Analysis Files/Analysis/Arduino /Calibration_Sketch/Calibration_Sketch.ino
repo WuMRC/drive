@@ -6,7 +6,6 @@
 
 #include "Wire.h"
 #include "Math.h"
-#include "BGLib.h" // BGLib C library for BGAPI communication.
 #include "AD5933.h" //Library for AD5933 functions (must be installed)
 #include "AD5258.h" //Library for AD5933 functions (must be installed)
 
@@ -21,9 +20,13 @@
 
 #define cal_samples 10         // Number of measurements to take of the calibration resistance.
 
-#define nOfLevels 10 // 10 levels, with 3 factors. Frequency has 99 levesls though.
+#define nOfLevels 1 // 10 levels, with 3 factors. Frequency has 99 levels though.
 
-#define fIncrements 98
+#define fIncrements 3
+
+#define nOfSamples 1
+
+#define indicator_LED 7
 
 // Define bit clearing and setting variables
 
@@ -40,27 +43,11 @@
 
 int ctrReg = 0; // Initialize control register variable.
 
-int n = 0; // Number of samples to take of each measurement. Dependent on STDEV.
-
-long sampleRatePeriod = 0; // Android app sample rate period (microseconds).
-
 uint8_t currentStep = 0; // Used to loop frequency sweeps.
 
-uint8_t sampleRate = 50; // Android app sample rate (Hz).
+double startFreqHz = 2000; // AC Start frequency (Hz).
 
-uint8_t startFreq = 2;       // AC Start frequency (KHz).
-
-uint8_t stepSize = 0;        // AC frequency step size between consecutive values (KHz).
-
-uint8_t numOfIncrements = 0;       // Number of frequency increments.
-
-double startFreqHz = ((long)(startFreq)) * 1000; // AC Start frequency (Hz).
-
-double stepSizeHz = 0; // AC frequency step size between consecutive values (Hz).
-
-double endFreqHz = 0; // End frequency for 2 point calibration.
-
-double gain_factor = 0;      // Initialize Gain factor.
+double stepSizeHz = 1000; // AC frequency step size between consecutive values (Hz).
 
 double systemPhaseShift = 0;       // Initialize system phase shift value.
 
@@ -88,8 +75,6 @@ double r1Array[nOfLevels]; // r1 values.
 
 double r2Array[nOfLevels]; // r2 values.
 
-double fArray[fIncrements]; // gain factor array.
-
 AD5258 r1; // rheostat r1
 
 AD5258 r2; // rheostat r2
@@ -97,109 +82,139 @@ AD5258 r2; // rheostat r2
 void setup() {
 
   Wire.begin(); // Start Arduino I2C library
+  Serial.begin(38400);
+
+  Serial.println();
+  Serial.println();
+  Serial.println("Starting...");
+
+  pinMode(indicator_LED, OUTPUT);
 
   cbi(TWSR, TWPS0);
   cbi(TWSR, TWPS1); // Clear bits in port
 
-  AD5933.setExtClock(false); 
-  AD5933.resetAD5933(); 
-  AD5933.setSettlingCycles(cycles_base,cycles_multiplier); 
-  AD5933.setStartFreq(startFreqHz); 
-  AD5933.setVolPGA(0, 1); 
-  temp = AD5933.getTemperature(); 
-  AD5933.getGainFactorC(cal_resistance, cal_samples, gain_factor, systemPhaseShift, false);
+  AD5933.setExtClock(false);
+  AD5933.resetAD5933();
+  AD5933.setRange(RANGE_4);
+  AD5933.setStartFreq(startFreqHz);
+  AD5933.setIncrement(stepSizeHz);
+  AD5933.setNumofIncrement(fIncrements);
+  AD5933.setSettlingCycles(cycles_base, cycles_multiplier);
+  temp = AD5933.getTemperature();
+  AD5933.setVolPGA(0, 1);
+  AD5933.getGainFactorS_Set(cal_resistance, cal_samples, GF_Array, PS_Array); 
 
-  ctrReg = AD5933.getByte(0x80);
+  // ctrReg = AD5933.getByte(0x80);
+
+  Serial.println();
+
+  for(int i = 0; i <= fIncrements; i++) { // print and set CR filter array.
+
+    if(i == 0) {
+      ctrReg = AD5933.getByte(0x80);
+      AD5933.setCtrMode(STAND_BY, ctrReg);
+      AD5933.setCtrMode(INIT_START_FREQ, ctrReg);
+      AD5933.setCtrMode(START_FREQ_SWEEP, ctrReg);
+      AD5933.getComplex(GF_Array[i], PS_Array[i], Z_Value, phaseAngle);
+    }
+
+    else if(i > 0 &&  i < fIncrements) {
+      AD5933.getComplex(GF_Array[i], PS_Array[i], Z_Value, phaseAngle);
+      AD5933.setCtrMode(INCR_FREQ, ctrReg);
+    }
+
+    else if(i = fIncrements) {
+      AD5933.getComplex(GF_Array[i], PS_Array[i], Z_Value, phaseAngle);
+      AD5933.setCtrMode(POWER_DOWN, ctrReg);
+    }
+
+    Serial.print("Frequency: ");
+    Serial.print("\t");
+    Serial.print(startFreqHz + (stepSizeHz * i));
+    Serial.print("\t");        
+    Serial.print("Gainfactor term: ");
+    Serial.print(i);
+    Serial.print("\t");
+    Serial.print(GF_Array[i]);
+    Serial.print("\t");
+    Serial.print("SystemPS term: ");
+    Serial.print(i);
+    Serial.print("\t");
+    Serial.print(PS_Array[i], 4);
+    Serial.print("\t");        
+    Serial.print("Z_Value: ");
+    Serial.print(i);
+    Serial.print("\t");
+    Serial.print(Z_Value);        
+    Serial.println(); 
+  }  
 
   r1.begin(1);
-
   r2.begin(2);
 
   Serial.print("Start freq: ");
   Serial.print(startFreqHz);
   Serial.println();
-
-  Serial.print("System Phase Shift: ");
-  Serial.print(systemPhaseShift, 4);
-  Serial.println();
-
 }
 
 void loop() {
 
   for(int i = 0; i < nOfLevels; i++) { // Capacitor loop
 
-    Serial.println("Insert capacitor");
-
-    while (Serial.available() == 0) { // Wait for user to swap capacitors befor triggering
+    Serial.println("Insert capacitor, and enter any key to continue. (Press only one key and enter)");
+    digitalWrite(indicator_LED, LOW); 
+    
+    while (Serial.available() < 1) { // Wait for user to swap capacitors befor triggering
     } // End capacitor while
 
+    Serial.read();
+    digitalWrite(indicator_LED, HIGH);  // Indicates program is running.
+
     for(int j = 0; j < nOfLevels; j++) {  // r2 loop
+      // Serial.println("r2 loop");
+      r2.writeRDAC(j+1);
 
       for(int k = 0; k < nOfLevels; k++) {  // r1 loop
-
-        //adjustAD5933();
+        // Serial.println("r1 loop");
+        r1.writeRDAC(k+1);
 
         for(int currentStep = 0; currentStep <= fIncrements; currentStep++) { // frequency loop
-
+          // Serial.print("currentStep: ");
+          // Serial.println(currentStep);
           if(currentStep == 0) {
             AD5933.setCtrMode(STAND_BY, ctrReg);
             AD5933.setCtrMode(INIT_START_FREQ, ctrReg);
             AD5933.setCtrMode(START_FREQ_SWEEP, ctrReg);
           }
 
-          AD5933.getComplex(GF_Array[currentStep], PS_Array[currentStep], Z_Value, phaseAngle);
+          else if(currentStep > 0 &&  currentStep < fIncrements) {
+            AD5933.setCtrMode(INCR_FREQ, ctrReg);
+          }
 
-          if(currentStep == fIncrements) {
-            currentStep = 0;
+          else if(currentStep == fIncrements) {
             AD5933.setCtrMode(POWER_DOWN, ctrReg);
           }
-          else {
-            AD5933.setCtrMode(INCR_FREQ, ctrReg);
-            currentStep++;
-          }
 
-          for(int m = 1; m < n; m++) {  // number of samples loop
-
+          for(int m = 0; m < nOfSamples; m++) {  // number of samples loop
+            // Serial.println("number of samples loop");
             AD5933.setCtrMode(REPEAT_FREQ); // Repeat measurement
-            AD5933.getComplex(gain_factor, systemPhaseShift, Z_Value, phaseAngle);
+            AD5933.getComplex(GF_Array[currentStep], PS_Array[currentStep], Z_Value, phaseAngle);
 
             // Print
 
+            Serial.print(startFreqHz + (stepSizeHz * currentStep));
+            Serial.print("\t");
+            Serial.print(Z_Value, 4);
+            Serial.print("\t"); 
+            Serial.print(phaseAngle, 4);
+            Serial.println();
+
           } // end number of samples loop
-
         } // end frequency loop
-
       } // end r1 loop
-
     } // end r2 loop
-
   } // End capacitor loop
-
-}
-
-void adjustAD5933(int startFreqC, int stepSizeC, int numOfIncrementsC) {
-
-  startFreq = startFreqC; 
-  stepSize = stepSizeC;  
-  numOfIncrements = numOfIncrementsC;
-
-  startFreqHz = (double)startFreq * 1000;  
-
-  stepSizeHz = (double)stepSize * 1000;
-  endFreqHz = startFreqHz + ((double)stepSize * ((double) numOfIncrements) * 1000);  
-
-  AD5933.setExtClock(false);
-  AD5933.resetAD5933();
-  AD5933.setStartFreq(startFreqHz);
-  AD5933.setIncrement(stepSizeHz);
-  AD5933.setNumofIncrement(numOfIncrements);      
-  AD5933.setSettlingCycles(cycles_base, cycles_multiplier);
-  AD5933.getTemperature();
-  AD5933.setVolPGA(0, 1);
-
-  AD5933.getGainFactorS_Set(cal_resistance, cal_samples, GF_Array, PS_Array); 
-}
+} // End main loop
 
 String generateMapKey(int fIndex, int r1Index, int r2Index, int cIndex, int level) {
   String key = "";
@@ -218,6 +233,15 @@ String generateMapKey(int fIndex, int r1Index, int r2Index, int cIndex, int leve
 
   return key;
 }
+
+
+
+
+
+
+
+
+
 
 
 
