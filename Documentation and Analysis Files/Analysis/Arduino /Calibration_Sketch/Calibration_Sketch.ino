@@ -20,13 +20,13 @@
 
 #define cal_samples 10         // Number of measurements to take of the calibration resistance.
 
-#define nOfLevels 2 // 10 levels, with 3 factors. Frequency has 99 levels though.
+#define nOfLevels 4 // 10 levels, with 3 factors. Frequency has 99 levels though.
 
 #define fIncrements 98
 
 #define nOfSamples 1
 
-#define indicator_LED 7
+#define indicator_LED 12
 
 // Define bit clearing and setting variables
 
@@ -69,11 +69,11 @@ double GF_Array[fIncrements + 1]; // gain factor array.
 
 double PS_Array[fIncrements + 1]; // phase shift array.
 
-double cArray[nOfLevels]; // capacitor values. 
+double cArray[nOfLevels] = {2.256, 3.26, 4.72, 7.125}; // capacitor values. 
 
-double r1Array[nOfLevels]; // r1 values. 
+double r1Array[nOfLevels] = {614.54, 631.98, 649.37, 666.43}; // r1 values. 
 
-double r2Array[nOfLevels]; // r2 values.
+double r2Array[nOfLevels] = {995.35, 1012.27, 1029.55, 1046.71}; // r2 values.
 
 AD5258 r1; // rheostat r1
 
@@ -104,11 +104,11 @@ void setup() {
   AD5933.setVolPGA(0, 1);
   AD5933.getGainFactorS_Set(cal_resistance, cal_samples, GF_Array, PS_Array); 
 
-  // ctrReg = AD5933.getByte(0x80);
+  ctrReg = AD5933.getByte(0x80);
 
   Serial.println();
 
-  for(int i = 0; i <= fIncrements; i++) { // print and set CR filter array.
+  /*for(int i = 0; i <= fIncrements; i++) { // print and set CR filter array.
 
     if(i == 0) {
       ctrReg = AD5933.getByte(0x80);
@@ -147,36 +147,33 @@ void setup() {
     Serial.print("\t");
     Serial.print(Z_Value);        
     Serial.println(); 
-  }  
+  }  */
 
   r1.begin(1);
   r2.begin(2);
-
-  Serial.print("Start freq: ");
-  Serial.print(startFreqHz);
   Serial.println();
+  Serial.println("F,R1,R2,C,Key,Z,R,X");
 }
 
 void loop() {
 
   for(int cap = 0; cap < nOfLevels; cap++) { // Capacitor loop
 
-    Serial.println("Insert capacitor, and enter any key to continue. (Press only one key and enter)");
-    digitalWrite(indicator_LED, LOW); 
+    digitalWrite(indicator_LED, LOW); // Indication to switch capacitors.
     
-    while (Serial.available() < 1) { // Wait for user to swap capacitors befor triggering
-    } // End capacitor while
+    while (Serial.available() < 1) {} // Wait for user to swap capacitors befor triggering
 
-    Serial.read();
-    digitalWrite(indicator_LED, HIGH);  // Indicates program is running.
+    Serial.read(); // Read the key entered and continue the program.
+
+    digitalWrite(indicator_LED, HIGH);  // Indication program is running.
 
     for(int R2 = 0; R2 < nOfLevels; R2++) {  // r2 loop
       // Serial.println("r2 loop");
-      r2.writeRDAC(52 + R2);
+      r2.writeRDAC(56 + R2);
 
       for(int R1 = 0; R1 < nOfLevels; R1++) {  // r1 loop
         // Serial.println("r1 loop");
-        r1.writeRDAC(30 + R1);
+        r1.writeRDAC(33 + R1);
 
         for(int currentStep = 0; currentStep <= fIncrements; currentStep++) { // frequency loop
           // Serial.print("currentStep: ");
@@ -204,9 +201,9 @@ void loop() {
 
             Serial.print(startFreqHz + (stepSizeHz * currentStep));
             Serial.print(",");
-            Serial.print(R1);
+            Serial.print(r1Array[R1]);
             Serial.print(",");
-            Serial.print(R2);
+            Serial.print(r2Array[R2]);
             Serial.print(",");
             Serial.print(cArray[cap]);
             Serial.print(",");
@@ -230,7 +227,7 @@ String generateMapKey(int fIndex, int r1Index, int r2Index, int cIndex, int leve
   String key = "";
   key += "c";
   key += cIndex;
-  key += "r";
+  key += "R";
   key += r1Index;
   key += "r";
   key += r2Index;

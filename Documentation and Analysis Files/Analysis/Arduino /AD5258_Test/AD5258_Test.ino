@@ -67,7 +67,7 @@ void loop() {
           inputSucess = false;
         }
 
-        if(wiperPositionHolder > 63) {
+        if(wiperPositionHolder > 64) {
           inputSucess = false;
         }
         break;
@@ -83,15 +83,31 @@ void loop() {
       Serial.print("wiper position: ");
       Serial.print(wiperPosition);
 
-      switch(firstByte) {
-      case R1:
-        r1.writeRDAC(wiperPosition);
-        Serial.println(" for rheostat 1.");
-        break;
-      case R2:
-        r2.writeRDAC(wiperPosition);
-        Serial.println(" for rheostat 2.");
-        break;
+      if(wiperPosition < 64) {
+        switch(firstByte) {
+        case R1:
+          r1.writeRDAC(wiperPosition);
+          Serial.println(" for rheostat 1.");
+          break;
+        case R2:
+          r2.writeRDAC(wiperPosition);
+          Serial.println(" for rheostat 2.");
+          break;
+        }
+      }
+      else {
+        switch(firstByte) {
+        case R1:
+          Serial.println();
+          Serial.print("Tolerance for R1 is: ");
+          Serial.println(r1.readTolerance());
+          break;
+        case R2:
+          Serial.println();
+          Serial.print("Tolerance for R2 is: ");
+          Serial.println(r2.readTolerance());
+          break;
+        }
       }
       wiperPositionHolder = 0;
       numberOfCommas = 0;
@@ -102,6 +118,8 @@ void loop() {
     }
   } // if (Serial.available() > 0) { 
 } // void loop() {
+
+
 
 
 
