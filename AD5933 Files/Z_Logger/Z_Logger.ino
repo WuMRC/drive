@@ -61,7 +61,7 @@ double gain_factor = 0;
 
 void setup()
 {
-  Serial.begin(115200); //Initialize serial communication for debugging.
+  Serial.begin(38400); //Initialize serial communication for debugging.
   //altSerial.begin(38400);
   #if VERBOSE
   Serial.println("Program start!");

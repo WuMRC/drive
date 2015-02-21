@@ -128,7 +128,7 @@ void setup() {
   // ================================================================
 
   Wire.begin(); // Start Arduino I2C library
-  Serial.begin(57600); // Open serial port
+  Serial.begin(38400); // Open serial port
 
   cbi(TWSR, TWPS0);
   cbi(TWSR, TWPS1); // Clear bits in port

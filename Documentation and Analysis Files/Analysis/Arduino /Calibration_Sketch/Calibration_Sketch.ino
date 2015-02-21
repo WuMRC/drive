@@ -69,11 +69,16 @@ double GF_Array[fIncrements + 1]; // gain factor array.
 
 double PS_Array[fIncrements + 1]; // phase shift array.
 
-double cArray[nOfLevels] = {2.256, 3.26, 4.72, 7.125}; // capacitor values. 
+double RX_Array[fIncrements + 1][2]; // array of array containing R & X values for fitting.
 
-double r1Array[nOfLevels] = {614.54, 631.98, 649.37, 666.43}; // r1 values. 
+double cArray[nOfLevels] = {
+  2.256, 3.26, 4.72, 7.125}; // capacitor values. 
 
-double r2Array[nOfLevels] = {995.35, 1012.27, 1029.55, 1046.71}; // r2 values.
+double r1Array[nOfLevels] = {
+  614.54, 631.98, 649.37, 666.43}; // r1 values. 
+
+double r2Array[nOfLevels] = {
+  995.35, 1012.27, 1029.55, 1046.71}; // r2 values.
 
 AD5258 r1; // rheostat r1
 
@@ -109,45 +114,45 @@ void setup() {
   Serial.println();
 
   /*for(int i = 0; i <= fIncrements; i++) { // print and set CR filter array.
-
-    if(i == 0) {
-      ctrReg = AD5933.getByte(0x80);
-      AD5933.setCtrMode(STAND_BY, ctrReg);
-      AD5933.setCtrMode(INIT_START_FREQ, ctrReg);
-      AD5933.setCtrMode(START_FREQ_SWEEP, ctrReg);
-      AD5933.getComplex(GF_Array[i], PS_Array[i], Z_Value, phaseAngle);
-    }
-
-    else if(i > 0 &&  i < fIncrements) {
-      AD5933.getComplex(GF_Array[i], PS_Array[i], Z_Value, phaseAngle);
-      AD5933.setCtrMode(INCR_FREQ, ctrReg);
-    }
-
-    else if(i = fIncrements) {
-      AD5933.getComplex(GF_Array[i], PS_Array[i], Z_Value, phaseAngle);
-      AD5933.setCtrMode(POWER_DOWN, ctrReg);
-    }
-
-    Serial.print("Frequency: ");
-    Serial.print("\t");
-    Serial.print(startFreqHz + (stepSizeHz * i));
-    Serial.print("\t");        
-    Serial.print("Gainfactor term: ");
-    Serial.print(i);
-    Serial.print("\t");
-    Serial.print(GF_Array[i]);
-    Serial.print("\t");
-    Serial.print("SystemPS term: ");
-    Serial.print(i);
-    Serial.print("\t");
-    Serial.print(PS_Array[i], 4);
-    Serial.print("\t");        
-    Serial.print("Z_Value: ");
-    Serial.print(i);
-    Serial.print("\t");
-    Serial.print(Z_Value);        
-    Serial.println(); 
-  }  */
+   
+   if(i == 0) {
+   ctrReg = AD5933.getByte(0x80);
+   AD5933.setCtrMode(STAND_BY, ctrReg);
+   AD5933.setCtrMode(INIT_START_FREQ, ctrReg);
+   AD5933.setCtrMode(START_FREQ_SWEEP, ctrReg);
+   AD5933.getComplex(GF_Array[i], PS_Array[i], Z_Value, phaseAngle);
+   }
+   
+   else if(i > 0 &&  i < fIncrements) {
+   AD5933.getComplex(GF_Array[i], PS_Array[i], Z_Value, phaseAngle);
+   AD5933.setCtrMode(INCR_FREQ, ctrReg);
+   }
+   
+   else if(i = fIncrements) {
+   AD5933.getComplex(GF_Array[i], PS_Array[i], Z_Value, phaseAngle);
+   AD5933.setCtrMode(POWER_DOWN, ctrReg);
+   }
+   
+   Serial.print("Frequency: ");
+   Serial.print("\t");
+   Serial.print(startFreqHz + (stepSizeHz * i));
+   Serial.print("\t");        
+   Serial.print("Gainfactor term: ");
+   Serial.print(i);
+   Serial.print("\t");
+   Serial.print(GF_Array[i]);
+   Serial.print("\t");
+   Serial.print("SystemPS term: ");
+   Serial.print(i);
+   Serial.print("\t");
+   Serial.print(PS_Array[i], 4);
+   Serial.print("\t");        
+   Serial.print("Z_Value: ");
+   Serial.print(i);
+   Serial.print("\t");
+   Serial.print(Z_Value);        
+   Serial.println(); 
+   }  */
 
   r1.begin(1);
   r2.begin(2);
@@ -160,8 +165,9 @@ void loop() {
   for(int cap = 0; cap < nOfLevels; cap++) { // Capacitor loop
 
     digitalWrite(indicator_LED, LOW); // Indication to switch capacitors.
-    
-    while (Serial.available() < 1) {} // Wait for user to swap capacitors befor triggering
+
+    while (Serial.available() < 1) {
+    } // Wait for user to swap capacitors befor triggering
 
     Serial.read(); // Read the key entered and continue the program.
 
@@ -197,6 +203,13 @@ void loop() {
             AD5933.setCtrMode(REPEAT_FREQ); // Repeat measurement
             AD5933.getComplex(GF_Array[currentStep], PS_Array[currentStep], Z_Value, phaseAngle);
 
+            RX_Array[currentStep][0] = Z_Value * cos(phaseAngle); // Resistance value
+            RX_Array[currentStep][1] = -1 * Z_Value * sin(phaseAngle); // Reactance Value
+
+              if(currentStep == fIncrements) {
+
+            }
+
             // Print
 
             Serial.print(startFreqHz + (stepSizeHz * currentStep));
@@ -211,9 +224,9 @@ void loop() {
             Serial.print(",");
             Serial.print(Z_Value, 4);
             Serial.print(",");
-            Serial.print(Z_Value * cos(phaseAngle));
+            Serial.print(RX_Array[currentStep][0]);
             Serial.print(",");
-            Serial.print(-1 * Z_Value * sin(phaseAngle));
+            Serial.print(RX_Array[currentStep][1]);
             Serial.println();
 
           } // end number of samples loop
@@ -225,19 +238,21 @@ void loop() {
 
 String generateMapKey(int fIndex, int r1Index, int r2Index, int cIndex, int level) {
   String key = "";
-  key += "c";
+  key += "C";
   key += cIndex;
   key += "R";
   key += r1Index;
   key += "r";
   key += r2Index;
-  key += "f";
+  key += "F";
   key += fIndex;
-  key += "l";
+  key += "L";
   key += level; 
 
   return key;
 }
+
+
 
 
 
