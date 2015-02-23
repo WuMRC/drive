@@ -16,7 +16,7 @@
 
 #define cycles_multiplier 1    // Multiple for cycles_base. Can be 1, 2, or 4.
 
-#define cal_resistance 461  // Calibration resistance for the gain factor. 
+#define cal_resistance 473.37  // Calibration resistance for the gain factor. 
 
 #define cal_samples 10         // Number of measurements to take of the calibration resistance.
 
@@ -176,6 +176,9 @@ void loop() {
         Serial.print(",");
         Serial.print(Z_Value);
         Serial.print(",");
+        Serial.print(Z_Value * cos(phaseAngle));
+        Serial.print(",");
+        Serial.print(-1 * Z_Value * sin(phaseAngle));
         Serial.println();
 
       } // end frequency loop

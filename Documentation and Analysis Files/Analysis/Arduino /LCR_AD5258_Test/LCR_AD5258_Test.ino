@@ -1,8 +1,8 @@
-// AD5933 library implementation via Arduino serial monitor by Adetunji Dahunsi <tunjid.com>
+// Companion to Agilent e4980 Python control by Adetunji Dahunsi <tunjid.com>
 // Updates should (hopefully) always be available at https://github.com/WuMRC
 
-// This sketch prints out constituents for a MATLAB Map object "impedanceMap".
-// Values of [f,r1,r2,c,key] are mapped to [z,r,x].
+// This sketch is triggered by a remote controller running a Python script
+// to control Agilent's e4980a via USBTMC
 
 #include "Wire.h"
 #include "AD5258.h" //Library for AD5258 functions (must be installed)
@@ -11,67 +11,47 @@
 #define indicator_LED 12
 
 
-AD5258 r1; // rheostat r1
-
-AD5258 r2; // rheostat r2
+AD5258 digipot; // rheostat r1
+uint8_t wiper = 0;
 
 void setup() {
   Serial.begin(38400);
   Wire.begin();
 
-  pinMode(SSR, OUTPUT);
   pinMode(indicator_LED, OUTPUT);
 
-  r1.begin(1);
-  r2.begin(2);
+  digipot.begin(2); // Specify i2c address for digipot
   Serial.println();
 }
 
 void loop() {
 
-  digitalWrite(indicator_LED, LOW); // Indication to switch capacitors.
+  if (Serial.available()) {
+    uint8_t ch = Serial.read();
+    uint8_t status;
 
-  while (Serial.available() < 1) {
-    delay(15);
-  } // Wait for user to swap capacitors befor triggering
+    if (ch == '0') {
+      digitalWrite(indicator_LED, LOW);
+      Serial.println("Switch off.");
+    }
 
-  Serial.read(); // Read the key entered and continue the program.
+    if (ch == '1') {
+      if(wiper == 64) {
+        wiper = 0;
+      }
+      digitalWrite(indicator_LED, HIGH);
+      digipot.writeRDAC(wiper);
+      Serial.print("Triggered. wiper is at ");
+      Serial.println(wiper);
+      wiper++;
+    }
 
-  digitalWrite(indicator_LED, HIGH);  // Indication program is running.
+  } // end if serial available
+} // end main loop
 
-  for(int i = 0; i < 4; i++) { // repetition loop
 
-    Serial.print("Current iteration is ");
-    Serial.print(i + 1);
-    Serial.println(".");
 
-    for(int R1 = 0; R1 < 64; R1++) {  // r1 loop
 
-      r1.writeRDAC(R1);
-
-      Serial.print("Changed rheostat. Wiper position is ");
-      Serial.print(R1 + 1);
-      Serial.println(".");
-
-      for(int f = 0; f < 99; f++) { // LCR frequency loop (201 steps).
-
-        triggerLCR();
-
-        Serial.print("Triggered. Frequency is ");
-        Serial.print(f + 2);
-        Serial.println(" KHz.");
-
-      } // end LCR frequency loop
-    } // end r1 loop
-  } // end repetition loop
-} // End main loop
-
-void triggerLCR() {
-  digitalWrite(SSR, HIGH);
-  delay(100);
-  digitalWrite(SSR, LOW);
-  delay(100);
-}
 
 
 
