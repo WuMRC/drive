@@ -20,7 +20,7 @@ void setup() {
 
   pinMode(indicator_LED, OUTPUT);
 
-  digipot.begin(2); // Specify i2c address for digipot
+  digipot.begin(1); // Specify i2c address for digipot
   Serial.println();
 }
 
