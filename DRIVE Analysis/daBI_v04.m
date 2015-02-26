@@ -8,8 +8,13 @@ addpath(genpath(pathname));
 cd(pathname)
 bioimp.acq = loadACQ(filename);
 
+% % Get patient ID
+% patientID = pathname(end-9:end);
+% patientID(ismember(patientID,' ,.:;!/')) = [];
+
+% FOR DIALYSIS
 % Get patient ID
-patientID = pathname(end-9:end);
+patientID = pathname(end-25:end-19);
 patientID(ismember(patientID,' ,.:;!/')) = [];
 
 %% STEP 2 - FILENAME BASED ON MARKER
@@ -17,15 +22,24 @@ patientID(ismember(patientID,' ,.:;!/')) = [];
 nMarker = length(bioimp.acq.markers.szText);
 
 for indMarker = 2:nMarker
-    markerText = bioimp.acq.markers.szText{:,indMarker};
-    if length(markerText) > 12
-        markerText = markerText(11:end);
-        saveFilename = strcat('b','-after-',patientID,'-',markerText)
-        
-        timeLength = 15;
-        % GET RAW SIGNAL AND SAMPLING DATA
-        bioimp.nb.dt = (bioimp.acq.hdr.graph.sample_time)*0.001; % in sec
-        bioimp.nb.time = 0:bioimp.nb.dt:15-bioimp.nb.dt;
+    markerText = bioimp.acq.markers.szText{:,indMarker}(11:end);
+    % FOR DIALYSIS
+    saveFilename = strcat('b','-after-',patientID,'-',markerText);
+    saveFilename(ismember(saveFilename,' ,.:;!/')) = []
+%     if length(markerText) > 12
+%         markerText = markerText(11:end);
+%         saveFilename = strcat('b','-before-',patientID,'-',markerText)
+%         
+%     else
+%         saveFilename = strcat('b','-before-',patientID,'-',markerText)
+%     end
+
+
+
+    timeLength = 15;
+    % GET RAW SIGNAL AND SAMPLING DATA
+    bioimp.nb.dt = (bioimp.acq.hdr.graph.sample_time)*0.001; % in sec
+    bioimp.nb.time = 0:bioimp.nb.dt:15-bioimp.nb.dt;
         bioimp.nb.FsBI = 1/bioimp.nb.dt;
         bioimp.nb.data = bioimp.acq.data(...
             bioimp.acq.markers.lSample(indMarker):...
@@ -101,5 +115,5 @@ for indMarker = 2:nMarker
         
         close all
         
-    end
+%     end
 end
