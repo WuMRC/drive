@@ -16,14 +16,13 @@
 
 #define cycles_multiplier 1    // Multiple for cycles_base. Can be 1, 2, or 4.
 
-#define cal_resistance 473.37  // Calibration resistance for the gain factor. 
+#define cal_resistance 827  // Calibration resistance for the gain factor. 
 
 #define cal_samples 10         // Number of measurements to take of the calibration resistance.
 
-#define nOfLevels 4 // 10 levels, with 3 factors. Frequency has 99 levels though.
+#define nOfLevels 1 // 10 levels, with 3 factors. Frequency has 99 levels though.
 
 #define fIncrements 98
-
 #define indicator_LED 12
 
 
@@ -41,8 +40,6 @@
 // ================================================================
 
 int ctrReg = 0; // Initialize control register variable.
-
-uint8_t currentStep = 0; // Used to loop frequency sweeps.
 
 double startFreqHz = 2000; // AC Start frequency (Hz).
 
@@ -84,50 +81,50 @@ void setup() {
   AD5933.setVolPGA(0, 1);
   AD5933.getGainFactorS_Set(cal_resistance, cal_samples, GF_Array, PS_Array);
   ctrReg = AD5933.getByte(0x80);
+  Serial.println();
 
-  /*  Serial.println();
-   
-   for(int i = 0; i <= fIncrements; i++) { // print and set CR filter array.
-   
-   if(i == 0) {
-   ctrReg = AD5933.getByte(0x80);
-   AD5933.setCtrMode(STAND_BY, ctrReg);
-   AD5933.setCtrMode(INIT_START_FREQ, ctrReg);
-   AD5933.setCtrMode(START_FREQ_SWEEP, ctrReg);
-   AD5933.getComplex(GF_Array[i], PS_Array[i], Z_Value, phaseAngle);
-   }
-   
-   else if(i > 0 &&  i < fIncrements) {
-   AD5933.getComplex(GF_Array[i], PS_Array[i], Z_Value, phaseAngle);
-   AD5933.setCtrMode(INCR_FREQ, ctrReg);
-   }
-   
-   else if(i = fIncrements) {
-   AD5933.getComplex(GF_Array[i], PS_Array[i], Z_Value, phaseAngle);
-   AD5933.setCtrMode(POWER_DOWN, ctrReg);
-   }
-   
-   Serial.print("Frequency: ");
-   Serial.print("\t");
-   Serial.print(startFreqHz + (stepSizeHz * i));
-   Serial.print("\t");        
-   Serial.print("Gainfactor term: ");
-   Serial.print(i);
-   Serial.print("\t");
-   Serial.print(GF_Array[i]);
-   Serial.print("\t");
-   Serial.print("SystemPS term: ");
-   Serial.print(i);
-   Serial.print("\t");
-   Serial.print(PS_Array[i], 4);
-   Serial.print("\t");        
-   Serial.print("Z_Value: ");
-   Serial.print(i);
-   Serial.print("\t");
-   Serial.print(Z_Value);        
-   Serial.println(); 
-   }  */
+  for(int i = 0; i <= fIncrements; i++) { // print and set CR filter array.
 
+    if(i == 0) {
+      ctrReg = AD5933.getByte(0x80);
+      AD5933.setCtrMode(STAND_BY, ctrReg);
+      AD5933.setCtrMode(INIT_START_FREQ, ctrReg);
+      AD5933.setCtrMode(START_FREQ_SWEEP, ctrReg);
+      AD5933.getComplex(GF_Array[i], PS_Array[i], Z_Value, phaseAngle);
+    }
+
+    else if(i > 0 &&  i < fIncrements) {
+      AD5933.setCtrMode(INCR_FREQ, ctrReg);
+      AD5933.getComplex(GF_Array[i], PS_Array[i], Z_Value, phaseAngle);
+    }
+
+    else if(i = fIncrements) {
+      AD5933.getComplex(GF_Array[i], PS_Array[i], Z_Value, phaseAngle);
+      AD5933.setCtrMode(POWER_DOWN, ctrReg);
+    }
+
+    Serial.print("Frequency: ");
+    Serial.print("\t");
+    Serial.print(startFreqHz + (stepSizeHz * i));
+    Serial.print("\t");        
+    Serial.print("Gainfactor term: ");
+    Serial.print(i);
+    Serial.print("\t");
+    Serial.print(GF_Array[i]);
+    Serial.print("\t");
+    Serial.print("SystemPS term: ");
+    Serial.print(i);
+    Serial.print("\t");
+    Serial.print(PS_Array[i], 4);
+    Serial.print("\t");        
+    Serial.print("Z_Value: ");
+    Serial.print(i);
+    Serial.print("\t");
+    Serial.print(Z_Value);        
+    Serial.println(); 
+  }
+
+  Serial.println();
   r1.begin(1);
   r2.begin(2);
   Serial.println();
@@ -139,36 +136,37 @@ void loop() {
 
   while (Serial.available() < 1) {
     delay(15);
-  } // Wait for user to swap capacitors befor triggering
+  } // Wait for user to move electrodes before starting
 
   Serial.read(); // Read the key entered and continue the program.
 
   digitalWrite(indicator_LED, HIGH);  // Indication program is running.
 
-  for(int i = 0; i < 4; i++) { // repetition loop
+  for(int i = 0; i < nOfLevels; i++) { // repetition loop
+    Serial.println();
     for(int R1 = 0; R1 < 64; R1++) {  // r1 loop
 
-      r2.writeRDAC(R1);
+      r1.writeRDAC(R1);
 
-      for(int currentStep = 0; currentStep <= fIncrements; currentStep++) { // frequency loop
+      for(int currentStep = 0; currentStep <= fIncrements; currentStep++) { // print and set CR filter array.
 
         if(currentStep == 0) {
+          ctrReg = AD5933.getByte(0x80);
           AD5933.setCtrMode(STAND_BY, ctrReg);
           AD5933.setCtrMode(INIT_START_FREQ, ctrReg);
           AD5933.setCtrMode(START_FREQ_SWEEP, ctrReg);
+          AD5933.getComplex(GF_Array[currentStep], PS_Array[currentStep], Z_Value, phaseAngle);
         }
 
         else if(currentStep > 0 &&  currentStep < fIncrements) {
           AD5933.setCtrMode(INCR_FREQ, ctrReg);
+          AD5933.getComplex(GF_Array[currentStep], PS_Array[currentStep], Z_Value, phaseAngle);
         }
 
         else if(currentStep == fIncrements) {
-          AD5933.setCtrMode(POWER_DOWN, ctrReg);
+          AD5933.getComplex(GF_Array[currentStep], PS_Array[currentStep], Z_Value, phaseAngle);
+          //AD5933.setCtrMode(POWER_DOWN, ctrReg);
         }
-
-        AD5933.getComplex(GF_Array[currentStep], PS_Array[currentStep], Z_Value, phaseAngle);
-
-        // Print
 
         Serial.print(R1);
         Serial.print(",");
@@ -180,11 +178,14 @@ void loop() {
         Serial.print(",");
         Serial.print(-1 * Z_Value * sin(phaseAngle));
         Serial.println();
-
-      } // end frequency loop
+      }
     } // end r1 loop
   } // end repetition loop
 } // End main loop
+
+
+
+
 
 
 

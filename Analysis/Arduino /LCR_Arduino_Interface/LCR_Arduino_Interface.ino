@@ -36,7 +36,7 @@ void loop() {
 
     if (ch == '0') {
       digitalWrite(indicator_LED, LOW);
-      Serial.println("Switch off.");
+      Serial.println("Program done.");
     }
 
     if (ch == '1') {
@@ -52,7 +52,7 @@ void loop() {
 
     if (ch == '2') {
       if(r2 == 63) {
-        r2 = 13;
+        r = 13;
       }
       digitalWrite(indicator_LED, HIGH);
       R2.writeRDAC(r2);
