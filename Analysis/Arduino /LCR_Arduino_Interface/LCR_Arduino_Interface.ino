@@ -14,8 +14,8 @@
 AD5258 R1; // rheostat r1
 AD5258 R2; // rheostat r1
 
-uint8_t r1 = 13;
-uint8_t r2 = 13;
+uint8_t r1 = 0;
+uint8_t r2 = 0;
 
 void setup() {
   Serial.begin(38400);
@@ -23,8 +23,8 @@ void setup() {
 
   pinMode(indicator_LED, OUTPUT);
 
-  R1.begin(1); // Specify i2c address for digipot
-  R2.begin(2); // Specify i2c address for digipot
+  R1.begin(1); // Specify i2c address for r1
+  R2.begin(2); // Specify i2c address for r2
   Serial.println();
 }
 
@@ -40,8 +40,8 @@ void loop() {
     }
 
     if (ch == '1') {
-      if(r1 == 63) {
-        r1 = 13;
+      if(r1 == 64) {
+        r1 = 0;
       }
       digitalWrite(indicator_LED, HIGH);
       R1.writeRDAC(r1);
@@ -51,8 +51,8 @@ void loop() {
     }
 
     if (ch == '2') {
-      if(r2 == 63) {
-        r = 13;
+      if(r2 == 64) {
+        r2 = 0;
       }
       digitalWrite(indicator_LED, HIGH);
       R2.writeRDAC(r2);

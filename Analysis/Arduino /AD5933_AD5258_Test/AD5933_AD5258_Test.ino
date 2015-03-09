@@ -16,7 +16,7 @@
 
 #define cycles_multiplier 1    // Multiple for cycles_base. Can be 1, 2, or 4.
 
-#define cal_resistance 827  // Calibration resistance for the gain factor. 
+#define cal_resistance 450  // Calibration resistance for the gain factor. 
 
 #define cal_samples 10         // Number of measurements to take of the calibration resistance.
 
@@ -72,7 +72,7 @@ void setup() {
   cbi(TWSR, TWPS1); // Clear bits in port
   AD5933.setExtClock(false);
   AD5933.resetAD5933();
-  AD5933.setRange(RANGE_4);
+  AD5933.setRange(RANGE_1);
   AD5933.setStartFreq(startFreqHz);
   AD5933.setIncrement(stepSizeHz);
   AD5933.setNumofIncrement(fIncrements);
