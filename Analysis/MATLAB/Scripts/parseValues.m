@@ -1,45 +1,88 @@
+R1_225 = csvread('r1_225.csv',0,2,[0,2,6335,2]);
+R1_300 = csvread('r1_300.csv',0,2,[0,2,6335,2]);
+R1_350 = csvread('r1_350.csv',0,2,[0,2,6335,2]);
+R1_400 = csvread('r1_400.csv',0,2,[0,2,6335,2]);
+R1_450 = csvread('r1_450.csv',0,2,[0,2,6335,2]);
+
+R4_225 = csvread('r4_225.csv',0,2,[0,2,6335,2]);
+R4_300 = csvread('r4_300.csv',0,2,[0,2,6335,2]);
+R4_350 = csvread('r4_350.csv',0,2,[0,2,6335,2]);
+R4_400 = csvread('r4_400.csv',0,2,[0,2,6335,2]);
+R4_450 = csvread('r4_450.csv',0,2,[0,2,6335,2]);
+
+LCR  = csvread('LCR.csv',0,2,[0,2,6335,2]);
+
+
 index = 1;
-A225 = zeros(192,1);
-A300 = zeros(192,1);
-A350 = zeros(192,1);
-A400 = zeros(192,1);
-A450 = zeros(192,1);
-S = zeros(192,1); 
+r1_225 = zeros(192,1);
+r1_300 = zeros(192,1);
+r1_350 = zeros(192,1);
+r1_400 = zeros(192,1);
+r1_450 = zeros(192,1);
+
+r4_225 = zeros(192,1);
+r4_300 = zeros(192,1);
+r4_350 = zeros(192,1);
+r4_400 = zeros(192,1);
+r4_450 = zeros(192,1);
+
+S = zeros(192,1);
 F = zeros(192,1);
-L = zeros(192,1);
+l = zeros(192,1);
 
 for i = 1:99:size(l)
-    A225(index) = a225(i);
-    A300(index) = a300(i);
-    A350(index) = a350(i);
-    A400(index) = a400(i);
-    A450(index) = a450(i);
+    r1_225(index) = R1_225(i);
+    r1_300(index) = R1_300(i);
+    r1_350(index) = R1_350(i);
+    r1_400(index) = R1_400(i);
+    r1_450(index) = R1_450(i);
+    
+    r4_225(index) = R4_225(i);
+    r4_300(index) = R4_300(i);
+    r4_350(index) = R4_350(i);
+    r4_400(index) = R4_400(i);
+    r4_450(index) = R4_450(i);
+    
     F(index) = f(i);
     S(index) = s(i);
-    L(index) = l(i);
-
-
+    l(index) = LCR(i);
+    
+    
     index = index + 1;
     
-    A225(index) = a225(i+49);
-    A300(index) = a300(i+49);
-    A350(index) = a350(i+49);
-    A400(index) = a400(i+49);
-    A450(index) = a450(i+49);
+    r1_225(index) = R1_225(i+49);
+    r1_300(index) = R1_300(i+49);
+    r1_350(index) = R1_350(i+49);
+    r1_400(index) = R1_400(i+49);
+    r1_450(index) = R1_450(i+49);
+    
+    r4_225(index) = R4_225(i+49);
+    r4_300(index) = R4_300(i+49);
+    r4_350(index) = R4_350(i+49);
+    r4_400(index) = R4_400(i+49);
+    r4_450(index) = R4_450(i+49);
+    
     F(index) = f(i+49);
     S(index) = s(i+49);
-    L(index) = l(i+49);
+    l(index) = LCR(i+49);
     
     index = index + 1;
     
-    A225(index) = a225(i+98);
-    A300(index) = a300(i+98);
-    A350(index) = a350(i+98);
-    A400(index) = a400(i+98);
-    A450(index) = a450(i+98);
+    r1_225(index) = R1_225(i+98);
+    r1_300(index) = R1_300(i+98);
+    r1_350(index) = R1_350(i+98);
+    r1_400(index) = R1_400(i+98);
+    r1_450(index) = R1_450(i+98);
+    
+    r4_225(index) = R4_225(i+98);
+    r4_300(index) = R4_300(i+98);
+    r4_350(index) = R4_350(i+98);
+    r4_400(index) = R4_400(i+98);
+    r4_450(index) = R4_450(i+98);
+    
     F(index) = f(i+98);
     S(index) = s(i+98);
-    L(index) = l(i+98);
+    l(index) = LCR(i+98);
     
     index = index + 1;
 end
@@ -58,11 +101,11 @@ ylabel('Error (Ohms)') % y-axis label
 %}
 %subplot(2,1,2)
 
-plot(L(1:3:end),L(1:3:end)-A225(1:3:end),'ro');
+plot(l(1:3:end),l(1:3:end)-r1_225(1:3:end),'ro');
 hold on
-plot(L(2:3:end),L(2:3:end)-A225(2:3:end),'go');
+plot(l(2:3:end),l(2:3:end)-r1_225(2:3:end),'go');
 hold on
-plot(L(3:3:end),L(3:3:end)-A225(3:3:end),'bo');
+plot(l(3:3:end),l(3:3:end)-r1_225(3:3:end),'bo');
 
 title('RCAL = RFB = 225');
 legend('2 KHz','51 KHz','100 KHz');
