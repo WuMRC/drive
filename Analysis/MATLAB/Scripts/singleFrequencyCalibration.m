@@ -39,20 +39,50 @@ M = zeros(100,1);
 C = zeros(100,1);
 
 % Fill in values for M and C
-largeIndex = 1;
+
+index = 1;
 
 for j = 1 : 100
     
-    M(j) = (fullRealR(largeIndex + 49) - fullRealR(largeIndex)/ fullA(largeIndex + 49) - fullA(largeIndex));
-    C(j) = fullRealR(largeIndex) - (M(j) * fullA(largeIndex));
+    %M(j) = ((fullRealR(index + 49) - fullRealR(index)) / (fullA(index + 49) - fullA(index)));
+    %C(j) = fullRealR(index) - (M(j) * fullA(index));
     
-    largeIndex = largeIndex + 50;
+    fitObject = fit(fullA(index:index + 49), fullRealR(index:index + 49), 'poly1');
+    
+    M(j) = fitObject.p1;
+    C(j) = fitObject.p2;
+    
+    index = index + 50;
 end
 
+% Correct AD5933 values
 
+fullAcorrected = zeros(5000, 1);
 
+index = 1;
 
+for k = 1 : 5000
+    
+    if index == 51
+        index = 1;
+    end
+    
+    fullAcorrected(k) = (M(index) * fullA(k)) + C(index);
+    
+    index = index + 1;
+end
 
+fitObject2 = fit(fullA, fullRealR, 'poly1');
 
+fullAcorrected2 = (fitObject2.p1 * fullA) + fitObject2.p2;
 
+%figure,plot(fullRealR, fullA - fullRealR, 'bo', fullRealR, fullAcorrected - fullRealR, 'ro')
 
+figure,plot(fullRealR, fullA - fullRealR, 'bo', fullRealR, fullAcorrected2 - fullRealR, 'ro')
+
+h_legend = legend('Raw AD5933', 'Corrected AD5933');
+set(h_legend,'FontSize',20);
+set(gca,'FontSize',20);
+
+ylabel('Error [\Omega]','FontSize',20) % x-axis label
+xlabel('Actual resistance [\Omega]','FontSize',20) % y-axis label

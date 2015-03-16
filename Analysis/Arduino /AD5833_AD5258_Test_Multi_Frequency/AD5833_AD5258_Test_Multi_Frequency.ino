@@ -41,7 +41,7 @@
 
 int ctrReg = 0; // Initialize control register variable.
 
-double startFreqHz = 50000; // AC Start frequency (Hz).
+double startFreqHz = 2000; // AC Start frequency (Hz).
 
 double stepSizeHz = 1000; // AC frequency step size between consecutive values (Hz).
 
@@ -83,6 +83,10 @@ void setup() {
   AD5933.getGainFactorS_Set(cal_resistance, cal_samples, GF_Array, PS_Array);
   ctrReg = AD5933.getByte(0x80);
 
+  r1.begin(1);
+  r2.begin(2);
+
+  Serial.println();
   Serial.println();
 
   for(int i = 0; i <= fIncrements; i++) { // print and set CR filter array.
@@ -125,11 +129,6 @@ void setup() {
     Serial.print(Z_Value);        
     Serial.println(); 
   }
-
-  Serial.println();
-  r1.begin(1);
-  r2.begin(2);
-  Serial.println();
 }
 
 void loop() {
@@ -147,28 +146,29 @@ void loop() {
   for(int i = 0; i < nOfLevels; i++) { // repetition loop
     Serial.println();
 
-    // Only use data within the linear range of AD5933. Take 50 points.
-    for(int R1 = 14; R1 < 64; R1++) {  // r1 loop
+    for(int currentStep = 0; currentStep <= fIncrements; currentStep++) { // print and set CR filter array.
 
-      r1.writeRDAC(R1);
+      if(currentStep == 0) {
+        ctrReg = AD5933.getByte(0x80);
+        AD5933.setCtrMode(STAND_BY, ctrReg);
+        AD5933.setCtrMode(INIT_START_FREQ, ctrReg);
+        AD5933.setCtrMode(START_FREQ_SWEEP, ctrReg);
+      }
 
-      for(int currentStep = 0; currentStep <= fIncrements; currentStep++) { // print and set CR filter array.
+      else if(currentStep > 0 &&  currentStep < fIncrements) {
+        AD5933.setCtrMode(INCR_FREQ, ctrReg);
+      }
 
-        if(currentStep == 0) {
-          ctrReg = AD5933.getByte(0x80);
-          AD5933.setCtrMode(STAND_BY, ctrReg);
-          AD5933.setCtrMode(INIT_START_FREQ, ctrReg);
-          AD5933.setCtrMode(START_FREQ_SWEEP, ctrReg);
-        }
+      else if(currentStep == fIncrements) {
+        //AD5933.setCtrMode(POWER_DOWN, ctrReg);
+      }
 
-        else if(currentStep > 0 &&  currentStep < fIncrements) {
-          AD5933.setCtrMode(INCR_FREQ, ctrReg);
-        }
+      // Only use data within the linear range of AD5933. Take 50 points.
+      for(int R1 = 14; R1 < 64; R1++) {  // r1 loop
 
-        else if(currentStep == fIncrements) {
-          //AD5933.setCtrMode(POWER_DOWN, ctrReg);
-        }
-
+        r1.writeRDAC(R1);
+        
+        AD5933.setCtrMode(REPEAT_FREQ);
         AD5933.getComplex(GF_Array[currentStep], PS_Array[currentStep], Z_Value, phaseAngle);
 
         Serial.print(R1);
@@ -181,7 +181,10 @@ void loop() {
         Serial.print(",");
         Serial.print(-1 * Z_Value * sin(phaseAngle));
         Serial.println();
-      }
-    } // end r1 loop
+
+      } // end r1 loop
+    }  // end frequency loop
   } // end repetition loop
 } // End main loop
+
+
