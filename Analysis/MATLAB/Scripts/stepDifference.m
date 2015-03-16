@@ -6,10 +6,12 @@ sizeAllData = sizeAllData(1);
 singleLCR = zeros(sizeAllData / 99, 1);
 singleA = zeros(sizeAllData / 99, 1);
 
-for i = 49:99:sizeAllData - 1
+for i = 1:99:sizeAllData - 1
     % Get value at single frequency (2 KHz)
     singleLCR(index) = LCR(i);
     singleA(index) = A(i);
+    singleB(index) = B(i);
+    singleC(index) = C(i);
     index = index+1;
 end
 
@@ -25,9 +27,11 @@ for i = 1 : sizeSingleData - 1
     diffA(i) = singleA(i + 1) - singleA(i);
 end
 
-plot(diffStep,diffA,'bo',diffStep,diffLCR,'ro');
-legend('AD5933', 'LCR');
+plot(diffStep(12:end),diffA(12:end),'bo',diffStep(12:end),diffLCR(12:end),'ro');
+h_legend = legend('AD5933', 'LCR');
+set(h_legend,'FontSize',20);
+set(gca,'FontSize',20); 
 
-ylabel('Difference in resistance of consecutive steps (Ohms)') % x-axis label
-xlabel('Step number') % y-axis label
+ylabel('DIFFERENCE IN RESISTANCE OF CONSECUTIVE STEPS (Ohms)','FontSize',20) % x-axis label
+xlabel('STEP NUMBER','FontSize',20) % y-axis label
 % singleStep(:,1) = 1:64;

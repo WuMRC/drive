@@ -16,7 +16,7 @@
 
 #define cycles_multiplier 1    // Multiple for cycles_base. Can be 1, 2, or 4.
 
-#define cal_resistance 550  // Calibration resistance for the gain factor. 
+#define cal_resistance 353  // Calibration resistance for the gain factor. 
 
 #define cal_samples 10         // Number of measurements to take of the calibration resistance.
 
@@ -144,7 +144,7 @@ void loop() {
 
   for(int i = 0; i < nOfLevels; i++) { // repetition loop
     Serial.println();
-    for(int R1 = 17; R1 < 42; R1++) {  // r1 loop
+    for(int R1 = 0; R1 < 64; R1++) {  // r1 loop
 
       r1.writeRDAC(R1);
 
