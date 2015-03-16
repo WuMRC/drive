@@ -41,7 +41,7 @@
 
 int ctrReg = 0; // Initialize control register variable.
 
-double startFreqHz = 2000; // AC Start frequency (Hz).
+double startFreqHz = 50000; // AC Start frequency (Hz).
 
 double stepSizeHz = 1000; // AC frequency step size between consecutive values (Hz).
 
@@ -70,6 +70,7 @@ void setup() {
 
   cbi(TWSR, TWPS0);
   cbi(TWSR, TWPS1); // Clear bits in port
+  
   AD5933.setExtClock(false);
   AD5933.resetAD5933();
   AD5933.setRange(RANGE_1);
@@ -81,6 +82,7 @@ void setup() {
   AD5933.setVolPGA(0, 1);
   AD5933.getGainFactorS_Set(cal_resistance, cal_samples, GF_Array, PS_Array);
   ctrReg = AD5933.getByte(0x80);
+  
   Serial.println();
 
   for(int i = 0; i <= fIncrements; i++) { // print and set CR filter array.
@@ -98,7 +100,7 @@ void setup() {
       AD5933.getComplex(GF_Array[i], PS_Array[i], Z_Value, phaseAngle);
     }
 
-    else if(i = fIncrements) {
+    else if(i == fIncrements) {
       AD5933.getComplex(GF_Array[i], PS_Array[i], Z_Value, phaseAngle);
       AD5933.setCtrMode(POWER_DOWN, ctrReg);
     }
@@ -144,7 +146,9 @@ void loop() {
 
   for(int i = 0; i < nOfLevels; i++) { // repetition loop
     Serial.println();
-    for(int R1 = 0; R1 < 64; R1++) {  // r1 loop
+    
+    // Only use data within the linear range of AD5933. Take 50 points.
+    for(int R1 = 14; R1 < 64; R1++) {  // r1 loop
 
       r1.writeRDAC(R1);
 

@@ -10,8 +10,6 @@ for i = 1:99:sizeAllData - 1
     % Get value at single frequency (2 KHz)
     singleLCR(index) = LCR(i);
     singleA(index) = A(i);
-    singleB(index) = B(i);
-    singleC(index) = C(i);
     index = index+1;
 end
 
