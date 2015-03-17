@@ -22,6 +22,8 @@ subplot(2,1,2), plot(ultrasound.data.timeUS,ultrasound.data.card,'r')
 xlabel('Time [s]')
 ylabel('\Delta IVC_{D,cardiac} [mm]')
 
+savefig(ultrasound.data.filename)
+
 %% Check video
 implay(permute(ultrasound.data.DICOM,[1 2 4 3]))
 

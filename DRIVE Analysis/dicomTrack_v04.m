@@ -83,6 +83,7 @@ while indFrame <= dicomFrames
 end
 
 %% Save data
+data.filename = filename(1:end-4);
 data.FsUS = FsUS;
 data.pointLog = pointLog;
 data.pointDist = pointDist.*data.MM_PER_PIXEL;    % in mm
