@@ -14,11 +14,9 @@
 
 #define cal_samples 10         // Number of measurements to take of the calibration resistance.
 
-#define nOfLevels 100 // 10 levels, with 3 factors. Frequency has 99 levels though.
+#define nOfLevels 1000 // Number of repetitions
 
-#define fIncrements 98
 #define indicator_LED 12
-
 
 // Define bit clearing and setting variables
 

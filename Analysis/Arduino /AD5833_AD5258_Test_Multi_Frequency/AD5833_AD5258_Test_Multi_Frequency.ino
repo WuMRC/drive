@@ -20,7 +20,7 @@
 
 #define cal_samples 10         // Number of measurements to take of the calibration resistance.
 
-#define nOfLevels 1 // 10 levels, with 3 factors. Frequency has 99 levels though.
+#define nOfLevels 100 // 10 levels, with 3 factors. Frequency has 99 levels though.
 
 #define fIncrements 98
 #define indicator_LED 12
@@ -143,31 +143,30 @@ void loop() {
 
   digitalWrite(indicator_LED, HIGH);  // Indication program is running.
 
-  for(int i = 0; i < nOfLevels; i++) { // repetition loop
-    Serial.println();
+  for(int currentStep = 0; currentStep <= fIncrements; currentStep++) { // print and set CR filter array.
 
-    for(int currentStep = 0; currentStep <= fIncrements; currentStep++) { // print and set CR filter array.
+    if(currentStep == 0) {
+      ctrReg = AD5933.getByte(0x80);
+      AD5933.setCtrMode(STAND_BY, ctrReg);
+      AD5933.setCtrMode(INIT_START_FREQ, ctrReg);
+      AD5933.setCtrMode(START_FREQ_SWEEP, ctrReg);
+    }
 
-      if(currentStep == 0) {
-        ctrReg = AD5933.getByte(0x80);
-        AD5933.setCtrMode(STAND_BY, ctrReg);
-        AD5933.setCtrMode(INIT_START_FREQ, ctrReg);
-        AD5933.setCtrMode(START_FREQ_SWEEP, ctrReg);
-      }
+    else if(currentStep > 0 &&  currentStep < fIncrements) {
+      AD5933.setCtrMode(INCR_FREQ, ctrReg);
+    }
 
-      else if(currentStep > 0 &&  currentStep < fIncrements) {
-        AD5933.setCtrMode(INCR_FREQ, ctrReg);
-      }
+    else if(currentStep == fIncrements) {
+      //AD5933.setCtrMode(POWER_DOWN, ctrReg);
+    }
 
-      else if(currentStep == fIncrements) {
-        //AD5933.setCtrMode(POWER_DOWN, ctrReg);
-      }
+    for(int i = 0; i < nOfLevels; i++) { // repetition loop
 
       // Only use data within the linear range of AD5933. Take 50 points.
       for(int R1 = 14; R1 < 64; R1++) {  // r1 loop
 
         r1.writeRDAC(R1);
-        
+
         AD5933.setCtrMode(REPEAT_FREQ);
         AD5933.getComplex(GF_Array[currentStep], PS_Array[currentStep], Z_Value, phaseAngle);
 
@@ -177,14 +176,13 @@ void loop() {
         Serial.print(",");
         Serial.print(Z_Value);
         Serial.print(",");
-        Serial.print(Z_Value * cos(phaseAngle));
-        Serial.print(",");
-        Serial.print(-1 * Z_Value * sin(phaseAngle));
+        Serial.print(phaseAngle);
         Serial.println();
 
       } // end r1 loop
-    }  // end frequency loop
-  } // end repetition loop
+    } // end repetition loop
+  }  // end frequency loop
 } // End main loop
+
 
 

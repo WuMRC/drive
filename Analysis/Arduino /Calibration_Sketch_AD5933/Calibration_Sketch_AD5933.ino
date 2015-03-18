@@ -16,11 +16,11 @@
 
 #define cycles_multiplier 1    // Multiple for cycles_base. Can be 1, 2, or 4.
 
-#define cal_resistance 461  // Calibration resistance for the gain factor. 
+#define cal_resistance 353  // Calibration resistance for the gain factor. 
 
 #define cal_samples 10         // Number of measurements to take of the calibration resistance.
 
-#define nOfLevels 4 // 10 levels, with 3 factors. Frequency has 99 levels though.
+#define nOfLevels 1 // 10 levels, with 3 factors. Frequency has 99 levels though.
 
 #define fIncrements 98
 
@@ -70,13 +70,13 @@ double GF_Array[fIncrements + 1]; // gain factor array.
 double PS_Array[fIncrements + 1]; // phase shift array.
 
 double cArray[nOfLevels] = {
-  2.256, 3.26, 4.72, 7.125}; // capacitor values. 
+  4.72}; // capacitor values. 
 
 double r1Array[nOfLevels] = {
-  614.54, 631.98, 649.37, 666.43}; // r1 values. 
+  644.66}; // r1 values. 
 
 double r2Array[nOfLevels] = {
-  995.35, 1012.27, 1029.55, 1046.71}; // r2 values.
+  1016.2}; // r2 values.
 
 AD5258 r1; // rheostat r1
 
@@ -111,7 +111,7 @@ void setup() {
 
   Serial.println();
 
-  /*for(int i = 0; i <= fIncrements; i++) { // print and set CR filter array.
+  for(int i = 0; i <= fIncrements; i++) { // print and set CR filter array.
    
    if(i == 0) {
    ctrReg = AD5933.getByte(0x80);
@@ -150,12 +150,12 @@ void setup() {
    Serial.print("\t");
    Serial.print(Z_Value);        
    Serial.println(); 
-   }  */
+   }  
 
   r1.begin(1);
   r2.begin(2);
   Serial.println();
-  Serial.println("F,R1,R2,C,Key,Z,R,X");
+  //Serial.println("F,R1,R2,C,Key,Z,R,X");
 }
 
 void loop() {
@@ -182,6 +182,7 @@ void loop() {
         for(int currentStep = 0; currentStep <= fIncrements; currentStep++) { // frequency loop
           // Serial.print("currentStep: ");
           // Serial.println(currentStep);
+          
           if(currentStep == 0) {
             AD5933.setCtrMode(STAND_BY, ctrReg);
             AD5933.setCtrMode(INIT_START_FREQ, ctrReg);
@@ -211,13 +212,12 @@ void loop() {
             Serial.print(",");
             Serial.print(cArray[cap]);
             Serial.print(",");
-            Serial.print(generateMapKey(currentStep,R1,R2,cap,N));
+            //Serial.print(generateMapKey(currentStep,R1,R2,cap,N));
+            //Serial.print(",");
+            Serial.print(Z_Value, 5);
             Serial.print(",");
-            Serial.print(Z_Value, 4);
+            Serial.print(phaseAngle, 5);
             Serial.print(",");
-            Serial.print(Z_Value * cos(phaseAngle));
-            Serial.print(",");
-            Serial.print(-1 * Z_Value * sin(phaseAngle));
             Serial.println();
 
           } // end number of samples loop

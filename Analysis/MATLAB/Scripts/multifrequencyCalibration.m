@@ -1,88 +1,26 @@
-% End to end resistance of AD5258
-rAB = 1227;
 
-% Import AD5933 data (50 points, repeated 100 times)
-fullA = csvread('2-100KHZ_NOREPS.csv',0,2,[0,2,4949,2]);
+% Import AD5933 data (50 points, repeated 100 times for 99 frequencies)
+measuredImpedance = csvread('2-100KHZ_100REPS.csv',0,2,[0,2,494999,2]);
 
-% Voltage in
-vIn = 0.213;
-
-% Import voltage divider values
-vOut =  csvread('50point_voltage_divider.csv',0,2,[0,2,49,2]);
-
-% Calculate actual resistance
-realR = rAB * (1 - (vOut ./ vIn));
-
-% Calculate step
-step(:,1) = 1:50;
-
-% Vertically concatenate realR 100 times
-fullRealR = zeros(4950, 1);
-fullStep = zeros(4950, 1);
-
-index = 1;
-
-for i = 1 : 4950
-    
-    if index == 51
-        index = 1;
-    end
-    
-    fullRealR(i) = realR(index);
-    fullStep(i) = step(index);
-    
-    index = index + 1;
-end
+% Import predicted impedance values from voltage divider
+predictedImpedance =  csvread('POT1_POT2_RESISTANCE_1000REPS.csv',0,1,[0,1,49999,1]);
 
 % Initialize slope and y intercept vectors
 M = zeros(99,1);
 C = zeros(99,1);
 
-% Fill in values for M and C
+% Fill in values for M and C for frequencies of interest
 
 index = 1;
 
-for j = 1 : 99
+for i = 1 : 99 % 2KHz - 100 KHz
     
-    %M(j) = ((fullRealR(index + 49) - fullRealR(index)) / (fullA(index + 49) - fullA(index)));
-    %C(j) = fullRealR(index) - (M(j) * fullA(index));
+    %50 points at 100 repetition gives 5000 points for each frequency
+    fitObjectSingleFrequency = fit(measuredImpedance(index:index + 4999), predictedImpedance(1:5000), 'poly1');
     
-    fitObject = fit(fullA(index:index + 49), fullRealR(index:index + 49), 'poly1');
+    M(i) = fitObjectSingleFrequency.p1;
+    C(i) = fitObjectSingleFrequency.p2;
     
-    M(j) = fitObject.p1;
-    C(j) = fitObject.p2;
-    
-    index = index + 50;
+    index = index + 5000;
 end
 
-% Correct AD5933 values
-
-fullAcorrected = zeros(4950, 1);
-
-index = 1;
-
-for k = 1 : 4950
-    
-    if index == 51
-        index = 1;
-    end
-    
-    fullAcorrected(k) = (M(index) * fullA(k)) + C(index);
-    
-    index = index + 1;
-end
-
-fitObject2 = fit(fullA, fullRealR, 'poly1');
-
-fullAcorrected2 = (fitObject2.p1 * fullA) + fitObject2.p2;
-
-%figure,plot(fullRealR, fullA - fullRealR, 'bo', fullRealR, fullAcorrected - fullRealR, 'ro')
-
-figure,plot(fullRealR, fullA - fullRealR, 'bo', fullRealR, fullAcorrected2 - fullRealR, 'ro')
-
-h_legend = legend('Raw AD5933', 'Corrected AD5933');
-set(h_legend,'FontSize',20);
-set(gca,'FontSize',20);
-
-ylabel('Error [\Omega]','FontSize',20) % x-axis label
-xlabel('Actual resistance [\Omega]','FontSize',20) % y-axis label
