@@ -22,7 +22,7 @@ patientID(ismember(patientID,' ,.:;!/')) = [];
 nMarker = length(bioimp.acq.markers.szText);
 
 for indMarker = 2:nMarker
-    markerText = bioimp.acq.markers.szText{:,indMarker}(11:end);
+    markerText = bioimp.acq.markers.szText{:,indMarker};%(11:end);
     % FOR DIALYSIS
     saveFilename = strcat('b','-after-',patientID,'-',markerText);
     saveFilename(ismember(saveFilename,' ,.:;!/')) = []
