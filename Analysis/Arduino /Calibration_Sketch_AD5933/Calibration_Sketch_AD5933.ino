@@ -12,21 +12,23 @@
 
 #define TWI_FREQ 400000L      // Set TWI/I2C Frequency to 400MHz.
 
-#define cycles_base 15       // Cycles to ignore before a measurement is taken. Max is 511.
+const int cycles_base = 15;       // Cycles to ignore before a measurement is taken. Max is 511.
 
-#define cycles_multiplier 1    // Multiple for cycles_base. Can be 1, 2, or 4.
+const int cycles_multiplier = 1;    // Multiple for cycles_base. Can be 1, 2, or 4.
 
-#define cal_resistance 353  // Calibration resistance for the gain factor. 
+const double cal_resistance = 353;  // Calibration resistance for the gain factor. 
 
-#define cal_samples 10         // Number of measurements to take of the calibration resistance.
+const int cal_samples = 10;         // Number of measurements to take of the calibration resistance.
 
-#define nOfLevels 1 // 10 levels, with 3 factors. Frequency has 99 levels though.
+const int nOfResistors = 50; // 50 levels, with 3 factors. Frequency has 99 levels though.
 
-#define fIncrements 98
+const int nOfCapacitors = 4; // 50 levels, with 3 factors. Frequency has 99 levels though.
 
-#define nOfSamples 1
+const int fIncrements = 98;
 
-#define indicator_LED 12
+const int nOfSamples = 1;
+
+const int indicator_LED = 12;
 
 // Define bit clearing and setting variables
 
@@ -69,14 +71,14 @@ double GF_Array[fIncrements + 1]; // gain factor array.
 
 double PS_Array[fIncrements + 1]; // phase shift array.
 
-double cArray[nOfLevels] = {
-  4.72}; // capacitor values. 
+double cArray[nOfCapacitors] = {2.168, 3.246, 4.697,
+  7.08}; // capacitor values. 
 
-double r1Array[nOfLevels] = {
+/*double r1Array[nOfResistors] = {
   644.66}; // r1 values. 
 
-double r2Array[nOfLevels] = {
-  1016.2}; // r2 values.
+double r2Array[nOfResistors] = {
+  1016.2}; // r2 values.*/
 
 AD5258 r1; // rheostat r1
 
@@ -98,7 +100,7 @@ void setup() {
 
   AD5933.setExtClock(false);
   AD5933.resetAD5933();
-  AD5933.setRange(RANGE_4);
+  AD5933.setRange(RANGE_1);
   AD5933.setStartFreq(startFreqHz);
   AD5933.setIncrement(stepSizeHz);
   AD5933.setNumofIncrement(fIncrements);
@@ -131,23 +133,23 @@ void setup() {
    AD5933.setCtrMode(POWER_DOWN, ctrReg);
    }
    
-   Serial.print("Frequency: ");
-   Serial.print("\t");
+   //Serial.print("Frequency: ");
+   //Serial.print("\t");
    Serial.print(startFreqHz + (stepSizeHz * i));
-   Serial.print("\t");        
-   Serial.print("Gainfactor term: ");
+   Serial.print(",");   
+   //Serial.print("Gainfactor term: ");
    Serial.print(i);
-   Serial.print("\t");
+   Serial.print(",");  
    Serial.print(GF_Array[i]);
-   Serial.print("\t");
-   Serial.print("SystemPS term: ");
-   Serial.print(i);
-   Serial.print("\t");
-   Serial.print(PS_Array[i], 4);
-   Serial.print("\t");        
-   Serial.print("Z_Value: ");
-   Serial.print(i);
-   Serial.print("\t");
+   Serial.print(",");  
+   //Serial.print("SystemPS term: ");
+   //Serial.print(i);
+   //Serial.print("\t");
+   Serial.print(PS_Array[i]);
+   Serial.print(",");  
+   //Serial.print("\t");        
+   //Serial.print("Z_Value: ");
+   //Serial.print(i);
    Serial.print(Z_Value);        
    Serial.println(); 
    }  
@@ -160,7 +162,7 @@ void setup() {
 
 void loop() {
 
-  for(int cap = 0; cap < nOfLevels; cap++) { // Capacitor loop
+  for(int cap = 0; cap < nOfCapacitors; cap++) { // Capacitor loop
 
     digitalWrite(indicator_LED, LOW); // Indication to switch capacitors.
 
@@ -171,13 +173,13 @@ void loop() {
 
     digitalWrite(indicator_LED, HIGH);  // Indication program is running.
 
-    for(int R2 = 0; R2 < nOfLevels; R2++) {  // r2 loop
+    for(int R1 = 0; R1 < nOfResistors; R1++) {  // r2 loop
       // Serial.println("r2 loop");
-      r2.writeRDAC(56 + R2);
+      r1.writeRDAC(14 + R1);
 
-      for(int R1 = 0; R1 < nOfLevels; R1++) {  // r1 loop
+      for(int R2 = 0; R2 < nOfResistors; R2++) {  // r1 loop
         // Serial.println("r1 loop");
-        r1.writeRDAC(33 + R1);
+        r2.writeRDAC(14 + R2);
 
         for(int currentStep = 0; currentStep <= fIncrements; currentStep++) { // frequency loop
           // Serial.print("currentStep: ");
@@ -206,9 +208,9 @@ void loop() {
 
             Serial.print(startFreqHz + (stepSizeHz * currentStep));
             Serial.print(",");
-            Serial.print(r1Array[R1]);
+            Serial.print(R1);
             Serial.print(",");
-            Serial.print(r2Array[R2]);
+            Serial.print(R2);
             Serial.print(",");
             Serial.print(cArray[cap]);
             Serial.print(",");
