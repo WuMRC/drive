@@ -224,8 +224,8 @@ void loop() {
 
           } // end number of samples loop
         } // end frequency loop
-      } // end r1 loop
-    } // end r2 loop
+      } // end r2 loop
+    } // end r1 loop
   } // End capacitor loop
 } // End main loop
 

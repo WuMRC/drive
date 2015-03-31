@@ -61,10 +61,6 @@ const int BOOST = 22; // 5V On
 
 const int BI_TETRA = 29; // Selects between Bi-Polar & Tetra-Polar modes
 
-const int SW_GAIN = 7; // Voltage gain switch
-
-const int SW_VI = 23; // Voltage / Current multiplexer
-
 int leds[6] = {LED5, LED6, LED7_R, LED7_G, LED7_B, LED8};
 
 // Define bit clearing and setting variables
@@ -178,8 +174,6 @@ void setup() {
   }
   digitalWrite(BOOST, HIGH);
   digitalWrite(BI_TETRA, HIGH); // Set AD5933 to bi-polar mode
-  digitalWrite(SW_GAIN,  LOW);		
-  digitalWrite(SW_VI,    LOW);
 
   Wire.begin(); // Start Arduino I2C library
   Serial.begin(38400); // Open serial port

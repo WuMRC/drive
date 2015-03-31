@@ -47,8 +47,7 @@ for indFreq = 1:99
     
     % Calibrate given individual fit
     resistanceCorrectedSheet(:,indFreq) = ...
-        resistanceSheet(:,indFreq)/resistanceFit_slope(indFreq) ...
-        -resistanceFit_intercept(indFreq);
+        (resistanceSheet(:,indFreq)  -resistanceFit_intercept(indFreq))/resistanceFit_slope(indFreq);
     
     % Find errors after calibration
     resistanceCorrectedErrorSheet(:,indFreq) = ...
