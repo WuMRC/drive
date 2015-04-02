@@ -106,3 +106,25 @@ end
 
 %%
 
+
+predictedResistanceSheet = reshape(predictedResistance,99,10000);
+predictedReactanceSheet = reshape(predictedReactance,99,10000);
+
+
+
+%%
+
+sliceR1 = [25 50];
+sliceR2 = [ 5 15 25 50];
+sliceC = [1 2 3];
+
+slice(resistanceFit_slope,sliceR1,sliceR2,sliceC)
+caxis([0.95 1.25])
+xlabel('R1'), ylabel('R2'), zlabel('C')
+
+%%
+
+[x,y,z] = meshgrid(1:50,1:50,1:4);
+
+
+slice(resistanceFit_slope,)
