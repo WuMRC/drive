@@ -33,20 +33,36 @@ r1SheetAverage = r1SheetAverage.';
 r2SheetAverage = r2SheetAverage.';
 
 %% Import model data
-rawData = csvread('MODEL_4_50_50_99.csv');
 
-frequency           = rawData(:,1)./ 1000; % Convert to kHz
-R1                  = rawData(:,2);
-R2                  = rawData(:,3);
-C                   = rawData(:,4);
-impedance           = rawData(:,5);
-phaseAngle          = rawData(:,6);
-
-% Replace potentiometer index with actual resistance values
-for index = 1:size(R1)    
-    R1(index) = r1SheetAverage(R1(index) + 1); % Change index to actual resistance value
-    R2(index) = r2SheetAverage(R2(index) + 1); % Change index to actual resistance value
+for noOfRuns = 1 : 2
+    
+    rawFile = strcat('RAW_', noOfRuns, '_MODEL_4_50_50_99.csv');
+    
+    fileName = strcat('FINAL_', noOfRuns, '_MODEL_4_50_50_99.csv');
+    
+    outputDir = fullfile('Users', 'Shemanigans', 'Google Drive', 'ShihLab',...
+        'Analysis', 'calibration files', strcat('Model Run ', noOfRuns));
+    
+    
+    rawData = csvread(rawFile);
+    
+    frequency           = rawData(:,1)./ 1000; % Convert to kHz
+    R1                  = rawData(:,2);
+    R2                  = rawData(:,3);
+    C                   = rawData(:,4);
+    impedance           = rawData(:,5);
+    phaseAngle          = rawData(:,6);
+    
+    % Replace potentiometer index with actual resistance values
+    for index = 1:size(R1)
+        R1(index) = r1SheetAverage(R1(index) + 1); % Change index to actual resistance value
+        R2(index) = r2SheetAverage(R2(index) + 1); % Change index to actual resistance value
+    end
+    
+    javaImport = horzcat(R1, R2, rawData);
+    
+    %csvwrite('javaImport', javaImport)
+    
+    csvwrite(fullfile(outputDir, fileName), javaImport);
+       
 end
-
-javaImport = horzcat(R1, R2, rawData);
-csvwrite('javaImport', javaImport)

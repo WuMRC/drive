@@ -124,7 +124,7 @@ xlabel('R1'), ylabel('R2'), zlabel('C')
 
 %%
 
-[x,y,z] = meshgrid(1:50,1:50,1:4);
+%[x,y,z] = meshgrid(1:50,1:50,1:4);
 
 
-slice(resistanceFit_slope,)
+%slice(resistanceFit_slope,)
