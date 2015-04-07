@@ -27,7 +27,7 @@ const int CYCLES_BASE = 15;       // Cycles to ignore before a measurement is ta
 
 const int CYCLES_MULTIPLIER = 1;    // Multiple for CYCLES_BASE. Can be 1, 2, or 4.
 
-const int CAL_RESISTANCE = 353;  // Calibration resistance for the gain factor. 
+const int CAL_RESISTANCE = 511;  // Calibration resistance for the gain factor. 
 
 const int CAL_SAMPLES = 10;         // Number of measurements to take of the calibration resistance.
 
@@ -192,7 +192,7 @@ void setup() {
   AD5933.resetAD5933(); 
   AD5933.setSettlingCycles(CYCLES_BASE,CYCLES_MULTIPLIER); 
   AD5933.setStartFreq(startFreqHz); 
-  AD5933.setVolPGA(0, 1); 
+  AD5933.setPGA(GAIN_1); 
   temp = AD5933.getTemperature(); 
   AD5933.getGainFactorC(CAL_RESISTANCE, CAL_SAMPLES, gain_factor, systemPhaseShift, false);
 
@@ -291,7 +291,7 @@ void loop() {
           numberOfCommas++;
         }
 
-        else if (incomingByte > 48 && incomingByte < 53){ // Only Range 1 - 4 is allowed
+        else if (incomingByte > 48 && incomingByte < 53) { // Only Range 1 - 4 is allowed
 
           switch(incomingByte) {
 
@@ -498,11 +498,14 @@ void adjustAD5933(int purpose, int v1, int v2, int v3) {
   switch(purpose) {
 
   case O: // Change output range of AD5933
+    cbi(TWSR, TWPS0);
+    cbi(TWSR, TWPS1); // Clear bits in port
+
     AD5933.setExtClock(false);
     AD5933.resetAD5933();
     AD5933.setSettlingCycles(CYCLES_BASE, CYCLES_MULTIPLIER);
     AD5933.setStartFreq(startFreqHz);
-    AD5933.setVolPGA(0, 1);
+    AD5933.setPGA(GAIN_1);
 
     delay(100); // Delay for AD5933 else no effect
 
@@ -512,7 +515,7 @@ void adjustAD5933(int purpose, int v1, int v2, int v3) {
     delay(100); // Delay for AD5933 else no effect
 
     AD5933.getGainFactorC(CAL_RESISTANCE, CAL_SAMPLES, gain_factor, systemPhaseShift, false);
-    AD5933.getComplex(gain_factor, systemPhaseShift, CR_Array[0], phaseAngle);
+    //AD5933.getComplex(gain_factor, systemPhaseShift, CR_Array[0], phaseAngle);
 
     Serial.println();
     Serial.print("Sucessful write attempt; new output range: ");
@@ -566,11 +569,14 @@ void adjustAD5933(int purpose, int v1, int v2, int v3) {
 
       Serial.println("New Array created.");
 
+      cbi(TWSR, TWPS0);
+      cbi(TWSR, TWPS1); // Clear bits in port
+
       AD5933.setExtClock(false);
       AD5933.resetAD5933();
       AD5933.setSettlingCycles(CYCLES_BASE, CYCLES_MULTIPLIER);
       AD5933.setStartFreq(startFreqHz);
-      AD5933.setVolPGA(0, 1);
+      AD5933.setPGA(GAIN_1);
       temp = AD5933.getTemperature(); 
       AD5933.getGainFactorC(CAL_RESISTANCE, CAL_SAMPLES, gain_factor, systemPhaseShift, false);
       AD5933.getComplex(gain_factor, systemPhaseShift, CR_Array[0], phaseAngle);
@@ -619,6 +625,9 @@ void adjustAD5933(int purpose, int v1, int v2, int v3) {
 
       Serial.println("New Arrays created.");
 
+      cbi(TWSR, TWPS0);
+      cbi(TWSR, TWPS1); // Clear bits in port
+
       AD5933.setExtClock(false);
       AD5933.resetAD5933();
       AD5933.setStartFreq(startFreqHz);
@@ -626,7 +635,7 @@ void adjustAD5933(int purpose, int v1, int v2, int v3) {
       AD5933.setNumofIncrement(numOfIncrements);      
       AD5933.setSettlingCycles(CYCLES_BASE, CYCLES_MULTIPLIER);
       AD5933.getTemperature();
-      AD5933.setVolPGA(0, 1);
+      AD5933.setPGA(GAIN_1);
 
       AD5933.getGainFactorS_Set(CAL_RESISTANCE, CAL_SAMPLES, GF_Array, PS_Array);
 
@@ -701,6 +710,7 @@ void notify() {
     SAMPLE_RATE_FLAG = true; 
   }
 }
+
 
 
 
