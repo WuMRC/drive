@@ -1,6 +1,4 @@
 // Library Code Section of AD5933
-// Author: Il-Taek Kwon
-// Modifications: Adetunji Dahunsi
 
 #include "AD5933.h"
 //#include <WProgram.h>
@@ -15,18 +13,18 @@ bool AD5933_Class::performFreqSweep(double gainFactor, double *arrSave)
 // Function to perform frequency Sweep, Just call it once to do it. It automatically do all the step.
 // double gainFactor - You need to call getGainFactor(double,int)
 //
-// double *arrSave - Just put the name of the array to save it. It should have right number of entries to save it. 
+// double *arrSave - Just put the name of the array to save it. It should have right number of entries to save it.
 // If not, hidden error will be occur.
 {
   int ctrReg = getByte(0x80); // Get the content of Control Register and put it into ctrReg
-  if(setCtrMode(STAND_BY, ctrReg) == false)
+  if (setCtrMode(STAND_BY, ctrReg) == false)
   {
 #if LOGGING1
     printer->println("performFreqSweep - Failed to setting Stand By Status!");
 #endif
     return false;
   }
-  if(setCtrMode(INIT_START_FREQ, ctrReg) == false)
+  if (setCtrMode(INIT_START_FREQ, ctrReg) == false)
   {
 #if LOGGING1
     printer->println("performFreqSweep - Failed to setting initialization with starting frequency!");
@@ -34,26 +32,26 @@ bool AD5933_Class::performFreqSweep(double gainFactor, double *arrSave)
     return false;
   }
   //delay(delayTimeInit);
-  if(setCtrMode(START_FREQ_SWEEP, ctrReg) == false)
+  if (setCtrMode(START_FREQ_SWEEP, ctrReg) == false)
   {
 #if LOGGING1
     printer->println("performFreqSweep - Failed to set to start frequency sweeping!");
 #endif
     return false;
   }
-  
-  int t1=0;
-  while( (getStatusReg() & 0x04) != 0x04 ) // Loop while if the entire sweep in not complete
+
+  int t1 = 0;
+  while ( (getStatusReg() & 0x04) != 0x04 ) // Loop while if the entire sweep in not complete
   {
     //delay(delayTimeInit);
-    arrSave[t1]=gainFactor/getMagOnce(); // Calculated with Gain Factor
+    arrSave[t1] = gainFactor / getMagOnce(); // Calculated with Gain Factor
 #if LOGGING1
     printer->print("performFreqSweep - arrSave[");
     printer->print(t1);
     printer->print("] = ");
-    printer->println(arrSave[t1]);  
+    printer->println(arrSave[t1]);
 #endif
-    if(setCtrMode(INCR_FREQ, ctrReg) == false)
+    if (setCtrMode(INCR_FREQ, ctrReg) == false)
     {
 #if LOGGING1
       printer->println("performFreqSweep - Failed to set for increasing frequency!");
@@ -63,7 +61,7 @@ bool AD5933_Class::performFreqSweep(double gainFactor, double *arrSave)
     t1++;
     //getByte(0x80);
   }
-  if(setCtrMode(POWER_DOWN, ctrReg) == false)
+  if (setCtrMode(POWER_DOWN, ctrReg) == false)
   {
 #if LOGGING1
     printer->println("performFreqSweep - Completed sweep, but failed to power down");
@@ -77,30 +75,30 @@ bool AD5933_Class::performFreqSweep(double gainFactor, double *arrSave)
 bool AD5933_Class::compFreqRawSweep(int *arrReal, int *arrImag)
 {
   int ctrReg = getByte(0x80); // Get the content of Control Register and put it into ctrReg
-  if(setCtrMode(STAND_BY, ctrReg) == false)
+  if (setCtrMode(STAND_BY, ctrReg) == false)
   {
     return false;
   }
-  if(setCtrMode(INIT_START_FREQ, ctrReg) == false)
+  if (setCtrMode(INIT_START_FREQ, ctrReg) == false)
   {
     return false;
   }
-  if(setCtrMode(START_FREQ_SWEEP, ctrReg) == false)
+  if (setCtrMode(START_FREQ_SWEEP, ctrReg) == false)
   {
     return false;
   }
-  
-  int t1=0;
-  while( (getStatusReg() & 0x04) != 0x04) // Loop while if the entire sweep in not complete
+
+  int t1 = 0;
+  while ( (getStatusReg() & 0x04) != 0x04) // Loop while if the entire sweep in not complete
   {
-    getComplexRawOnce(arrReal[t1], arrImag[t1]); // Only for real and Imag components. 
-    if(setCtrMode(INCR_FREQ, ctrReg) == false)
+    getComplexRawOnce(arrReal[t1], arrImag[t1]); // Only for real and Imag components.
+    if (setCtrMode(INCR_FREQ, ctrReg) == false)
     {
       return false;
     }
     t1++;
   }
-  if(setCtrMode(POWER_DOWN, ctrReg) == false)
+  if (setCtrMode(POWER_DOWN, ctrReg) == false)
   {
     return false;
   }
@@ -109,59 +107,59 @@ bool AD5933_Class::compFreqRawSweep(int *arrReal, int *arrImag)
 
 bool AD5933_Class::compFreqSweep(double *arrGainFactor, double *arrPShift, double *arrReal, double *arrImag)
 {
-	int ctrReg = getByte(0x80);
-	setCtrMode(STAND_BY, ctrReg);
-	setCtrMode(INIT_START_FREQ, ctrReg);
-	setCtrMode(START_FREQ_SWEEP, ctrReg);
-	
-	int t1=0;
-	//int cReal, cImag;
-	double Z_Val, phase;
-	while( (getStatusReg() & 0x04) != 0x04) // Loop while if the entire sweep in not complete
-  	{
-    	/*
-    	getComplexRawOnce(cReal, cImag); // Only for real and Imag components. 
-    	double magImp = arrGainFactor[t1]/getMag(cReal, cImag);
-    	double phase = atan2(cImag, cReal) - arrPShift[t1];
-    	arrReal[t1] = magImp * cos(phase);
-    	arrImag[t1] = magImp * sin(phase);
-    	*/
-    	getComplexOnce(arrGainFactor[t1], arrPShift[t1], arrReal[t1], arrImag[t1], Z_Val, phase);
-    	
-    	if(setCtrMode(INCR_FREQ, ctrReg) == false)
-    	{
-      		return false;
-   		}
-    	t1++;
-    }	
-    setCtrMode(POWER_DOWN, ctrReg);
-    return true;
-  
+  int ctrReg = getByte(0x80);
+  setCtrMode(STAND_BY, ctrReg);
+  setCtrMode(INIT_START_FREQ, ctrReg);
+  setCtrMode(START_FREQ_SWEEP, ctrReg);
+
+  int t1 = 0;
+  //int cReal, cImag;
+  double Z_Val, phase;
+  while ( (getStatusReg() & 0x04) != 0x04) // Loop while if the entire sweep in not complete
+  {
+    /*
+    getComplexRawOnce(cReal, cImag); // Only for real and Imag components.
+    double magImp = arrGainFactor[t1]/getMag(cReal, cImag);
+    double phase = atan2(cImag, cReal) - arrPShift[t1];
+    arrReal[t1] = magImp * cos(phase);
+    arrImag[t1] = magImp * sin(phase);
+    */
+    getComplexOnce(arrGainFactor[t1], arrPShift[t1], arrReal[t1], arrImag[t1], Z_Val, phase);
+
+    if (setCtrMode(INCR_FREQ, ctrReg) == false)
+    {
+      return false;
+    }
+    t1++;
+  }
+  setCtrMode(POWER_DOWN, ctrReg);
+  return true;
+
 
 }
 
 bool AD5933_Class::compCbrArray(double GF_Init, double GF_Incr, double PS_Init, double PS_Incr, double *arrGainFactor, double *arrPShift)
 {
-	int t1 = 0;
-	arrGainFactor[0] = GF_Init;
-	arrPShift[0] = PS_Init;
-	for(t1=1;t1<numIncrement;t1++)
-	{
-		arrGainFactor[t1] = arrGainFactor[t1-1] + GF_Incr;
-		arrPShift[t1] = arrPShift[t1-1] + PS_Incr;
-	}
-	return true;
+  int t1 = 0;
+  arrGainFactor[0] = GF_Init;
+  arrPShift[0] = PS_Init;
+  for (t1 = 1; t1 < numIncrement; t1++)
+  {
+    arrGainFactor[t1] = arrGainFactor[t1 - 1] + GF_Incr;
+    arrPShift[t1] = arrPShift[t1 - 1] + PS_Incr;
+  }
+  return true;
 }
 
 bool AD5933_Class::getArraysLI(
-  double &deltaGF, double &deltaPS, 
+  double &deltaGF, double &deltaPS,
   double &stepSize, uint8_t &numOfIncrements,
   double &GF_Initial, double &PS_Initial,
   double *arrGainFactor, double *arrPShift)
 {
   int t1 = 0;
 
-  for(t1 = 1; t1 <= numOfIncrements; t1++)
+  for (t1 = 1; t1 <= numOfIncrements; t1++)
   {
     arrGainFactor[t1] = (deltaGF * t1 / numOfIncrements) + GF_Initial;
     arrPShift[t1] = (deltaPS * t1 / numOfIncrements) + PS_Initial;
@@ -175,231 +173,231 @@ bool AD5933_Class::getGainFactors_LI(double cResistance, int avgNum, double star
   byte numIncrementBackup = numIncrement;
   long incrHexBackup = incrHex;
   setNumofIncrement(1);
-  setIncrement(endFreq-startFreq);
-  if(setCtrMode(STAND_BY, ctrReg) == false) {
-      return false;
+  setIncrement(endFreq - startFreq);
+  if (setCtrMode(STAND_BY, ctrReg) == false) {
+    return false;
   }
-    if(setCtrMode(INIT_START_FREQ, ctrReg) == false) {
-      return false;
-    }
-    if(setCtrMode(START_FREQ_SWEEP, ctrReg) == false) {
-      return false;
-    }
-    
-  int t1=0;
-  int rImag, rReal;
-  double sumMag=0, sumPhase=0;
-    for(t1=0;t1<avgNum;t1++)
-    {
-      getComplexRawOnce(rReal, rImag); // Only for real and Imag components. 
-      sumMag += getMag(rReal, rImag);
-      sumPhase += atan2(rImag, rReal);
-      
-      if(setCtrMode(REPEAT_FREQ, ctrReg) == false)
-      {
-          return false;
-      }
-    }
-    GF_Initial = (sumMag / avgNum) * cResistance;
-    PS_Initial = sumPhase / avgNum;
-    
-    setCtrMode(INCR_FREQ, ctrReg);
+  if (setCtrMode(INIT_START_FREQ, ctrReg) == false) {
+    return false;
+  }
+  if (setCtrMode(START_FREQ_SWEEP, ctrReg) == false) {
+    return false;
+  }
 
-    sumMag = 0;
-    sumPhase = 0;
-    
-    for(t1=0;t1<avgNum;t1++)
-    {
-      getComplexRawOnce(rReal, rImag); // Only for real and Imag components. 
-      sumMag += getMag(rReal, rImag);
-      sumPhase += atan2(rImag, rReal);
-      
-      if(setCtrMode(REPEAT_FREQ, ctrReg) == false)
-      {
-          return false;
-      }
-    }
-    GF_Final = (sumMag / avgNum) * cResistance;
-    PS_Final = (sumPhase / avgNum);
-    
-    
-    if(setCtrMode(POWER_DOWN, ctrReg) == false)
+  int t1 = 0;
+  int rImag, rReal;
+  double sumMag = 0, sumPhase = 0;
+  for (t1 = 0; t1 < avgNum; t1++)
+  {
+    getComplexRawOnce(rReal, rImag); // Only for real and Imag components.
+    sumMag += getMag(rReal, rImag);
+    sumPhase += atan2(rImag, rReal);
+
+    if (setCtrMode(REPEAT_FREQ, ctrReg) == false)
     {
       return false;
     }
-    setNumofIncrement(numIncrementBackup);
-    setIncrementinHex(incrHexBackup);
-    return true; // Succeed!  
+  }
+  GF_Initial = (sumMag / avgNum) * cResistance;
+  PS_Initial = sumPhase / avgNum;
+
+  setCtrMode(INCR_FREQ, ctrReg);
+
+  sumMag = 0;
+  sumPhase = 0;
+
+  for (t1 = 0; t1 < avgNum; t1++)
+  {
+    getComplexRawOnce(rReal, rImag); // Only for real and Imag components.
+    sumMag += getMag(rReal, rImag);
+    sumPhase += atan2(rImag, rReal);
+
+    if (setCtrMode(REPEAT_FREQ, ctrReg) == false)
+    {
+      return false;
+    }
+  }
+  GF_Final = (sumMag / avgNum) * cResistance;
+  PS_Final = (sumPhase / avgNum);
+
+
+  if (setCtrMode(POWER_DOWN, ctrReg) == false)
+  {
+    return false;
+  }
+  setNumofIncrement(numIncrementBackup);
+  setIncrementinHex(incrHexBackup);
+  return true; // Succeed!
 }
 
 
 bool AD5933_Class::getGainFactorS_TP(double cResistance, int avgNum, double startFreq, double endFreq, double &GF_Init, double &GF_Incr, double &PS_Init, double &PS_Incr)
 {
-	int ctrReg = getByte(0x80);
-	byte numIncrementBackup = numIncrement;
-	long incrHexBackup = incrHex;
-	setNumofIncrement(1);
-	setIncrement(endFreq-startFreq);
-	if(setCtrMode(STAND_BY, ctrReg) == false)
-  	{
-    	return false;
-	}
-  	if(setCtrMode(INIT_START_FREQ, ctrReg) == false)
-  	{
-    	return false;
-  	}
-  	if(setCtrMode(START_FREQ_SWEEP, ctrReg) == false)
-  	{
-    	return false;
-  	}
-  	
-	int t1=0;
-	int rImag, rReal;
-	double sumMag=0, sumPhase=0;
-  	for(t1=0;t1<avgNum;t1++)
-  	{
-    	getComplexRawOnce(rReal, rImag); // Only for real and Imag components. 
-    	sumMag += getMag(rReal, rImag);
-    	sumPhase += atan2(rImag, rReal);
-    	
-    	if(setCtrMode(REPEAT_FREQ, ctrReg) == false)
-    	{
-      		return false;
-    	}
-  	}
-  	GF_Init = (sumMag / avgNum) * cResistance;
-  	PS_Init = sumPhase / avgNum;
-  	
-  	setCtrMode(INCR_FREQ, ctrReg);
-  	sumMag = 0;
-  	sumPhase = 0;
-  	
-  	for(t1=0;t1<avgNum;t1++)
-  	{
-    	getComplexRawOnce(rReal, rImag); // Only for real and Imag components. 
-    	sumMag += getMag(rReal, rImag);
-    	sumPhase += atan2(rImag, rReal);
-    	
-    	if(setCtrMode(REPEAT_FREQ, ctrReg) == false)
-    	{
-      		return false;
-    	}
-  	}
-  	GF_Incr = ((sumMag / avgNum) * cResistance - GF_Init) / numIncrementBackup;
-  	PS_Incr = ((sumPhase / avgNum) - PS_Init) / numIncrementBackup;
-  	
-  	
-  	if(setCtrMode(POWER_DOWN, ctrReg) == false)
-  	{
-    	return false;
-  	}
-  	setNumofIncrement(numIncrementBackup);
-  	setIncrementinHex(incrHexBackup);
-  	return true; // Succeed!	
+  int ctrReg = getByte(0x80);
+  byte numIncrementBackup = numIncrement;
+  long incrHexBackup = incrHex;
+  setNumofIncrement(1);
+  setIncrement(endFreq - startFreq);
+  if (setCtrMode(STAND_BY, ctrReg) == false)
+  {
+    return false;
+  }
+  if (setCtrMode(INIT_START_FREQ, ctrReg) == false)
+  {
+    return false;
+  }
+  if (setCtrMode(START_FREQ_SWEEP, ctrReg) == false)
+  {
+    return false;
+  }
+
+  int t1 = 0;
+  int rImag, rReal;
+  double sumMag = 0, sumPhase = 0;
+  for (t1 = 0; t1 < avgNum; t1++)
+  {
+    getComplexRawOnce(rReal, rImag); // Only for real and Imag components.
+    sumMag += getMag(rReal, rImag);
+    sumPhase += atan2(rImag, rReal);
+
+    if (setCtrMode(REPEAT_FREQ, ctrReg) == false)
+    {
+      return false;
+    }
+  }
+  GF_Init = (sumMag / avgNum) * cResistance;
+  PS_Init = sumPhase / avgNum;
+
+  setCtrMode(INCR_FREQ, ctrReg);
+  sumMag = 0;
+  sumPhase = 0;
+
+  for (t1 = 0; t1 < avgNum; t1++)
+  {
+    getComplexRawOnce(rReal, rImag); // Only for real and Imag components.
+    sumMag += getMag(rReal, rImag);
+    sumPhase += atan2(rImag, rReal);
+
+    if (setCtrMode(REPEAT_FREQ, ctrReg) == false)
+    {
+      return false;
+    }
+  }
+  GF_Incr = ((sumMag / avgNum) * cResistance - GF_Init) / numIncrementBackup;
+  PS_Incr = ((sumPhase / avgNum) - PS_Init) / numIncrementBackup;
+
+
+  if (setCtrMode(POWER_DOWN, ctrReg) == false)
+  {
+    return false;
+  }
+  setNumofIncrement(numIncrementBackup);
+  setIncrementinHex(incrHexBackup);
+  return true; // Succeed!
 }
 
 bool AD5933_Class::getGainFactorS_Set(double cResistance, int avgNum, double *gainFactorArr, double *pShiftArr)
 {
-	int ctrReg = getByte(0x80);
-	if(setCtrMode(STAND_BY, ctrReg) == false)
-  	{
-    	return false;
-	}
-  	if(setCtrMode(INIT_START_FREQ, ctrReg) == false)
-  	{
-    	return false;
-  	}
-  	if(setCtrMode(START_FREQ_SWEEP, ctrReg) == false)
-  	{
-    	return false;
-  	}
-  	
-	int t1=0;
-	int rImag, rReal;
-	double mag;
-  	while( (getStatusReg() & 0x04) != 0x04) // Loop while if the entire sweep in not complete
-  	{
-    	double tSumMag = 0, tSumPhase = 0;
-    	for(int t2=0;t2<avgNum;t2++)
-    	{
-    		getComplexRawOnce(rReal, rImag); // Only for real and Imag components.
-    		tSumMag += getMag(rReal, rImag); 
-    		tSumPhase += atan2(rImag, rReal); 
-    		if(setCtrMode(REPEAT_FREQ, ctrReg) == false)
-    		{
-    			return false;
-    		}
-    	}
+  int ctrReg = getByte(0x80);
+  if (setCtrMode(STAND_BY, ctrReg) == false)
+  {
+    return false;
+  }
+  if (setCtrMode(INIT_START_FREQ, ctrReg) == false)
+  {
+    return false;
+  }
+  if (setCtrMode(START_FREQ_SWEEP, ctrReg) == false)
+  {
+    return false;
+  }
 
-    	gainFactorArr[t1] = (tSumMag/avgNum) * cResistance;
-    	pShiftArr[t1] = tSumPhase / avgNum;
-    	
-    	if(setCtrMode(INCR_FREQ, ctrReg) == false)
-    	{
-      		return false;
-    	}
-    	t1++;
-  	}
-  	if(setCtrMode(POWER_DOWN, ctrReg) == false)
-  	{
-    	return false;
-  	}
-  	return true; // Succeed!
+  int t1 = 0;
+  int rImag, rReal;
+  double mag;
+  while ( (getStatusReg() & 0x04) != 0x04) // Loop while if the entire sweep in not complete
+  {
+    double tSumMag = 0, tSumPhase = 0;
+    for (int t2 = 0; t2 < avgNum; t2++)
+    {
+      getComplexRawOnce(rReal, rImag); // Only for real and Imag components.
+      tSumMag += getMag(rReal, rImag);
+      tSumPhase += atan2(rImag, rReal);
+      if (setCtrMode(REPEAT_FREQ, ctrReg) == false)
+      {
+        return false;
+      }
+    }
+    //Serial.println(t1);
+    gainFactorArr[t1] = (tSumMag / avgNum) * cResistance;
+    pShiftArr[t1] = tSumPhase / avgNum;
+
+    if (setCtrMode(INCR_FREQ, ctrReg) == false)
+    {
+      return false;
+    }
+    t1++;
+  }
+  if (setCtrMode(POWER_DOWN, ctrReg) == false)
+  {
+    return false;
+  }
+  return true; // Succeed!
 }
 
 bool AD5933_Class::getGainFactorC(double cResistance, int avgNum, double &gainFactor, double &pShift)
 {
-	return getGainFactorC(cResistance, avgNum, gainFactor, pShift, true);
+  return getGainFactorC(cResistance, avgNum, gainFactor, pShift, true);
 }
 
 
 bool AD5933_Class::getGainFactorC(double cResistance, int avgNum, double &gainFactor, double &pShift, bool retStandBy)
 {
-	int ctrReg = getByte(0x80); // Get the content of Control Register and put it into ctrReg
-  	if(setCtrMode(STAND_BY, ctrReg) == false)
-  	{
-    	return false;
-	}
-  	if(setCtrMode(INIT_START_FREQ, ctrReg) == false)
-  	{
-    	return false;
-  	}
-  	//delay(delayTimeInit);
-  	if(setCtrMode(START_FREQ_SWEEP, ctrReg) == false)
-  	{
-    	return false;
-  	}
-  
-  	int t1 = 0, rImag, rReal;
-  	double tSum = 0, tSumP = 0;
-  	while(t1 < avgNum) // Until reached pre-defined number for averaging.
-  	{
-    	getComplexRawOnce(rReal, rImag);
-    	tSum += getMag(rReal, rImag);
-    	tSumP += atan2(rImag, rReal);
-    	if(setCtrMode(REPEAT_FREQ, ctrReg) == false)
-    	{
-    		return false;
-    	}
-    	t1++;  
-  	}
-  	double mag = tSum / (double)avgNum;
-  	pShift = tSumP / (double)avgNum;
+  int ctrReg = getByte(0x80); // Get the content of Control Register and put it into ctrReg
+  if (setCtrMode(STAND_BY, ctrReg) == false)
+  {
+    return false;
+  }
+  if (setCtrMode(INIT_START_FREQ, ctrReg) == false)
+  {
+    return false;
+  }
+  //delay(delayTimeInit);
+  if (setCtrMode(START_FREQ_SWEEP, ctrReg) == false)
+  {
+    return false;
+  }
 
-  	if(retStandBy == false)
-  	{
-  		gainFactor = mag * cResistance;
-  		return true;  
-  	}
-  
-  	if( setCtrMode(STAND_BY, ctrReg) == false)
-  	{
-  		return false;
-  	}
-  	resetAD5933();
-    // Gain Factor is different from one of the datasheet in this program. Reciprocal Value.
+  int t1 = 0, rImag, rReal;
+  double tSum = 0, tSumP = 0;
+  while (t1 < avgNum) // Until reached pre-defined number for averaging.
+  {
+    getComplexRawOnce(rReal, rImag);
+    tSum += getMag(rReal, rImag);
+    tSumP += atan2(rImag, rReal);
+    if (setCtrMode(REPEAT_FREQ, ctrReg) == false)
+    {
+      return false;
+    }
+    t1++;
+  }
+  double mag = tSum / (double)avgNum;
+  pShift = tSumP / (double)avgNum;
+
+  if (retStandBy == false)
+  {
     gainFactor = mag * cResistance;
-  	return true;
+    return true;
+  }
+
+  if ( setCtrMode(STAND_BY, ctrReg) == false)
+  {
+    return false;
+  }
+  resetAD5933();
+  // Gain Factor is different from one of the datasheet in this program. Reciprocal Value.
+  gainFactor = mag * cResistance;
+  return true;
 }
 
 
@@ -410,14 +408,14 @@ double AD5933_Class::getGainFactor(double cResistance, int avgNum, bool retStand
 // Returns -1 if error occurs.
 {
   int ctrReg = getByte(0x80); // Get the content of Control Register and put it into ctrReg
-  if(setCtrMode(STAND_BY, ctrReg) == false)
+  if (setCtrMode(STAND_BY, ctrReg) == false)
   {
 #if LOGGING1
     printer->println("getGainFactor - Failed to setting Stand By Status!");
 #endif
     return -1;
   }
-  if(setCtrMode(INIT_START_FREQ, ctrReg) == false)
+  if (setCtrMode(INIT_START_FREQ, ctrReg) == false)
   {
 #if LOGGING1
     printer->println("getGainFactor  - Failed to setting initialization with starting frequency!");
@@ -425,54 +423,54 @@ double AD5933_Class::getGainFactor(double cResistance, int avgNum, bool retStand
     return -1;
   }
   //delay(delayTimeInit);
-  if(setCtrMode(START_FREQ_SWEEP, ctrReg) == false)
+  if (setCtrMode(START_FREQ_SWEEP, ctrReg) == false)
   {
 #if LOGGING1
     printer->println("getGainFactor - Failed to set to start frequency sweeping!");
 #endif
     return -1;
   }
-  
+
   int t1 = 0;
   double tSum = 0;
-  while(t1 < avgNum) // Until reached pre-defined number for averaging.
+  while (t1 < avgNum) // Until reached pre-defined number for averaging.
   {
     tSum += getMagOnce();
-    if(setCtrMode(REPEAT_FREQ, ctrReg) == false)
+    if (setCtrMode(REPEAT_FREQ, ctrReg) == false)
     {
 #if LOGGING1
-    	printer->println("getGainFactor - Failed to set to repeat this frequency!");
+      printer->println("getGainFactor - Failed to set to repeat this frequency!");
 #endif
-    	return -1;
+      return -1;
     }
-    t1++;  
+    t1++;
   }
-  double mag = tSum/(double)avgNum;
+  double mag = tSum / (double)avgNum;
 #if LOGGING2
   printer->print("getGainFactor - Gain Factor: ");
-  printer->println(mag*cResistance);
+  printer->println(mag * cResistance);
 
 #endif
 
-  if(retStandBy == false)
+  if (retStandBy == false)
   {
 #if LOGGING3
-	printer->println("getGainFactor - terminate the function without going into Stand By");
-#endif  	
-  	return mag*cResistance;  
+    printer->println("getGainFactor - terminate the function without going into Stand By");
+#endif
+    return mag * cResistance;
   }
-  
-  if( setCtrMode(STAND_BY, ctrReg) == false)
+
+  if ( setCtrMode(STAND_BY, ctrReg) == false)
   {
 #if LOGGING1
-	printer->println("getGainFactor - Failed to set into Stand-By Status");
-#endif  	
-  	return -1;
+    printer->println("getGainFactor - Failed to set into Stand-By Status");
+#endif
+    return -1;
   }
   resetAD5933();
-    // Gain Factor is different from one of the datasheet in this program. Reciprocal Value.
+  // Gain Factor is different from one of the datasheet in this program. Reciprocal Value.
   return mag * cResistance;
- 
+
 }
 
 double AD5933_Class::getGainFactor(double cResistance, int avgNum)
@@ -498,38 +496,38 @@ bool AD5933_Class::setCtrMode(byte modetoSet, int ctrReg)
 //
 {
   ctrReg &= 0x0F; // Get the last 4 digits.
-  switch(modetoSet)
+  switch (modetoSet)
   {
-    case INIT_START_FREQ:
-      ctrReg |= 0x10;
-      break;
-    case START_FREQ_SWEEP:
-      ctrReg |= 0x20;
-      break;
-    case INCR_FREQ:
-      ctrReg |= 0x30;
-      break;
-    case REPEAT_FREQ:
-      ctrReg |= 0x40;
-      break;
-    case POWER_DOWN:
-      ctrReg |= 0xA0;
-      break;
-    case STAND_BY:
-      ctrReg |= 0xB0;
-      break;
-    case TEMP_MEASURE:
-      ctrReg |= 0x90;
-      break;
-    default:
+  case INIT_START_FREQ:
+    ctrReg |= 0x10;
+    break;
+  case START_FREQ_SWEEP:
+    ctrReg |= 0x20;
+    break;
+  case INCR_FREQ:
+    ctrReg |= 0x30;
+    break;
+  case REPEAT_FREQ:
+    ctrReg |= 0x40;
+    break;
+  case POWER_DOWN:
+    ctrReg |= 0xA0;
+    break;
+  case STAND_BY:
+    ctrReg |= 0xB0;
+    break;
+  case TEMP_MEASURE:
+    ctrReg |= 0x90;
+    break;
+  default:
 #if LOGGING1
-      printer->println("setCtrMode - Invalid Parameter!");
+    printer->println("setCtrMode - Invalid Parameter!");
 #endif
-      return false; // return the signal of fail if there is not valid parameter.
-      break;
-  } 
+    return false; // return the signal of fail if there is not valid parameter.
+    break;
+  }
   return setByte(0x80, ctrReg); // return signal depends on the result of setting control register.
- 
+
 }
 
 bool AD5933_Class::setRange(byte rangeToSet)
@@ -542,31 +540,36 @@ bool AD5933_Class::setRange(byte rangeToSet, int ctrReg)
 // setting Control Register to change control mode.
 //
 {
+
   ctrReg &= 0xF9; // Get D9 & D10.
-  switch(rangeToSet)
+  switch (rangeToSet)
   {
-      case RANGE_1:
-        ctrReg |= 0x00;
-        break;
+  case RANGE_1:
+    ctrReg |= 0x00;
+    //Serial.println("Changed to RANGE_1");
+    break;
 
-      case RANGE_2:
-        ctrReg |= 0x06;
-        break;
+  case RANGE_2:
+    ctrReg |= 0x06;
+    //Serial.println("Changed to RANGE_2");
+    break;
 
-      case RANGE_3:
-        ctrReg |= 0x04;
-        break;
+  case RANGE_3:
+    ctrReg |= 0x04;
+    //Serial.println("Changed to RANGE_3");
+    break;
 
-      case RANGE_4:
-        ctrReg |= 0x02;
-        break;
-    default:
+  case RANGE_4:
+    ctrReg |= 0x02;
+    //Serial.println("Changed to RANGE_4");
+    break;
+  default:
 #if LOGGING1
-      printer->println("setRange - Invalid Parameter!");
+    printer->println("setRange - Invalid Parameter!");
 #endif
-      return false; // return the signal of fail if there is not valid parameter.
-      break;
-  } 
+    return false; // return the signal of fail if there is not valid parameter.
+    break;
+  }
   return setByte(0x80, ctrReg); // return signal depends on the result of setting control register.
 
 }
@@ -574,22 +577,22 @@ bool AD5933_Class::setRange(byte rangeToSet, int ctrReg)
 bool AD5933_Class::setVolPGA(byte voltageNum, byte pgaGain)
 // Function to set sweep voltage and PGA Gain
 // byte voltageNum - Refer to Table 10 in datasheet
-// 1 - 2.0Vpp 	2 - 200mVpp		3- 400mVpp		4- 1.0Vpp
+// 1 - 2.0Vpp   2 - 200mVpp   3- 400mVpp    4- 1.0Vpp
 // (They are typical values with 3.3V power supply. See Figure 4-10 in datasheet)
 // byte pgaGain - determines the gain of ADC signal. (to convert the current into the value)
 //
 {
-  if( (voltageNum < 0 || voltageNum > 3) || !(pgaGain == 1 || pgaGain == 5) )  
+  if ( (voltageNum < 0 || voltageNum > 3) || !(pgaGain == 1 || pgaGain == 5) )
   {
 #if LOGGING1
     printer->println("setVolPGA - invaild parameter");
 #endif
     return false;
-  } 
+  }
   int temp = getByte(0x80); // Get the content of Control Register and put it into temp
   temp &= 0xF0; // discard the last 4 digits.
   temp |= voltageNum << 1; // Shift one digits to fit in D9 and D10. (p 23-24/40 in datasheet)
-  if(pgaGain == 1)
+  if (pgaGain == 1)
     temp |= 0x01; // if PGA Gain is x1, then write 1 at D8.
   else
     temp &= 0xFE; // if PGA Gain is x5, then write 0 at D8.
@@ -597,7 +600,7 @@ bool AD5933_Class::setVolPGA(byte voltageNum, byte pgaGain)
   printer->print("setVolPGA - Final Value to Set: ");
   printer->println(temp, BIN);
 #endif
-  return setByte(0x80,temp); // Write value at 0x80 Register.
+  return setByte(0x80, temp); // Write value at 0x80 Register.
 }
 
 bool AD5933_Class::setExtClock(bool swt)
@@ -605,7 +608,7 @@ bool AD5933_Class::setExtClock(bool swt)
 // This function also sets environmental variable. (double opClock)
 {
   byte t1;
-  if( swt )
+  if ( swt )
   {
     t1 = 0x04; // Use Ext. Clock
     opClock = 16000000;
@@ -614,7 +617,7 @@ bool AD5933_Class::setExtClock(bool swt)
   {
     t1 = 0x00; // Use Int. Clock
     opClock = 16776000;
-  }  
+  }
   return setByte(0x81, t1); // Write register 0x81.
 }
 
@@ -627,7 +630,7 @@ bool AD5933_Class::resetAD5933()
 
 bool AD5933_Class::setSettlingCycles(int cycles, byte mult)
 {
-  if(cycles > 0x1FF || !(mult == 1 || mult == 2 || mult == 4) )
+  if (cycles > 0x1FF || !(mult == 1 || mult == 2 || mult == 4) )
   {
 #if LOGGING1
     printer->println("setSettlingCycles - Invalid Parameter");
@@ -637,36 +640,36 @@ bool AD5933_Class::setSettlingCycles(int cycles, byte mult)
   int lowerHex = cycles % 256;
   int upperHex = ((cycles - (long)lowerHex) >> 8) % 2;
   byte t1; // Parsing upper and lower bits.
-/*switch(mult)
-  {
-    case 1:
-      t1 = 0;
+  /*switch(mult)
+    {
+      case 1:
+        t1 = 0;
+        break;
+      case 2:
+        t1 = 1;
+        break;
+      case 4:
+        t1 = 3;
+        break;
+      default:
+  #if LOGGING1
+      printer->println("setSettlingCycles - Invalid Mult Parameter");
+  #endif
+      return false;
       break;
-    case 2:
-      t1 = 1;
-      break;
-    case 4:
-      t1 = 3;
-      break;
-    default:
-#if LOGGING1
-    printer->println("setSettlingCycles - Invalid Mult Parameter");
-#endif
-    return false;
-    break;    
-  }*/
+    }*/
   t1--; // Enhanced Code for setting t1.
-  upperHex |= (t1 << 1); 	// t1 is for D9, D10. The upperHex just accounts for D8. Thus, the value after left-shifting t1 accounts for D9, D10.
-  							// Thus, this above writes bits for D9, D10.
+  upperHex |= (t1 << 1);  // t1 is for D9, D10. The upperHex just accounts for D8. Thus, the value after left-shifting t1 accounts for D9, D10.
+  // Thus, this above writes bits for D9, D10.
 #if LOGGING2
   printer->print("setSettlingCycles - upper: ");
-  printer->println(upperHex,BIN);
+  printer->println(upperHex, BIN);
 #endif
   bool t2, t3;
-  t2=setByte(0x8A, upperHex);
-  t3=setByte(0x8B, lowerHex);
-  if( t2 && t3 ) // Checking if successful.
-    return true;  // Succeed! 
+  t2 = setByte(0x8A, upperHex);
+  t3 = setByte(0x8B, lowerHex);
+  if ( t2 && t3 ) // Checking if successful.
+    return true;  // Succeed!
   else
   {
 #if LOGGING1
@@ -680,23 +683,23 @@ bool AD5933_Class::setNumofIncrement(byte num)
 // Function to set the number of incrementing.
 // byte num - the number of incrementing.
 {
-  if(num > 0x1FF + 1)
+  if (num > 0x1FF + 1)
   {
 #if LOGGING1
     printer->print("setNumofIncrement - Frequency Overflow!");
 #endif
     return false;
   }
-  
+
   int lowerHex = num % 256;
   int upperHex = (num >> 8) % 2; // Parsing number for register input.
-  
+
   bool t2, t4;
   t2 = setByte(0x88, upperHex);
   t4 = setByte(0x89, lowerHex);
-  if(t2 && t4)
+  if (t2 && t4)
   {
-    numIncrement = num+1;
+    numIncrement = num + 1;
     return true; // Succeed!
   }
   else
@@ -721,25 +724,25 @@ bool AD5933_Class::setIncrementinHex(long freqHex)
 // Function to set increment frequency in converted Hex value. (calculated based on the datasheet.)
 // long freqHex - converted hexadecimal value
 {
-  if(freqHex > 0xFFFFFF)
+  if (freqHex > 0xFFFFFF)
   {
 #if LOGGING1
     printer->print("setIncrementHex - Freqeuncy Overflow!");
 #endif
     return false;
   }
-  
+
   int lowerHex = freqHex % 256;
   int midHex = ((freqHex - (long)lowerHex) >> 8) % 256;
   int upperHex = freqHex >> 16;
-  
+
   bool t2, t3, t4;
   t2 = setByte(0x85, upperHex);
   t3 = setByte(0x86, midHex);
   t4 = setByte(0x87, lowerHex);
-  if(t2 && t3 && t4)
+  if (t2 && t3 && t4)
   {
-  	incrHex = freqHex;
+    incrHex = freqHex;
     return true; // Succeed!
   }
   else
@@ -749,7 +752,7 @@ bool AD5933_Class::setIncrementinHex(long freqHex)
 #endif
     return false;
   }
-  
+
 }
 
 bool AD5933_Class::setStartFreq(long startFreq) // long startFreq in Hz
@@ -759,18 +762,18 @@ bool AD5933_Class::setStartFreq(long startFreq) // long startFreq in Hz
   //printer->println(t1);
 #endif
   long freqHex = startFreq / (opClock / pow(2, 29)); // based on datasheet
-  if(freqHex > 0xFFFFFF)
+  if (freqHex > 0xFFFFFF)
   {
 #if LOGGING1
     printer->print("setStartFreq - Freqeuncy Overflow!");
 #endif
     return false;
   }
-  
+
   int lowerHex = freqHex % 256;
   int midHex = ((freqHex - (long)lowerHex) >> 8) % 256;
   int upperHex = freqHex >> 16;
-#if LOGGING3  
+#if LOGGING3
   printer->print("setStartFreq - freqHex: ");
   printer->print(freqHex, HEX);
   printer->print("\t");
@@ -788,7 +791,7 @@ bool AD5933_Class::setStartFreq(long startFreq) // long startFreq in Hz
   t2 = setByte(0x82, upperHex);
   t3 = setByte(0x83, midHex);
   t4 = setByte(0x84, lowerHex);
-  if(t2 && t3 && t4)
+  if (t2 && t3 && t4)
     return true; // succeed!
   else
   {
@@ -803,92 +806,92 @@ bool AD5933_Class::setStartFreq(long startFreq) // long startFreq in Hz
 double AD5933_Class::getTemperature()
 // Function to get temperature measurement.
 {
-  
-  if( tempUpdate() == false )
-  	return -1;
-  	
+
+  if ( tempUpdate() == false )
+    return -1;
+
   int tTemp[2];
   long tTempVal;
   double cTemp;
-  
+
   tTemp[0] = getByte(0x92);
   tTemp[1] = getByte(0x93);
-  tTempVal = (tTemp[0] % (12 * 16))*16*16 + tTemp[1];
-  if(bitRead(tTemp[0],5) == 0)
+  tTempVal = (tTemp[0] % (12 * 16)) * 16 * 16 + tTemp[1];
+  if (bitRead(tTemp[0], 5) == 0)
   {
     // Positive Formula
-    cTemp = (double)tTempVal/32;
+    cTemp = (double)tTempVal / 32;
   }
   else
   {
     // Negative Formula
-    cTemp = (tTempVal-16384.0) / 32;
+    cTemp = (tTempVal - 16384.0) / 32;
   }
- #if LOGGING1
+#if LOGGING1
   printer->print("getTemperature - Current Temp. is ");
   printer->print(cTemp);
   printer->print("\n");
- #endif
-  
+#endif
+
   return cTemp;
 }
 
 bool AD5933_Class::tempUpdate()
 // Function to update temperature information without reading.
 {
-  if(setCtrMode(TEMP_MEASURE) == false)
+  if (setCtrMode(TEMP_MEASURE) == false)
   {
 #if LOGGING1
-	printer->println("getTemperature - Failed to set the control bit");
+    printer->println("getTemperature - Failed to set the control bit");
 #endif
-  	return false;
+    return false;
   }
-  
-  while( getStatusReg() & 0x01 != 0x01)
+
+  while ( getStatusReg() & 0x01 != 0x01)
   {
-  	; // Wait Until Get Vaild Temp. Measurement.
+    ; // Wait Until Get Vaild Temp. Measurement.
   }
-  
+
   return true;
 }
 
 
 int AD5933_Class::getByte(int address) {
-// Hidden Function to get register value via I2C Transmission.
+  // Hidden Function to get register value via I2C Transmission.
 
   int rxByte;
-#if LOGGING3  
+#if LOGGING3
   printer->print("getByte - Initiating I2C Transmission. Address: ");
   printer->print(address, HEX);
   printer->print('\n');
 #endif
-  
+
   //Wire.beginTransmission(AD5933_ADR); // Begin I2C Transmission with AD5933 Chip.
   //Wire.write(Address_Ptr); // Send Address Pointer to write the target address
   //Wire.write(address); // Write address to read.
   //int i2cReturn = Wire.endTransmission(); // End Transmission.
-  
-  if( !setByte(Address_Ptr,address))
-  	return false;
-	
-//#if LOGGING3
-//  printer->print("getByte - Transmission Complete. i2cReturn: ");
-//  printer->print(i2cReturn);
-//  printer->print("\n");
-//#endif  
-  
+
+  if ( !setByte(Address_Ptr, address))
+    return false;
+
+  //#if LOGGING3
+  //  printer->print("getByte - Transmission Complete. i2cReturn: ");
+  //  printer->print(i2cReturn);
+  //  printer->print("\n");
+  //#endif
+
   Wire.requestFrom(AD5933_ADR, 1); // Request the value of the written address.
 
   if (1 <= Wire.available()) { // If the MCU get the value,
     rxByte = Wire.read(); // Read the value.
-#if LOGGING3   
+#if LOGGING3
     printer->print("getByte - Message Received: ");
-    printer->print(rxByte,BIN);
+    printer->print(rxByte, BIN);
     printer->print(" or ");
-    printer->print(rxByte,HEX);    
+    printer->print(rxByte, HEX);
     printer->print("\n");
 #endif
-  } 
+  }
   else {
     rxByte = -1; // Returns -1 if fails.
 #if LOGGING1
@@ -901,14 +904,14 @@ int AD5933_Class::getByte(int address) {
 }
 
 bool AD5933_Class::setByte(int address, int value) {
-// Hidden Function to transmit the value to write.
-#if LOGGING3   
+  // Hidden Function to transmit the value to write.
+#if LOGGING3
   printer->print("setByte - Initiating I2C Transmission. Address: ");
   printer->print(address, HEX);
   printer->print(" , Value: ");
   printer->print(value, HEX);
   printer->print('\n');
-#endif  
+#endif
   Wire.beginTransmission(AD5933_ADR); // Begin I2C Transmission.
   Wire.write(address); // Write Address
   Wire.write(value); // Write Value
@@ -916,35 +919,35 @@ bool AD5933_Class::setByte(int address, int value) {
 
   if (i2cReturn)
   {
-#if LOGGING1    
+#if LOGGING1
     printer->println("setByte - Failed");
 #endif
     return false;
   }
   else
   {
-#if LOGGING3 
+#if LOGGING3
     printer->println("setByte - Success");
 #endif
-    return true; 
+    return true;
   }
 }
 
 double AD5933_Class::getMagValue() {
-// Hidden Function to get magnitude value of impedance measurement. (It does not wait.)
-// TODO: Rewrite this function with using block read function.
+  // Hidden Function to get magnitude value of impedance measurement. (It does not wait.)
+  // TODO: Rewrite this function with using block read function.
 
   int rComp, iComp;
   //rComp = getRealComp(); // Getting Real Component
   //iComp = getImagComp(); // Getting Imaginary Component
-  
+
   byte impData[4];
   blockRead(0x94, 4, impData);
-  rComp = impData[0]*16*16+impData[1];
-  iComp = impData[2]*16*16+impData[3];
-  
+  rComp = impData[0] * 16 * 16 + impData[1];
+  iComp = impData[2] * 16 * 16 + impData[3];
+
   double result = getMag(rComp, iComp); // Calculating magnitude.
-#if LOGGING3 
+#if LOGGING3
   printer->print("getMagValue - Resistance Magnitude is ");
   printer->println(result);
 #endif
@@ -954,112 +957,112 @@ double AD5933_Class::getMagValue() {
 double AD5933_Class::getMagOnce()
 // Wrapper Function of getMagValue. It waits until the ADC completes the conversion.
 {
-  while(!isValueReady()) // wait until ADC conversion is complete.
+  while (!isValueReady()) // wait until ADC conversion is complete.
   {
     //delay(delayTimeInit);
     ;
   }
-  return getMagValue();  
+  return getMagValue();
 }
 
 bool AD5933_Class::blockRead(int address, int num2Read, byte *toSave)
 {
-	if( !AD5933.setByte(Address_Ptr, address) )
-		return false;
-	if( !AD5933.setByte(BLOCK_READ_CODE, num2Read) )
-		return false;
-	
-	for(byte t1 = 0; t1 < num2Read; t1++)
-	{
-		Wire.requestFrom(AD5933_ADR, 1); // Request the value of the written address.
-  		
-        if (1 <= Wire.available()) { // If the MCU get the value,
-    		toSave[t1] = Wire.read(); // Read the value.
+  if ( !AD5933.setByte(Address_Ptr, address) )
+    return false;
+  if ( !AD5933.setByte(BLOCK_READ_CODE, num2Read) )
+    return false;
+
+  for (byte t1 = 0; t1 < num2Read; t1++)
+  {
+    Wire.requestFrom(AD5933_ADR, 1); // Request the value of the written address.
+
+    if (1 <= Wire.available()) { // If the MCU get the value,
+      toSave[t1] = Wire.read(); // Read the value.
 #if LOGGING3
-		printer->print(address+t1,HEX);
-		printer->print(" ");
-		printer->println(toSave[t1],HEX);      
-#endif		
-    	}
-    	else {
-    		toSave[t1] = -1; // Returns -1 if fails.
-#if LOGGING1
-    		printer->println("blockRead - Failed to receive Message");
+      printer->print(address + t1, HEX);
+      printer->print(" ");
+      printer->println(toSave[t1], HEX);
 #endif
-    		return false;
-	
-		}	
     }
-  	
-	return true;
+    else {
+      toSave[t1] = -1; // Returns -1 if fails.
+#if LOGGING1
+      printer->println("blockRead - Failed to receive Message");
+#endif
+      return false;
+
+    }
+  }
+
+  return true;
 }
 
 bool AD5933_Class::isValueReady()
 {
-	if( (getStatusReg() & 0x02) == 0x02 )
-		return true;
-	else
-		return false;	
+  if ( (getStatusReg() & 0x02) == 0x02 )
+    return true;
+  else
+    return false;
 }
 
 bool AD5933_Class::getComplexRawOnce(int &realComp, int &imagComp)
 {
-	while( (getStatusReg() & 0x02) != 0x02 )
-		; // Wait until measurement is complete.
-	
-	int rComp, iComp;
- 
-  	byte impData[4];
-  	blockRead(0x94, 4, impData);
-  	rComp = impData[0]*16*16+impData[1];
-  	iComp = impData[2]*16*16+impData[3];
-  
-  	//double magSq = square((double)rComp) + square((double)iComp); 
-	//double td1=gainFactor/magSq;
-	//realComp = abs(rComp)*td1;
-	//imagComp = abs(iComp)*td1;	
-  	realComp = rComp;
-	imagComp = iComp;	
-  	
-	return true;
+  while ( (getStatusReg() & 0x02) != 0x02 )
+    ; // Wait until measurement is complete.
+
+  int rComp, iComp;
+
+  byte impData[4];
+  blockRead(0x94, 4, impData);
+  rComp = impData[0] * 16 * 16 + impData[1];
+  iComp = impData[2] * 16 * 16 + impData[3];
+
+  //double magSq = square((double)rComp) + square((double)iComp);
+  //double td1=gainFactor/magSq;
+  //realComp = abs(rComp)*td1;
+  //imagComp = abs(iComp)*td1;
+  realComp = rComp;
+  imagComp = iComp;
+
+  return true;
 }
 
 bool AD5933_Class::getComplexOnce(double gainFactor, double pShift, double &vReal, double &vComp, double &impVal, double &phase)
 {
-	while( (getStatusReg() & 0x02) != 0x02 )
-		; // Wait until measurement is complete.
-	
-	int rComp, iComp;
- 
-  	byte impData[4];
-  	blockRead(0x94, 4, impData);
-  	rComp = impData[0]*16*16+impData[1];
-  	iComp = impData[2]*16*16+impData[3];
-  
-  	double magSq = getMag(rComp, iComp);
-	impVal=gainFactor/magSq;
-	phase = atan2(iComp, rComp) - pShift;
-	vReal = impVal * cos(phase); 
-  	vComp = impVal * sin(phase);
-  	
-	return true;
+  while ( (getStatusReg() & 0x02) != 0x02 )
+    ; // Wait until measurement is complete.
+
+  int rComp, iComp;
+
+  byte impData[4];
+  blockRead(0x94, 4, impData);
+  rComp = impData[0] * 16 * 16 + impData[1];
+  iComp = impData[2] * 16 * 16 + impData[3];
+
+  double magSq = getMag(rComp, iComp);
+  impVal = gainFactor / magSq;
+  phase = atan2(iComp, rComp) - pShift;
+  vReal = impVal * cos(phase);
+  vComp = impVal * sin(phase);
+
+  return true;
 }
 
 bool AD5933_Class::getComplex(double gainFactor, double pShift, double &impVal, double &phase)
 {
-  while( (getStatusReg() & 0x02) != 0x02 )
+  while ( (getStatusReg() & 0x02) != 0x02 )
     ; // Wait until measurement is complete.
-  
+
   int rComp, iComp;
- 
-    byte impData[4];
-    blockRead(0x94, 4, impData);
-    rComp = impData[0]*16*16+impData[1];
-    iComp = impData[2]*16*16+impData[3];
-  
-    double magSq = getMag(rComp, iComp);
-  impVal=gainFactor/magSq;
-  phase = atan2(iComp, rComp) - pShift;    
+
+  byte impData[4];
+  blockRead(0x94, 4, impData);
+  rComp = impData[0] * 16 * 16 + impData[1];
+  iComp = impData[2] * 16 * 16 + impData[3];
+
+  double magSq = getMag(rComp, iComp);
+  impVal = gainFactor / magSq;
+  phase = atan2(iComp, rComp) - pShift;
   return true;
 }
 
@@ -1085,22 +1088,22 @@ double AD5933_Class::returnStandardPhaseAngle(double angle) {
 /*
 int AD5933_Class::getRealComp()
 {
-	while(!isValueReady()) // wait until ADC conversion is complete.
-	{
+  while(!isValueReady()) // wait until ADC conversion is complete.
+  {
     //delay(delayTimeInit);
-		;
-	}
-	return getRealCompP(); 
+    ;
+  }
+  return getRealCompP();
 }
 
 int AD5933_Class::getImagComp()
 {
-	while(!isValueReady()) // wait until ADC conversion is complete.
-	{
+  while(!isValueReady()) // wait until ADC conversion is complete.
+  {
     //delay(delayTimeInit);
-		;
-	}
-	return getImagCompP(); 
+    ;
+  }
+  return getImagCompP();
 }
 
 int AD5933_Class::getRealCompP()

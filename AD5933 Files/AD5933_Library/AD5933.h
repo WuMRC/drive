@@ -1,5 +1,9 @@
 // Header File for AD5933 Library
+
 // Author: Il-Taek Kwon
+
+// Modifications: Adetunji Dahunsi
+
 #ifndef AD5933_Head // Pre-Processing code to prevent from duplicate declaration.
 #define AD5933_Head
 
@@ -22,6 +26,14 @@
 #define POWER_DOWN 10
 #define STAND_BY 11
 #define TEMP_MEASURE 9
+#define RANGE_1 12
+#define RANGE_2 13
+#define RANGE_3 14
+#define RANGE_4 15
+
+
+#define M_PI 3.14159265358979323846	// pi
+#define M_PI_2 1.57079632679489661923	// pi/2 
 
 typedef uint8_t byte; // For the compatibility for Arduino Type Definitions
 
@@ -42,6 +54,8 @@ public: // The detailed instruction will be on Wiki or ".cpp" file
 	bool setVolPGA(byte, byte);
 	bool setCtrMode(byte);
 	bool setCtrMode(byte, int);
+	bool setRange(byte);
+	bool setRange(byte, int);
 	double getGainFactor(double);
 	double getGainFactor(double, int);
 	double getGainFactor(double, int, bool);
@@ -69,27 +83,30 @@ public: // The detailed instruction will be on Wiki or ".cpp" file
 	//int getImagComp();
 	bool getComplexRawOnce(int &, int &);
 	bool getComplexOnce(double, double, double &, double &, double &, double &);
-	bool getComplexPolar(double , double , double &, double &);
 	bool compFreqRawSweep(int *, int *);
 	bool compFreqSweep(double *, double *, double *, double *);
 	bool getGainFactorC(double, int, double &, double &);
 	bool getGainFactorC(double, int, double &, double &, bool);
 	bool getGainFactorS_Set(double , int, double *, double *);
-	bool getGainFactorS_TP(double , int, double &, double &, double &, double &);
+	bool getGainFactorS_TP(double, int, double, double, double &, double &, double &, double &);
 	bool compCbrArray(double, double, double, double, double *, double *);
+	bool getArraysLI(double&, double&, double&, uint8_t&, double&, double&, double*, double*);
+	bool getGainFactors_LI(double, int, double, double, double &, double &, double &, double &);
+	bool getComplex(double, double, double &, double &);
 
-	//bool getGainFactors_LI(double , int, double &, double &, double &, double &);
-	//bool getArraysLI(double, double, double, double, double, double *, double *);	
+
+	
 
 private:
 	
 	static const byte Address_Ptr = 0xB0; // Address Pointer to read register values.
 	double opClock;
-	long incrHex, startFreqB, freqIncr;
+	long incrHex;
 	//int getRealCompP();
 	//int getImagCompP();
 	byte numIncrement;
 	double getMagValue();
+	double returnStandardPhaseAngle(double angle);
 	inline byte getStatusReg()
 	{
 		return (getByte(0x8F) & 0x07);
@@ -99,14 +116,8 @@ private:
 	inline double getMag(int cReal, int cImag)
 	{
 		return sqrt( ( square(cReal) + square(cImag)) );
-	}
-	inline long convIncr_Hex_to_Freq(long incrementHex)
-	{
-		return incrementHex * (opClock / pow(2, 29));
-	}
-	inline long convIncr_Freq_to_Hex(long incrementFreq)
-	{
-		return incrementFreq / (opClock / pow(2, 29));
+		//return sqrt( (cReal * cReal) + (cImag * cImag) );
+		//return sqrt( ( sq((double)cReal) + sq((double)cImag)) );
 	}
 	
 };
