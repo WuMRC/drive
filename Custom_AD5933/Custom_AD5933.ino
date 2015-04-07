@@ -27,13 +27,15 @@ const int CYCLES_BASE = 15;       // Cycles to ignore before a measurement is ta
 
 const int CYCLES_MULTIPLIER = 1;    // Multiple for CYCLES_BASE. Can be 1, 2, or 4.
 
-const int CAL_RESISTANCE = 511;  // Calibration resistance for the gain factor. 
+const int CAL_RESISTANCE = 353;  // Calibration resistance for the gain factor. 
 
 const int CAL_SAMPLES = 10;         // Number of measurements to take of the calibration resistance.
 
 const int B = 98; // Begin
 
 const int S = 115; // Stop
+
+const int O = 111; // Output Range
 
 const int R = 114; // Sample Rate
 
@@ -61,7 +63,8 @@ const int BOOST = 22; // 5V On
 
 const int BI_TETRA = 29; // Selects between Bi-Polar & Tetra-Polar modes
 
-int leds[6] = {LED5, LED6, LED7_R, LED7_G, LED7_B, LED8};
+int leds[6] = {
+  LED5, LED6, LED7_R, LED7_G, LED7_B, LED8};
 
 // Define bit clearing and setting variables
 
@@ -89,8 +92,8 @@ int rIncrement = 0; // Increments in sample rate serial reading. For parsing.
 int fIncrement = 0; // Increments in frequency sweep serial reading. For parsing.
 
 int sampleRate = 100; // App sample rate in hertz. 
-                      // This is something worth changing on a case-dependent basis
-                      // Above 100 Hz seems to have issues
+// This is something worth changing on a case-dependent basis
+// Above 100 Hz seems to have issues
 
 int startFreq = 50; // AC start frequency in kilohertz.
 
@@ -111,6 +114,10 @@ int numberOfCommas = 0; // Number of commas. Used to parse frequency sweeps.
 long sampleRatePeriod = 0; // Sample rate period (microseconds).
 
 uint8_t currentStep = 0; // Used to loop frequency sweeps.
+
+uint8_t outputRangeHolder = 0; // Holds value of input prior to check of input syntax.
+
+uint8_t outputRange = 0; // Current output Range of the AD5933
 
 double startFreqHz = ((long)(startFreq)) * 1000; // AC Start frequency (Hz).
 
@@ -148,7 +155,7 @@ void setup() {
   // ================================================================
   // For AD5933
   // ================================================================
-  
+
   // put your setup code here, to run once:
   //Set IOs mode 
 
@@ -164,7 +171,7 @@ void setup() {
 
   pinMode(PUSH1, INPUT);
   pinMode(PUSH2, INPUT);
-  
+
   pinMode(25, INPUT);
   pinMode(24, INPUT);
 
@@ -212,8 +219,10 @@ void setup() {
   Serial.print(2, DEC);
   Serial.println("\ts - stop sampling");
   Serial.print(3, DEC);
-  Serial.println("\tr,samplerate  - change sample rate.");
+  Serial.println("\to,outputRange - change output range");
   Serial.print(4, DEC);
+  Serial.println("\tr,sampleRate  - change sample rate.");
+  Serial.print(5, DEC);
   Serial.println("\tf,startFrequency,stepSize,numberOfIncrements - set frequency sweep. values must be between 1 and 100");
   Serial.println();
 
@@ -275,6 +284,45 @@ void loop() {
       incomingByte = Serial.read();
 
       switch(firstByte) {
+
+      case O:
+
+        if(incomingByte == 44) {
+          numberOfCommas++;
+        }
+
+        else if (incomingByte > 48 && incomingByte < 53){ // Only Range 1 - 4 is allowed
+
+          switch(incomingByte) {
+
+          case 49: // Number 1
+            outputRangeHolder =  RANGE_1;
+            inputSucess = true; 
+            break;
+          case 50: // Number 2
+            outputRangeHolder =  RANGE_2; 
+            inputSucess = true;
+            break;
+          case 51: // Number 3
+            outputRangeHolder =  RANGE_3; 
+            inputSucess = true;
+            break;
+          case 52: // Number 4
+            outputRangeHolder =  RANGE_4; 
+            inputSucess = true;
+            break;
+          }
+        }
+
+        else {
+          inputSucess = false;
+        }
+
+        if(numberOfCommas > 1) {
+          inputSucess = false;
+        }
+
+        break;
 
       case R:
         rIncrement++;
@@ -350,6 +398,10 @@ void loop() {
 
     if(inputSucess == true) {
       switch(firstByte) {
+      case O:
+        outputRange = outputRangeHolder;
+        adjustAD5933(firstByte, outputRange, 0, 0);
+        break;
       case R:
         sampleRate = sampleRateHolder;
         adjustAD5933(firstByte, sampleRate, 0, 0);
@@ -405,19 +457,19 @@ void loop() {
       }
     }
 
-/*  TJ's way of printing to the screen
-    Serial.print("Elapsed time (ms): ");
-    Serial.print(millis());
-    Serial.print("\tCurrent Frequency: ");
-    Serial.print(startFreqHz + (stepSizeHz * currentStep));
-    Serial.print("\tImpedance: ");
-    Serial.print(Z_Value, 4);
-    Serial.print("\tPhase Angle: "); 
-    Serial.print(phaseAngle, 4);
-    Serial.println();
-    Serial.println();
-*/
-// Barry's way, making it easier for data processing
+    /*  TJ's way of printing to the screen
+     Serial.print("Elapsed time (ms): ");
+     Serial.print(millis());
+     Serial.print("\tCurrent Frequency: ");
+     Serial.print(startFreqHz + (stepSizeHz * currentStep));
+     Serial.print("\tImpedance: ");
+     Serial.print(Z_Value, 4);
+     Serial.print("\tPhase Angle: "); 
+     Serial.print(phaseAngle, 4);
+     Serial.println();
+     Serial.println();
+     */
+    // Barry's way, making it easier for data processing
     Serial.print(millis());
     Serial.print("\t");
     Serial.print(startFreqHz + (stepSizeHz * currentStep));
@@ -443,8 +495,34 @@ void adjustAD5933(int purpose, int v1, int v2, int v3) {
 
   Micro40Timer::stop(); // stop Timer interrupts as soon as this is called.
 
-  // check for data written to "c_sample_rate" handle
-  if (purpose == R) {
+  switch(purpose) {
+
+  case O: // Change output range of AD5933
+    AD5933.setExtClock(false);
+    AD5933.resetAD5933();
+    AD5933.setSettlingCycles(CYCLES_BASE, CYCLES_MULTIPLIER);
+    AD5933.setStartFreq(startFreqHz);
+    AD5933.setVolPGA(0, 1);
+
+    delay(100); // Delay for AD5933 else no effect
+
+    ctrReg = AD5933.getByte(0x80);
+    AD5933.setRange(v1, ctrReg);
+    temp = AD5933.getTemperature(); 
+    delay(100); // Delay for AD5933 else no effect
+
+    AD5933.getGainFactorC(CAL_RESISTANCE, CAL_SAMPLES, gain_factor, systemPhaseShift, false);
+    AD5933.getComplex(gain_factor, systemPhaseShift, CR_Array[0], phaseAngle);
+
+    Serial.println();
+    Serial.print("Sucessful write attempt; new output range: ");
+    Serial.print(outputRange - 11);
+    Serial.println();
+
+    break;
+
+    // check for data written to "c_sample_rate" handle
+  case R:
 
     sampleRate = v1;
     sampleRatePeriod = 1000000 / ((long) sampleRate);
@@ -460,10 +538,11 @@ void adjustAD5933(int purpose, int v1, int v2, int v3) {
 
     Micro40Timer::set(sampleRatePeriod, notify); 
     Micro40Timer::start();
-  }
+    break;
 
-  // check for data written to "c_ac_freq" handle  
-  if (purpose == FR) {
+
+    // check for data written to "c_ac_freq" handle  
+  case FR:
 
     delete [] GF_Array; // Free memory from previous GF array.
     delete [] PS_Array; // Free memory from previous PS array.
@@ -492,6 +571,7 @@ void adjustAD5933(int purpose, int v1, int v2, int v3) {
       AD5933.setSettlingCycles(CYCLES_BASE, CYCLES_MULTIPLIER);
       AD5933.setStartFreq(startFreqHz);
       AD5933.setVolPGA(0, 1);
+      temp = AD5933.getTemperature(); 
       AD5933.getGainFactorC(CAL_RESISTANCE, CAL_SAMPLES, gain_factor, systemPhaseShift, false);
       AD5933.getComplex(gain_factor, systemPhaseShift, CR_Array[0], phaseAngle);
 
@@ -611,7 +691,8 @@ void adjustAD5933(int purpose, int v1, int v2, int v3) {
 
     Micro40Timer::set(sampleRatePeriod, notify);
     Micro40Timer::start();    
-  }  
+    break; 
+  }
 }
 
 
@@ -620,4 +701,13 @@ void notify() {
     SAMPLE_RATE_FLAG = true; 
   }
 }
+
+
+
+
+
+
+
+
+
 
