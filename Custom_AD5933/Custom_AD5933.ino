@@ -27,7 +27,7 @@ const int CYCLES_BASE = 15;       // Cycles to ignore before a measurement is ta
 
 const int CYCLES_MULTIPLIER = 1;    // Multiple for CYCLES_BASE. Can be 1, 2, or 4.
 
-const int CAL_RESISTANCE = 511;  // Calibration resistance for the gain factor. 
+const int CAL_RESISTANCE = 353;  // Calibration resistance for the gain factor. 
 
 const int CAL_SAMPLES = 10;         // Number of measurements to take of the calibration resistance.
 
@@ -36,6 +36,8 @@ const int B = 98; // Begin
 const int S = 115; // Stop
 
 const int O = 111; // Output Range
+
+const int G = 103; // PGA Gain
 
 const int R = 114; // Sample Rate
 
@@ -117,7 +119,11 @@ uint8_t currentStep = 0; // Used to loop frequency sweeps.
 
 uint8_t outputRangeHolder = 0; // Holds value of input prior to check of input syntax.
 
-uint8_t outputRange = 0; // Current output Range of the AD5933
+uint8_t outputRange = RANGE_1; // Current output Range of the AD5933
+
+uint8_t PGAGainHolder = 0; // Holds value of input prior to check of input syntax.
+
+uint8_t PGAGain = GAIN_1; // Current output Range of the AD5933
 
 double startFreqHz = ((long)(startFreq)) * 1000; // AC Start frequency (Hz).
 
@@ -192,7 +198,7 @@ void setup() {
   AD5933.resetAD5933(); 
   AD5933.setSettlingCycles(CYCLES_BASE,CYCLES_MULTIPLIER); 
   AD5933.setStartFreq(startFreqHz); 
-  AD5933.setPGA(GAIN_1); 
+  AD5933.setPGA(PGAGain); 
   temp = AD5933.getTemperature(); 
   AD5933.getGainFactorC(CAL_RESISTANCE, CAL_SAMPLES, gain_factor, systemPhaseShift, false);
 
@@ -324,6 +330,37 @@ void loop() {
 
         break;
 
+      case G:
+
+        if(incomingByte == 44) {
+          numberOfCommas++;
+        }
+
+        else if (incomingByte == 49 || incomingByte == 53) { // Only Range 1 - 4 is allowed
+
+          switch(incomingByte) {
+
+          case 49: // Number 1
+            PGAGainHolder =  GAIN_1;
+            inputSucess = true; 
+            break;
+          case 53: // Number 5
+            PGAGainHolder =  GAIN_5; 
+            inputSucess = true;
+            break;
+          }
+        }
+
+        else {
+          inputSucess = false;
+        }
+
+        if(numberOfCommas > 1) {
+          inputSucess = false;
+        }
+
+        break;
+
       case R:
         rIncrement++;
 
@@ -401,6 +438,10 @@ void loop() {
       case O:
         outputRange = outputRangeHolder;
         adjustAD5933(firstByte, outputRange, 0, 0);
+        break;
+      case G:
+        PGAGain = PGAGainHolder;
+        adjustAD5933(firstByte, PGAGain, 0, 0);
         break;
       case R:
         sampleRate = sampleRateHolder;
@@ -505,7 +546,6 @@ void adjustAD5933(int purpose, int v1, int v2, int v3) {
     AD5933.resetAD5933();
     AD5933.setSettlingCycles(CYCLES_BASE, CYCLES_MULTIPLIER);
     AD5933.setStartFreq(startFreqHz);
-    AD5933.setPGA(GAIN_1);
 
     delay(100); // Delay for AD5933 else no effect
 
@@ -514,12 +554,35 @@ void adjustAD5933(int purpose, int v1, int v2, int v3) {
     temp = AD5933.getTemperature(); 
     delay(100); // Delay for AD5933 else no effect
 
+    AD5933.setPGA(PGAGain);
+
+
     AD5933.getGainFactorC(CAL_RESISTANCE, CAL_SAMPLES, gain_factor, systemPhaseShift, false);
     //AD5933.getComplex(gain_factor, systemPhaseShift, CR_Array[0], phaseAngle);
 
     Serial.println();
     Serial.print("Sucessful write attempt; new output range: ");
-    Serial.print(outputRange - 11);
+    Serial.print(outputRange);
+    Serial.println();
+
+    break;
+
+  case G: // Change Gain of AD5933
+    cbi(TWSR, TWPS0);
+    cbi(TWSR, TWPS1); // Clear bits in port
+
+    AD5933.setExtClock(false);
+    AD5933.resetAD5933();
+    AD5933.setSettlingCycles(CYCLES_BASE, CYCLES_MULTIPLIER);
+    AD5933.setStartFreq(startFreqHz);
+    delay(100);
+    AD5933.setPGA(PGAGain);
+    AD5933.getGainFactorC(CAL_RESISTANCE, CAL_SAMPLES, gain_factor, systemPhaseShift, false);
+    //AD5933.getComplex(gain_factor, systemPhaseShift, CR_Array[0], phaseAngle);
+
+    Serial.println();
+    Serial.print("Sucessful write attempt; new PGA Gain: ");
+    Serial.print(PGAGain);
     Serial.println();
 
     break;
@@ -576,7 +639,7 @@ void adjustAD5933(int purpose, int v1, int v2, int v3) {
       AD5933.resetAD5933();
       AD5933.setSettlingCycles(CYCLES_BASE, CYCLES_MULTIPLIER);
       AD5933.setStartFreq(startFreqHz);
-      AD5933.setPGA(GAIN_1);
+      AD5933.setPGA(PGAGain);
       temp = AD5933.getTemperature(); 
       AD5933.getGainFactorC(CAL_RESISTANCE, CAL_SAMPLES, gain_factor, systemPhaseShift, false);
       AD5933.getComplex(gain_factor, systemPhaseShift, CR_Array[0], phaseAngle);
@@ -635,7 +698,7 @@ void adjustAD5933(int purpose, int v1, int v2, int v3) {
       AD5933.setNumofIncrement(numOfIncrements);      
       AD5933.setSettlingCycles(CYCLES_BASE, CYCLES_MULTIPLIER);
       AD5933.getTemperature();
-      AD5933.setPGA(GAIN_1);
+      AD5933.setPGA(PGAGain);
 
       AD5933.getGainFactorS_Set(CAL_RESISTANCE, CAL_SAMPLES, GF_Array, PS_Array);
 
@@ -710,6 +773,9 @@ void notify() {
     SAMPLE_RATE_FLAG = true; 
   }
 }
+
+
+
 
 
 
