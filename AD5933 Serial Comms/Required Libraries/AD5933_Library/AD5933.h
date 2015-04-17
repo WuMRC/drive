@@ -1,4 +1,9 @@
 // Header File for AD5933 Library
+
+// Author: Il-Taek Kwon
+
+// Modifications: Adetunji Dahunsi
+
 #ifndef AD5933_Head // Pre-Processing code to prevent from duplicate declaration.
 #define AD5933_Head
 
@@ -21,10 +26,13 @@
 #define POWER_DOWN 10
 #define STAND_BY 11
 #define TEMP_MEASURE 9
-#define RANGE_1 12
-#define RANGE_2 13
-#define RANGE_3 14
-#define RANGE_4 15
+#define RANGE_1 1
+#define RANGE_2 2
+#define RANGE_3 3
+#define RANGE_4 4
+#define GAIN_1 1
+#define GAIN_5 5
+
 
 
 #define M_PI 3.14159265358979323846	// pi
@@ -46,9 +54,10 @@ public: // The detailed instruction will be on Wiki or ".cpp" file
 	bool setSettlingCycles(int, byte);
 	bool resetAD5933();
 	bool setExtClock(bool);
-	bool setVolPGA(byte, byte);
 	bool setCtrMode(byte);
 	bool setCtrMode(byte, int);
+	bool setPGA(byte);
+	bool setPGA(byte, int);
 	bool setRange(byte);
 	bool setRange(byte, int);
 	double getGainFactor(double);

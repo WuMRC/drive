@@ -1,5 +1,9 @@
 // Library Code Section of AD5933
 
+// Author: Il-Taek Kwon
+
+// Modifications: Adetunji Dahunsi
+
 #include "AD5933.h"
 //#include <WProgram.h>
 #include <Arduino.h> // For the compatibility with Arduino Conventions.
@@ -542,8 +546,9 @@ bool AD5933_Class::setRange(byte rangeToSet, int ctrReg)
 {
 
   ctrReg &= 0xF9; // Get D9 & D10.
-  switch (rangeToSet)
-  {
+
+  switch (rangeToSet) {
+
   case RANGE_1:
     ctrReg |= 0x00;
     //Serial.println("Changed to RANGE_1");
@@ -574,33 +579,37 @@ bool AD5933_Class::setRange(byte rangeToSet, int ctrReg)
 
 }
 
-bool AD5933_Class::setVolPGA(byte voltageNum, byte pgaGain)
-// Function to set sweep voltage and PGA Gain
-// byte voltageNum - Refer to Table 10 in datasheet
-// 1 - 2.0Vpp   2 - 200mVpp   3- 400mVpp    4- 1.0Vpp
-// (They are typical values with 3.3V power supply. See Figure 4-10 in datasheet)
-// byte pgaGain - determines the gain of ADC signal. (to convert the current into the value)
-//
+bool AD5933_Class::setPGA(byte pgaGain)
+// setting Control Register to change control mode without assuming control register. (0x80)
 {
-  if ( (voltageNum < 0 || voltageNum > 3) || !(pgaGain == 1 || pgaGain == 5) )
-  {
+  return setByte(pgaGain, getByte(0x80));
+}
+
+bool AD5933_Class::setPGA(byte pgaGain, int ctrReg) {
+
+  ctrReg &= 0xFE; // Get D8.
+
+  switch (pgaGain) {
+    
+  case GAIN_1:
+    ctrReg |= 0x00;
+    Serial.println("Changed to GAIN_1");
+    break;
+
+  case GAIN_5:
+    ctrReg |= 0x01;
+    Serial.println("Changed to GAIN_5");
+    break;
+
+  default:
 #if LOGGING1
-    printer->println("setVolPGA - invaild parameter");
+    printer->println("setRange - Invalid Parameter!");
 #endif
-    return false;
+    return false; // return the signal of fail if there is not valid parameter.
+    break;
   }
-  int temp = getByte(0x80); // Get the content of Control Register and put it into temp
-  temp &= 0xF0; // discard the last 4 digits.
-  temp |= voltageNum << 1; // Shift one digits to fit in D9 and D10. (p 23-24/40 in datasheet)
-  if (pgaGain == 1)
-    temp |= 0x01; // if PGA Gain is x1, then write 1 at D8.
-  else
-    temp &= 0xFE; // if PGA Gain is x5, then write 0 at D8.
-#if LOGGING2
-  printer->print("setVolPGA - Final Value to Set: ");
-  printer->println(temp, BIN);
-#endif
-  return setByte(0x80, temp); // Write value at 0x80 Register.
+  return setByte(0x80, ctrReg); // return signal depends on the result of setting control register.
+
 }
 
 bool AD5933_Class::setExtClock(bool swt)
@@ -1007,8 +1016,7 @@ bool AD5933_Class::isValueReady()
 
 bool AD5933_Class::getComplexRawOnce(int &realComp, int &imagComp)
 {
-  while ( (getStatusReg() & 0x02) != 0x02 )
-    ; // Wait until measurement is complete.
+  while ( (getStatusReg() & 0x02) != 0x02 ); // Wait until measurement is complete.
 
   int rComp, iComp;
 
