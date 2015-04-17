@@ -142,8 +142,9 @@ void setup() {
   AD5933.setExtClock(false); 
   AD5933.resetAD5933(); 
   AD5933.setSettlingCycles(CYCLES_BASE,CYCLES_MULTIPLIER); 
-  AD5933.setStartFreq(startFreqHz); 
-  AD5933.setVolPGA(0, 1); 
+  AD5933.setStartFreq(startFreqHz);
+  AD5933.setRange(1);  
+  AD5933.setPGA(1); 
   temp = AD5933.getTemperature(); 
   AD5933.getGainFactorC(CAL_RESISTANCE, CAL_SAMPLES, gain_factor, systemPhaseShift, false);
 
@@ -453,7 +454,7 @@ void adjustAD5933(int purpose, int v1, int v2, int v3) {
     AD5933.resetAD5933();
     AD5933.setSettlingCycles(CYCLES_BASE, CYCLES_MULTIPLIER);
     AD5933.setStartFreq(startFreqHz);
-    AD5933.setVolPGA(0, 1);
+    AD5933.setPGA(1);
     AD5933.getGainFactorC(CAL_RESISTANCE, CAL_SAMPLES, gain_factor, systemPhaseShift, false);
     AD5933.getComplex(gain_factor, systemPhaseShift, CR_Array[0], phaseAngle);
 
@@ -517,7 +518,7 @@ void adjustAD5933(int purpose, int v1, int v2, int v3) {
       AD5933.resetAD5933();
       AD5933.setSettlingCycles(CYCLES_BASE, CYCLES_MULTIPLIER);
       AD5933.setStartFreq(startFreqHz);
-      AD5933.setVolPGA(0, 1);
+      AD5933.setPGA(1);
       AD5933.getGainFactorC(CAL_RESISTANCE, CAL_SAMPLES, gain_factor, systemPhaseShift, false);
       AD5933.getComplex(gain_factor, systemPhaseShift, CR_Array[0], phaseAngle);
 
@@ -572,7 +573,7 @@ void adjustAD5933(int purpose, int v1, int v2, int v3) {
       AD5933.setNumofIncrement(numOfIncrements);      
       AD5933.setSettlingCycles(CYCLES_BASE, CYCLES_MULTIPLIER);
       AD5933.getTemperature();
-      AD5933.setVolPGA(0, 1);
+      AD5933.setPGA(1);
 
       AD5933.getGainFactorS_Set(CAL_RESISTANCE, CAL_SAMPLES, GF_Array, PS_Array);
 

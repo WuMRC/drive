@@ -81,6 +81,10 @@ int I_CURRENT = 0;
 
 double GAIN_FACTOR = 0;
 
+double VOLTAGE_PHASE = 0;
+
+double CURRENT_PHASE = 0;
+
 double Z_VALUE = 0;
 
 double temp = 0;
@@ -150,18 +154,25 @@ void setup() {
   delay(DELAY);
   digitalWrite(SW_VI, HIGH); // Voltage measurement
   delay(DELAY);
+
   AD5933.getComplexRawOnce(R_VOLTAGE, I_VOLTAGE);
+
+  VOLTAGE_PHASE = atan2(I_VOLTAGE, R_VOLTAGE);
 
   AD5933.setCtrMode(REPEAT_FREQ);
 
   delay(DELAY);
   digitalWrite(SW_VI, LOW); // Current measurement
   delay(DELAY);
+
   AD5933.getComplexRawOnce(R_CURRENT, I_CURRENT);
+
+  CURRENT_PHASE = atan2(I_CURRENT, R_CURRENT);
 
   AD5933.setCtrMode(REPEAT_FREQ);
 
-  GAIN_FACTOR = CAL_RESISTANCE * (getMag(R_CURRENT, I_CURRENT) / getMag(R_VOLTAGE, I_VOLTAGE)); 
+  GAIN_FACTOR = CAL_RESISTANCE * (getMag(R_CURRENT, I_CURRENT) / getMag(R_VOLTAGE, I_VOLTAGE));
+
 
   Serial.println();
   Serial.print("R_CURRENT is: ");
@@ -172,8 +183,13 @@ void setup() {
   Serial.println(R_VOLTAGE); 
   Serial.print("I_VOLTAGE is: ");
   Serial.println(I_VOLTAGE);   
+  Serial.print("Current phase is: ");
+  Serial.println(CURRENT_PHASE);
+  Serial.print("Voltage phase is: ");
+  Serial.println(VOLTAGE_PHASE);
   Serial.print("Gain factor is: ");
-  Serial.println(GAIN_FACTOR);
+  Serial.println(GAIN_FACTOR); 
+  Serial.println();  
 }
 
 void loop() {
@@ -207,7 +223,38 @@ void loop() {
 
       //Serial.println();
       //Serial.print("Impedance is: ");
-      Serial.println(Z_VALUE);
+
+      double phaseAngle = (atan2(I_VOLTAGE, R_VOLTAGE) + atan2(I_CURRENT, R_CURRENT)) - (VOLTAGE_PHASE + CURRENT_PHASE);
+
+      Serial.print(Z_VALUE);
+       Serial.print(",");
+       Serial.print(atan2(I_CURRENT, R_CURRENT) - CURRENT_PHASE , 5);
+       Serial.print(",");
+       Serial.print(atan2(I_VOLTAGE, R_VOLTAGE) - VOLTAGE_PHASE), 5;
+       //Serial.print(",");
+       //Serial.print(phaseAngle);      
+       Serial.println();
+
+      /*Serial.print("Impedance: ");
+      Serial.print(",\t");
+      Serial.print(Z_VALUE, 5);
+      Serial.println();
+
+      Serial.print("Current Phase: ");
+      Serial.print(",\t");
+      Serial.print(atan2(I_CURRENT, R_CURRENT), 5);
+      Serial.print(",\t");
+      Serial.print(CURRENT_PHASE, 5);       
+      Serial.println();
+
+      Serial.print("Voltage phase: ");
+      Serial.print(",\t");
+      Serial.print(atan2(I_VOLTAGE, R_VOLTAGE), 5);
+      Serial.print(",\t");
+      Serial.print(VOLTAGE_PHASE, 5);
+      Serial.println();*/
+
+      Serial.println();      
     }
 
     if (ch == '2') {
@@ -221,6 +268,9 @@ void loop() {
 double getMag(int cReal, int cImag) {
   return sqrt( ( square(cReal) + square(cImag)) );
 }
+
+
+
 
 
 
