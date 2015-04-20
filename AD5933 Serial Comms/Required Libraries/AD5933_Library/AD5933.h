@@ -9,34 +9,38 @@
 
 #include<math.h> // for math functions
 #include<Wire.h> // for I2C communications
+#include<Arduino.h> // For access to hardware pins
 #include<HardwareSerial.h> // for Serial Logging
 
-#define LOGGING1 0 // Basic Log, Error
-#define LOGGING2 0 // Related to Development Phase
-#define LOGGING3 0 // Detailed Log for Debugging
+const int LOGGING1 = 0; // Basic Log, Error
+const int LOGGING2 = 0; // Related to Development Phase
+const int LOGGING3 = 0; // Detailed Log for Debugging
 // Caution! Currently, verbose logging feature makes problem. Do not use them before proper debugging.
 
-#define AD5933_ADR 0x0D // Device Serial Bus Address
-#define BLOCK_READ_CODE 0xA1 // Command Code for block read.
+const int AD5933_ADR = 0x0D; // Device Serial Bus Address
+const int BLOCK_READ_CODE = 0xA1; // Command Code for block read.
 
-#define INIT_START_FREQ 1	// defined values for Control Register
-#define START_FREQ_SWEEP 2
-#define INCR_FREQ 3
-#define REPEAT_FREQ 4
-#define POWER_DOWN 10
-#define STAND_BY 11
-#define TEMP_MEASURE 9
-#define RANGE_1 1
-#define RANGE_2 2
-#define RANGE_3 3
-#define RANGE_4 4
-#define GAIN_1 1
-#define GAIN_5 5
+const int INIT_START_FREQ = 1;	// defined values for Control Register
+const int START_FREQ_SWEEP = 2;
+const int INCR_FREQ = 3;
+const int REPEAT_FREQ = 4;
+const int POWER_DOWN = 10;
+const int STAND_BY = 11;
+const int TEMP_MEASURE = 9;
 
+const int RANGE_1 = 1;
+const int RANGE_2 = 2;
+const int RANGE_3 = 3;
+const int RANGE_4 = 4;
 
+const int GAIN_1 = 1;
+const int GAIN_5 = 5;
 
-#define M_PI 3.14159265358979323846	// pi
-#define M_PI_2 1.57079632679489661923	// pi/2 
+const int BI_TETRA_MUX = 29;
+const int IV_MUX = 23;
+
+//const double M_PI = 3.14159265358979323846;	// pi
+//const double M_PI_2 = 1.57079632679489661923;	// pi/2
 
 typedef uint8_t byte; // For the compatibility for Arduino Type Definitions
 
@@ -91,12 +95,15 @@ public: // The detailed instruction will be on Wiki or ".cpp" file
 	bool compFreqSweep(double *, double *, double *, double *);
 	bool getGainFactorC(double, int, double &, double &);
 	bool getGainFactorC(double, int, double &, double &, bool);
+	bool getGainFactorTetra(double, int, double &, double &, double &);
+	bool getGainFactorTetra(double, int, double &, double &, double &, bool);
 	bool getGainFactorS_Set(double , int, double *, double *);
 	bool getGainFactorS_TP(double, int, double, double, double &, double &, double &, double &);
 	bool compCbrArray(double, double, double, double, double *, double *);
 	bool getArraysLI(double&, double&, double&, uint8_t&, double&, double&, double*, double*);
 	bool getGainFactors_LI(double, int, double, double, double &, double &, double &, double &);
 	bool getComplex(double, double, double &, double &);
+	bool getComplexTetra(int, double, double, double, double &, double &);
 
 
 	

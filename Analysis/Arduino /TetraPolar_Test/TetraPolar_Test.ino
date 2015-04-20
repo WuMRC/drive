@@ -39,7 +39,7 @@ const int BI_TETRA = 29; // Selects between Bi-Polar & Tetra-Polar modes
 
 const int SW_VI = 23; // Voltage current multiplexer
 
-const int DELAY = 10; // Voltage current multiplexer
+const int DELAY = 10; // Delay between toggling the multiplexer
 
 int leds[6] = {
   LED5, LED6, LED7_R, LED7_G, LED7_B, LED8};
@@ -71,33 +71,26 @@ int stepSize = 0;  // Step size of AC frequency sweep in kilohertz.
 
 int numOfIncrements = 0;  // Number of increments in frequency sweep.
 
-int R_VOLTAGE = 0;
-
-int I_VOLTAGE = 0;
-
-int R_CURRENT = 0;
-
-int I_CURRENT = 0;
-
 double GAIN_FACTOR = 0;
 
 double VOLTAGE_PHASE = 0;
 
 double CURRENT_PHASE = 0;
 
-double Z_VALUE = 0;
+double z_mag = 0;
+
+double phaseAngle = 0;
 
 double temp = 0;
-
-double gain_factor = 0;
-
-double systemPhaseShift = 0;
 
 void setup() {
 
   // ================================================================
   // For AD5933
   // ================================================================
+
+  Serial.println();
+  Serial.println();
 
   // put your setup code here, to run once:
   //Set IOs mode 
@@ -141,48 +134,11 @@ void setup() {
   AD5933.setSettlingCycles(CYCLES_BASE, CYCLES_MULTIPLIER); 
   AD5933.setStartFreq(50000);
   AD5933.setRange(1);
-
-  delay(DELAY);
   AD5933.setPGA(1);
-  delay(DELAY); 
   temp = AD5933.getTemperature(); 
 
-  AD5933.getGainFactorC(CAL_RESISTANCE, CAL_SAMPLES, gain_factor, systemPhaseShift, false);
+  Serial.println(AD5933.getGainFactorTetra(CAL_RESISTANCE, CAL_SAMPLES, GAIN_FACTOR, VOLTAGE_PHASE, CURRENT_PHASE, false));
 
-  AD5933.setCtrMode(REPEAT_FREQ);
-
-  delay(DELAY);
-  digitalWrite(SW_VI, HIGH); // Voltage measurement
-  delay(DELAY);
-
-  AD5933.getComplexRawOnce(R_VOLTAGE, I_VOLTAGE);
-
-  VOLTAGE_PHASE = atan2(I_VOLTAGE, R_VOLTAGE);
-
-  AD5933.setCtrMode(REPEAT_FREQ);
-
-  delay(DELAY);
-  digitalWrite(SW_VI, LOW); // Current measurement
-  delay(DELAY);
-
-  AD5933.getComplexRawOnce(R_CURRENT, I_CURRENT);
-
-  CURRENT_PHASE = atan2(I_CURRENT, R_CURRENT);
-
-  AD5933.setCtrMode(REPEAT_FREQ);
-
-  GAIN_FACTOR = CAL_RESISTANCE * (getMag(R_CURRENT, I_CURRENT) / getMag(R_VOLTAGE, I_VOLTAGE));
-
-
-  Serial.println();
-  Serial.print("R_CURRENT is: ");
-  Serial.println(R_CURRENT);
-  Serial.print("I_CURRENT is: ");
-  Serial.println(I_CURRENT);
-  Serial.print("R_VOLTAGE is: ");
-  Serial.println(R_VOLTAGE); 
-  Serial.print("I_VOLTAGE is: ");
-  Serial.println(I_VOLTAGE);   
   Serial.print("Current phase is: ");
   Serial.println(CURRENT_PHASE);
   Serial.print("Voltage phase is: ");
@@ -199,75 +155,25 @@ void loop() {
     uint8_t ch = Serial.read();
     uint8_t status;
 
-    if (ch == '0') {
-      Serial.println("Switch off.");
-    }
-
     if (ch == '1') {
+      Serial.println(AD5933.getComplexTetra(DELAY, GAIN_FACTOR, VOLTAGE_PHASE, CURRENT_PHASE, z_mag, phaseAngle));
 
-      AD5933.setCtrMode(REPEAT_FREQ);
+      Serial.print(z_mag);
+      Serial.print(",");
+      Serial.print(phaseAngle); 
 
-      delay(DELAY);
-      digitalWrite(SW_VI, HIGH); // Voltage measurement
-      delay(DELAY);
-      AD5933.getComplexRawOnce(R_VOLTAGE, I_VOLTAGE);
-
-      AD5933.setCtrMode(REPEAT_FREQ);
-
-      delay(DELAY);
-      digitalWrite(SW_VI, LOW); // Current measurement
-      delay(DELAY);
-      AD5933.getComplexRawOnce(R_CURRENT, I_CURRENT);
-
-      Z_VALUE = GAIN_FACTOR * (getMag(R_VOLTAGE, I_VOLTAGE) / getMag(R_CURRENT, I_CURRENT));
-
-      //Serial.println();
-      //Serial.print("Impedance is: ");
-
-      double phaseAngle = (atan2(I_VOLTAGE, R_VOLTAGE) + atan2(I_CURRENT, R_CURRENT)) - (VOLTAGE_PHASE + CURRENT_PHASE);
-
-      Serial.print(Z_VALUE);
-       Serial.print(",");
-       Serial.print(atan2(I_CURRENT, R_CURRENT) - CURRENT_PHASE , 5);
-       Serial.print(",");
-       Serial.print(atan2(I_VOLTAGE, R_VOLTAGE) - VOLTAGE_PHASE), 5;
-       //Serial.print(",");
-       //Serial.print(phaseAngle);      
-       Serial.println();
-
-      /*Serial.print("Impedance: ");
-      Serial.print(",\t");
-      Serial.print(Z_VALUE, 5);
       Serial.println();
-
-      Serial.print("Current Phase: ");
-      Serial.print(",\t");
-      Serial.print(atan2(I_CURRENT, R_CURRENT), 5);
-      Serial.print(",\t");
-      Serial.print(CURRENT_PHASE, 5);       
-      Serial.println();
-
-      Serial.print("Voltage phase: ");
-      Serial.print(",\t");
-      Serial.print(atan2(I_VOLTAGE, R_VOLTAGE), 5);
-      Serial.print(",\t");
-      Serial.print(VOLTAGE_PHASE, 5);
-      Serial.println();*/
-
       Serial.println();      
-    }
-
-    if (ch == '2') {
-
     }
 
   } // end if serial available
 
 }
 
-double getMag(int cReal, int cImag) {
-  return sqrt( ( square(cReal) + square(cImag)) );
-}
+
+
+
+
 
 
 
