@@ -45,28 +45,7 @@ const int FR = 102;// Frequency sweeps
 
 const int MAX_SAMPLE_RATE = 100; // 100 is the default, but I'm taking this thing out for a spin
 
-const int LED7_R = 3;
-
-const int LED7_G = 4;
-
-const int LED7_B = 5;
-
-const int LED5 = 13;
-
-const int LED6 = 12;
-
-const int LED8 = 11;
-
-const int PUSH1 = 27; // Push button 1:  Switch 2
-
-const int PUSH2 = 28; // Push button 2:  Switch 3
-
-const int BOOST = 22; // 5V On
-
-const int BI_TETRA = 29; // Selects between Bi-Polar & Tetra-Polar modes
-
-int leds[6] = {
-  LED5, LED6, LED7_R, LED7_G, LED7_B, LED8};
+const int DELAY = 10; // Delay between toggling the multiplexer
 
 // Define bit clearing and setting variables
 
@@ -123,7 +102,7 @@ uint8_t outputRange = RANGE_1; // Current output Range of the AD5933
 
 uint8_t PGAGainHolder = 0; // Holds value of input prior to check of input syntax.
 
-uint8_t PGAGain = GAIN_1; // Current output Range of the AD5933
+uint8_t PGAGain = 1; // PGA Gain of the AD5933
 
 double startFreqHz = ((long)(startFreq)) * 1000; // AC Start frequency (Hz).
 
@@ -131,11 +110,13 @@ double stepSizeHz = 0; // AC frequency step size between consecutive values (Hz)
 
 double endFreqHz = 0; // End frequency for 2 point calibration.
 
-double gain_factor = 0;      // Initialize Gain factor.
+double GAIN_FACTOR = 0;      // Initialize Gain factor.
 
-double Z_Value = 0;          // Initialize impedance magnitude.
+double VOLTAGE_PHASE_SHIFT = 0;       // Initialize voltage phase shift value.
 
-double systemPhaseShift = 0;       // Initialize system phase shift value.
+double CURRENT_PHASE_SHIFT = 0;       // Initialize current phase shift value.
+
+double z_mag = 0;          // Initialize impedance magnitude.
 
 double phaseAngle = 0;       // Initialize phase angle value.
 
@@ -143,7 +124,9 @@ double temp = 0; // Used to update AD5933's temperature.
 
 double* GF_Array = NULL; // Pointer for dynamic gain factor array size.
 
-double* PS_Array = NULL; // Pointer for dynamic phase shift array size.
+double* VS_Array = NULL; // Pointer for dynamic voltage phase shift array size.
+
+double* CS_Array = NULL; // Pointer for dynamic current phase shift array size.
 
 double* CR_Array = NULL; // Pointer for calibration impedance at a certain frequency. Used for filtering.
 
@@ -165,29 +148,8 @@ void setup() {
   // put your setup code here, to run once:
   //Set IOs mode 
 
-  pinMode(LED5, OUTPUT);
-  pinMode(LED6, OUTPUT);  
-  pinMode(LED7_R, OUTPUT);
-  pinMode(LED7_G, OUTPUT);
-  pinMode(LED7_B, OUTPUT);
-  pinMode(LED8, OUTPUT);
-  pinMode(BI_TETRA, OUTPUT);
-
-  pinMode(BOOST, OUTPUT);
-
-  pinMode(PUSH1, INPUT);
-  pinMode(PUSH2, INPUT);
-
-  pinMode(25, INPUT);
-  pinMode(24, INPUT);
-
-  //All leds off
-  for(int i=0;i<6;i++) {
-    digitalWrite(leds[i],HIGH);
-  }
-  digitalWrite(BOOST, HIGH);
-  digitalWrite(BI_TETRA, HIGH); // Set AD5933 to bi-polar mode
-
+  AD5933.setupDevicePins(LOW);
+  
   Wire.begin(); // Start Arduino I2C library
   Serial.begin(38400); // Open serial port
 
@@ -197,10 +159,11 @@ void setup() {
   AD5933.setExtClock(false); 
   AD5933.resetAD5933(); 
   AD5933.setSettlingCycles(CYCLES_BASE,CYCLES_MULTIPLIER); 
-  AD5933.setStartFreq(startFreqHz); 
+  AD5933.setStartFreq(startFreqHz);
+  AD5933.setRange(1);   
   AD5933.setPGA(PGAGain); 
   temp = AD5933.getTemperature(); 
-  AD5933.getGainFactorC(CAL_RESISTANCE, CAL_SAMPLES, gain_factor, systemPhaseShift, false);
+  AD5933.getGainFactorTetra(CAL_RESISTANCE, CAL_SAMPLES, GAIN_FACTOR, VOLTAGE_PHASE_SHIFT, CURRENT_PHASE_SHIFT, false);
 
   Serial.println();
   Serial.println();
@@ -474,7 +437,8 @@ void loop() {
 
     if(!FREQ_SWEEP_FLAG) { // Repeat frequency, don't sweep.
       AD5933.setCtrMode(REPEAT_FREQ);
-      AD5933.getComplex(gain_factor, systemPhaseShift, Z_Value, phaseAngle);
+      AD5933.getComplexTetra(DELAY, GAIN_FACTOR, VOLTAGE_PHASE_SHIFT, CURRENT_PHASE_SHIFT, z_mag, phaseAngle);
+
     }
 
     else { // Perform frequency sweep.
@@ -486,7 +450,7 @@ void loop() {
         AD5933.setCtrMode(START_FREQ_SWEEP, ctrReg);
       }
 
-      AD5933.getComplex(GF_Array[currentStep], PS_Array[currentStep], Z_Value, phaseAngle);
+      AD5933.getComplexTetra(DELAY, GF_Array[currentStep], VS_Array[currentStep], CS_Array[currentStep], z_mag, phaseAngle);
 
       if(currentStep == numOfIncrements) {
         currentStep = 0;
@@ -504,7 +468,7 @@ void loop() {
      Serial.print("\tCurrent Frequency: ");
      Serial.print(startFreqHz + (stepSizeHz * currentStep));
      Serial.print("\tImpedance: ");
-     Serial.print(Z_Value, 4);
+     Serial.print(z_mag, 4);
      Serial.print("\tPhase Angle: "); 
      Serial.print(phaseAngle, 4);
      Serial.println();
@@ -515,7 +479,7 @@ void loop() {
     Serial.print("\t");
     Serial.print(startFreqHz + (stepSizeHz * currentStep));
     Serial.print("\t");
-    Serial.print(Z_Value, 4);
+    Serial.print(z_mag, 4);
     Serial.print("\t"); 
     Serial.print(phaseAngle, 4);
     Serial.println();
@@ -546,19 +510,10 @@ void adjustAD5933(int purpose, int v1, int v2, int v3) {
     AD5933.resetAD5933();
     AD5933.setSettlingCycles(CYCLES_BASE, CYCLES_MULTIPLIER);
     AD5933.setStartFreq(startFreqHz);
-
-    delay(100); // Delay for AD5933 else no effect
-
-    ctrReg = AD5933.getByte(0x80);
-    AD5933.setRange(v1, ctrReg);
-    temp = AD5933.getTemperature(); 
-    delay(100); // Delay for AD5933 else no effect
-
+    AD5933.setRange(v1);
     AD5933.setPGA(PGAGain);
 
-
-    AD5933.getGainFactorC(CAL_RESISTANCE, CAL_SAMPLES, gain_factor, systemPhaseShift, false);
-    //AD5933.getComplex(gain_factor, systemPhaseShift, CR_Array[0], phaseAngle);
+    AD5933.getGainFactorTetra(CAL_RESISTANCE, CAL_SAMPLES, GAIN_FACTOR, VOLTAGE_PHASE_SHIFT, CURRENT_PHASE_SHIFT, false);
 
     Serial.println();
     Serial.print("Sucessful write attempt; new output range: ");
@@ -575,10 +530,9 @@ void adjustAD5933(int purpose, int v1, int v2, int v3) {
     AD5933.resetAD5933();
     AD5933.setSettlingCycles(CYCLES_BASE, CYCLES_MULTIPLIER);
     AD5933.setStartFreq(startFreqHz);
-    delay(100);
     AD5933.setPGA(PGAGain);
-    AD5933.getGainFactorC(CAL_RESISTANCE, CAL_SAMPLES, gain_factor, systemPhaseShift, false);
-    //AD5933.getComplex(gain_factor, systemPhaseShift, CR_Array[0], phaseAngle);
+
+    AD5933.getGainFactorTetra(CAL_RESISTANCE, CAL_SAMPLES, GAIN_FACTOR, VOLTAGE_PHASE_SHIFT, CURRENT_PHASE_SHIFT, false);
 
     Serial.println();
     Serial.print("Sucessful write attempt; new PGA Gain: ");
@@ -611,7 +565,7 @@ void adjustAD5933(int purpose, int v1, int v2, int v3) {
   case FR:
 
     delete [] GF_Array; // Free memory from previous GF array.
-    delete [] PS_Array; // Free memory from previous PS array.
+    delete [] VS_Array; // Free memory from previous PS array.
     delete [] CR_Array; // Free memory from previous CR array.
 
     Serial.println("Old Arrays Deleted.");
@@ -640,9 +594,10 @@ void adjustAD5933(int purpose, int v1, int v2, int v3) {
       AD5933.setSettlingCycles(CYCLES_BASE, CYCLES_MULTIPLIER);
       AD5933.setStartFreq(startFreqHz);
       AD5933.setPGA(PGAGain);
-      temp = AD5933.getTemperature(); 
-      AD5933.getGainFactorC(CAL_RESISTANCE, CAL_SAMPLES, gain_factor, systemPhaseShift, false);
-      AD5933.getComplex(gain_factor, systemPhaseShift, CR_Array[0], phaseAngle);
+
+      AD5933.getGainFactorTetra(CAL_RESISTANCE, CAL_SAMPLES, GAIN_FACTOR, VOLTAGE_PHASE_SHIFT, CURRENT_PHASE_SHIFT, false);
+      
+      AD5933.getComplexTetra(DELAY, GAIN_FACTOR, VOLTAGE_PHASE_SHIFT, CURRENT_PHASE_SHIFT, CR_Array[0], phaseAngle);
 
       Serial.println("Gain factors measured.");
 
@@ -653,11 +608,15 @@ void adjustAD5933(int purpose, int v1, int v2, int v3) {
       Serial.print("\t");
       Serial.print("Gain factor:");
       Serial.print("\t");
-      Serial.print(gain_factor);
+      Serial.print(GAIN_FACTOR);
       Serial.print("\t");
-      Serial.print("SystemPS:");
+      Serial.print("Voltage PS:");
       Serial.print("\t");
-      Serial.print(systemPhaseShift, 4);
+      Serial.print(VOLTAGE_PHASE_SHIFT, 4);
+      Serial.print("\t");
+      Serial.print("Current PS:");
+      Serial.print("\t");
+      Serial.print(CURRENT_PHASE_SHIFT, 4);
       Serial.print("\t");
       Serial.print("CR: ");
       Serial.print("\t");
@@ -678,12 +637,15 @@ void adjustAD5933(int purpose, int v1, int v2, int v3) {
       // generate gain factor array using two point calibration.
 
       GF_Array = new double[numOfIncrements + 1];
-      PS_Array = new double[numOfIncrements + 1];
+      VS_Array = new double[numOfIncrements + 1];
+      CS_Array = new double[numOfIncrements + 1];      
       CR_Array = new double[numOfIncrements + 1];
 
       for (int i = 0; i < numOfIncrements; i++) {
         GF_Array[i] = 0;    // Initialize all elements to zero.
-        PS_Array[i] = 0;    // Initialize all elements to zero.        
+        VS_Array[i] = 0;    // Initialize all elements to zero. 
+        CS_Array[i] = 0;    // Initialize all elements to zero. 
+        CR_Array[i] = 0;    // Initialize all elements to zero.                       
       }
 
       Serial.println("New Arrays created.");
@@ -697,10 +659,9 @@ void adjustAD5933(int purpose, int v1, int v2, int v3) {
       AD5933.setIncrement(stepSizeHz);
       AD5933.setNumofIncrement(numOfIncrements);      
       AD5933.setSettlingCycles(CYCLES_BASE, CYCLES_MULTIPLIER);
-      AD5933.getTemperature();
       AD5933.setPGA(PGAGain);
 
-      AD5933.getGainFactorS_Set(CAL_RESISTANCE, CAL_SAMPLES, GF_Array, PS_Array);
+      AD5933.getGainFactorTetraSweep(CAL_RESISTANCE, CAL_SAMPLES, GF_Array, VS_Array, CS_Array);
 
       Serial.println("Gain factors gotten.");
 
@@ -713,16 +674,16 @@ void adjustAD5933(int purpose, int v1, int v2, int v3) {
           AD5933.setCtrMode(STAND_BY, ctrReg);
           AD5933.setCtrMode(INIT_START_FREQ, ctrReg);
           AD5933.setCtrMode(START_FREQ_SWEEP, ctrReg);
-          AD5933.getComplex(GF_Array[i], PS_Array[i], CR_Array[i], phaseAngle);
+          AD5933.getComplexTetra(DELAY, GF_Array[i], VS_Array[i], CS_Array[i], CR_Array[i], phaseAngle);
         }
 
         else if(i > 0 &&  i < numOfIncrements) {
-          AD5933.getComplex(GF_Array[i], PS_Array[i], CR_Array[i], phaseAngle);
+          AD5933.getComplexTetra(DELAY, GF_Array[i], VS_Array[i], CS_Array[i], CR_Array[i], phaseAngle);
           AD5933.setCtrMode(INCR_FREQ, ctrReg);
         }
 
         else if(i = numOfIncrements) {
-          AD5933.getComplex(GF_Array[i], PS_Array[i], CR_Array[i], phaseAngle);
+          AD5933.getComplexTetra(DELAY, GF_Array[i], VS_Array[i], CS_Array[i], CR_Array[i], phaseAngle);
           AD5933.setCtrMode(POWER_DOWN, ctrReg);
         }
 
@@ -735,10 +696,15 @@ void adjustAD5933(int purpose, int v1, int v2, int v3) {
         Serial.print("\t");
         Serial.print(GF_Array[i]);
         Serial.print("\t");
-        Serial.print("SystemPS term: ");
+        Serial.print("VoltagePS term: ");
         Serial.print(i);
         Serial.print("\t");
-        Serial.print(PS_Array[i], 4);
+        Serial.print(VS_Array[i], 4);
+        Serial.print("\t");
+        Serial.print("CurrentPS term: ");
+        Serial.print(i);
+        Serial.print("\t");
+        Serial.print(CS_Array[i], 4);
         Serial.print("\t");        
         Serial.print("CR term: ");
         Serial.print(i);
@@ -773,6 +739,11 @@ void notify() {
     SAMPLE_RATE_FLAG = true; 
   }
 }
+
+
+
+
+
 
 
 
