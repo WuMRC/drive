@@ -36,8 +36,18 @@ const int RANGE_4 = 4;
 const int GAIN_1 = 1;
 const int GAIN_5 = 5;
 
-const int BI_TETRA_MUX = 29;
-const int IV_MUX = 23;
+const int LED7_R = 3;
+const int LED7_G = 4;
+const int LED7_B = 5;
+const int LED5 = 13;
+const int LED6 = 12;
+const int LED8 = 11;
+const int PUSH1 = 27; // Push button 1:  Switch 2
+const int PUSH2 = 28; // Push button 2:  Switch 3
+const int BOOST = 22; // 5V On
+
+const int BI_TETRA_MUX = 29; // Bi-Polar / Tetra-polar multiplexer switch
+const int IV_MUX = 23; // Current / Voltage multiplexer switch
 
 //const double M_PI = 3.14159265358979323846;	// pi
 //const double M_PI_2 = 1.57079632679489661923;	// pi/2
@@ -48,68 +58,70 @@ class AD5933_Class
 {
 public: // The detailed instruction will be on Wiki or ".cpp" file
 	int delayTimeInit; // for setting delay time.
+
+	// Common functions used within a sketch
+
 	double getTemperature();
+
 	bool tempUpdate();
-	double getMagOnce();
-	bool setStartFreq(long);
-	bool setIncrement(long);
-	bool setIncrementinHex(long);
-	bool setNumofIncrement(byte);
-	bool setSettlingCycles(int, byte);
 	bool resetAD5933();
+
 	bool setExtClock(bool);
+	bool setSettlingCycles(int, byte);
+
+	bool setStartFreq(long);
+	bool setStepSize(long);
+	bool setStepSizeInHex(long);
+	bool setNumofIncrement(byte);
+
 	bool setCtrMode(byte);
 	bool setCtrMode(byte, int);
+
 	bool setPGA(byte);
 	bool setPGA(byte, int);
+
 	bool setRange(byte);
 	bool setRange(byte, int);
-	double getGainFactor(double);
-	double getGainFactor(double, int);
-	double getGainFactor(double, int, bool);
-	bool performFreqSweep(double, double *);
-	AD5933_Class()
-	{
+
+	bool getGainFactor(double, int, double &, double &);
+	bool getGainFactor(double, int, double &, double &, bool);
+	bool getGainFactorsSweep(double, int, double *, double *);
+	bool getGainFactorTetra(double, int, double &, double &, double &);
+	bool getGainFactorTetra(double, int, double &, double &, double &, bool);
+	bool getGainFactorsTetraSweep(double, int, double *, double *, double *);
+
+	bool getComplexRawOnce(int &, int &);
+
+	bool getComplex(double, double, double &, double &);
+	bool getComplexTetra(int, double, double, double, double &, double &);
+
+	bool setupDevicePins(int);
+
+	// Internal fucntions used within the library
+
+	bool isValueReady();
+
+	int getByte(int);
+	bool setByte(int, int);
+
+	double getMagOnce();
+
+	AD5933_Class() {
 		delayTimeInit=100;
 		opClock = 16776000;
 	}
-	AD5933_Class(int delayTime) // Another option of constructor
-	{
+	AD5933_Class(int delayTime) {// Another option of constructor
 		delayTimeInit=delayTime;
 		opClock = 16776000;
 	}
-	AD5933_Class(int delayTime, HardwareSerial &print)
-	{
+	AD5933_Class(int delayTime, HardwareSerial &print){
 		delayTimeInit=delayTime;
 		opClock = 16776000;
 		printer = &print;
 	}
-	int getByte(int);
-	bool setByte(int, int);
-	bool isValueReady();
-	//int getRealComp();
-	//int getImagComp();
-	bool getComplexRawOnce(int &, int &);
-	bool getComplexOnce(double, double, double &, double &, double &, double &);
-	bool compFreqRawSweep(int *, int *);
-	bool compFreqSweep(double *, double *, double *, double *);
-	bool getGainFactorC(double, int, double &, double &);
-	bool getGainFactorC(double, int, double &, double &, bool);
-	bool getGainFactorTetra(double, int, double &, double &, double &);
-	bool getGainFactorTetra(double, int, double &, double &, double &, bool);
-	bool getGainFactorS_Set(double , int, double *, double *);
-	bool getGainFactorS_TP(double, int, double, double, double &, double &, double &, double &);
-	bool compCbrArray(double, double, double, double, double *, double *);
-	bool getArraysLI(double&, double&, double&, uint8_t&, double&, double&, double*, double*);
-	bool getGainFactors_LI(double, int, double, double, double &, double &, double &, double &);
-	bool getComplex(double, double, double &, double &);
-	bool getComplexTetra(int, double, double, double, double &, double &);
-
-
-	
 
 private:
-	
+
 	static const byte Address_Ptr = 0xB0; // Address Pointer to read register values.
 	double opClock;
 	long incrHex;
@@ -130,10 +142,9 @@ private:
 		//return sqrt( (cReal * cReal) + (cImag * cImag) );
 		//return sqrt( ( sq((double)cReal) + sq((double)cImag)) );
 	}
-	
+
 };
 
 extern AD5933_Class AD5933;
-
 
 #endif

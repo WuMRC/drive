@@ -656,12 +656,12 @@ void adjustAD5933(int purpose, int v1, int v2, int v3) {
       AD5933.setExtClock(false);
       AD5933.resetAD5933();
       AD5933.setStartFreq(startFreqHz);
-      AD5933.setIncrement(stepSizeHz);
+      AD5933.setStepSize(stepSizeHz);
       AD5933.setNumofIncrement(numOfIncrements);      
       AD5933.setSettlingCycles(CYCLES_BASE, CYCLES_MULTIPLIER);
       AD5933.setPGA(PGAGain);
 
-      AD5933.getGainFactorTetraSweep(CAL_RESISTANCE, CAL_SAMPLES, GF_Array, VS_Array, CS_Array);
+      AD5933.getGainFactorsTetraSweep(CAL_RESISTANCE, CAL_SAMPLES, GF_Array, VS_Array, CS_Array);
 
       Serial.println("Gain factors gotten.");
 
