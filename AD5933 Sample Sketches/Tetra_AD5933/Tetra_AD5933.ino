@@ -565,7 +565,8 @@ void adjustAD5933(int purpose, int v1, int v2, int v3) {
   case FR:
 
     delete [] GF_Array; // Free memory from previous GF array.
-    delete [] VS_Array; // Free memory from previous PS array.
+    delete [] VS_Array; // Free memory from previous VS array.
+    delete [] CS_Array; // Free memory from previous CS array.
     delete [] CR_Array; // Free memory from previous CR array.
 
     Serial.println("Old Arrays Deleted.");
