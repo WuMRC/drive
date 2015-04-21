@@ -17,32 +17,8 @@ const int CAL_RESISTANCE = 353;  // Calibration resistance for the gain factor.
 
 const int CAL_SAMPLES = 10;         // Number of measurements to take of the calibration resistance.
 
-const int LED7_R = 3;
-
-const int LED7_G = 4;
-
-const int LED7_B = 5;
-
-const int LED5 = 13;
-
-const int LED6 = 12;
-
-const int LED8 = 11;
-
-const int PUSH1 = 27; // Push button 1:  Switch 2
-
-const int PUSH2 = 28; // Push button 2:  Switch 3
-
-const int BOOST = 22; // 5V On
-
-const int BI_TETRA = 29; // Selects between Bi-Polar & Tetra-Polar modes
-
-const int SW_VI = 23; // Voltage current multiplexer
-
 const int DELAY = 10; // Delay between toggling the multiplexer
 
-int leds[6] = {
-  LED5, LED6, LED7_R, LED7_G, LED7_B, LED8};
 
 // Define bit clearing and setting variables
 
@@ -95,32 +71,7 @@ void setup() {
   // put your setup code here, to run once:
   //Set IOs mode 
 
-  pinMode(LED5, OUTPUT);
-  pinMode(LED6, OUTPUT);  
-  pinMode(LED7_R, OUTPUT);
-  pinMode(LED7_G, OUTPUT);
-  pinMode(LED7_B, OUTPUT);
-  pinMode(LED8, OUTPUT);
-
-  pinMode(BI_TETRA, OUTPUT);
-  pinMode(SW_VI, OUTPUT);
-
-
-  pinMode(BOOST, OUTPUT);
-
-  pinMode(PUSH1, INPUT);
-  pinMode(PUSH2, INPUT);
-
-  pinMode(25, INPUT);
-  pinMode(24, INPUT);
-
-  //All leds off
-  for(int i=0;i<6;i++) {
-    digitalWrite(leds[i],HIGH);
-  }
-
-  digitalWrite(BOOST, HIGH);
-  digitalWrite(BI_TETRA, LOW); // Set AD5933 to tetra-polar mode
+  AD5933.setupDevicePins(LOW);
 
   Wire.begin(); // Start Arduino I2C library
   Serial.begin(38400); // Open serial port
@@ -145,6 +96,7 @@ void setup() {
   Serial.println(VOLTAGE_PHASE);
   Serial.print("Gain factor is: ");
   Serial.println(GAIN_FACTOR); 
+  Serial.println();
   Serial.println();  
 }
 
@@ -156,19 +108,18 @@ void loop() {
     uint8_t status;
 
     if (ch == '1') {
-      Serial.println(AD5933.getComplexTetra(DELAY, GAIN_FACTOR, VOLTAGE_PHASE, CURRENT_PHASE, z_mag, phaseAngle));
+      AD5933.getComplexTetra(DELAY, GAIN_FACTOR, VOLTAGE_PHASE, CURRENT_PHASE, z_mag, phaseAngle);
 
       Serial.print(z_mag);
       Serial.print(",");
-      Serial.print(phaseAngle); 
-
-      Serial.println();
-      Serial.println();      
+      Serial.print(phaseAngle);
+      Serial.println(); 
     }
 
   } // end if serial available
 
 }
+
 
 
 
