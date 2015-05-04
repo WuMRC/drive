@@ -129,7 +129,6 @@ private:
 	//int getImagCompP();
 	byte numIncrement;
 	double getMagValue();
-	double returnStandardPhaseAngle(double angle);
 	inline byte getStatusReg()
 	{
 		return (getByte(0x8F) & 0x07);
