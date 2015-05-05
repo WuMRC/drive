@@ -317,7 +317,7 @@ bool AD5933_Class::setNumofIncrement(byte num) {
  */
 
 bool AD5933_Class::setRange(byte rangeToSet) {
-	return setByte(rangeToSet, getByte(0x80));
+	return setRange(rangeToSet, getByte(0x80));
 }
 
 /**
@@ -376,7 +376,7 @@ bool AD5933_Class::setRange(byte rangeToSet, int ctrReg) {
  */
 
 bool AD5933_Class::setPGA(byte pgaGain){
-	return setByte(pgaGain, getByte(0x80));
+	return setPGA(pgaGain, getByte(0x80));
 }
 
 /**
