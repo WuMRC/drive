@@ -9,15 +9,15 @@ cd(pathname)
 bioimp.acq = loadACQ(filename);
 
 % % Get patient ID
-% patientID = pathname(end-9:end);
-% patientID(ismember(patientID,' ,.:;!/')) = [];
+patientID = pathname(end-9:end);
+patientID(ismember(patientID,' ,.:;!/')) = [];
 
 % FOR DIALYSIS
 % Get patient ID
-patientID = pathname(end-25:end-19);
+% patientID = pathname(end-25:end-19);
 patientID(ismember(patientID,' ,.:;!/')) = [];
 
-%% STEP 2 - FILENAME BASED ON MARKER
+% %% STEP 2 - FILENAME BASED ON MARKER
 
 nMarker = length(bioimp.acq.markers.szText);
 
@@ -66,7 +66,7 @@ for indMarker = 2:nMarker
         % PLOT
         % RESPIRATORY SIGNAL - ARM
         figure('units','normalized','outerposition',[0 0 1 1])
-        subplot(2,3,1), hold on
+        subplot(2,2,1), hold on
         leading = 20; lagging = 20;
         plot(bioimp.nb.time(leading:end-lagging),...
             bioimp.nb.armS.total(leading:end-lagging),...
@@ -79,7 +79,7 @@ for indMarker = 2:nMarker
         ylabel('Total and Resp Z [Volts (need conversion)]')
         
         % CARDIAC SIGNAL - ARM
-        subplot(2,3,2), hold on
+        subplot(2,2,2), hold on
         title('Arm impedance changes')
         plot(bioimp.nb.time(leading:end-lagging),...
             bioimp.nb.armS.card(leading:end-lagging),'Color','r','LineWidth',2)
@@ -89,7 +89,7 @@ for indMarker = 2:nMarker
         
         
         % RESPIRATORY SIGNAL - LEG
-        subplot(2,3,4), hold on
+        subplot(2,2,3), hold on
         plot(bioimp.nb.time(leading:end-lagging),...
             bioimp.nb.legS.total(leading:end-lagging),...
             'Color',[0.5 0.5 0.5],'LineWidth',2)
@@ -101,7 +101,7 @@ for indMarker = 2:nMarker
         ylabel('Total and Resp Z [Volts (need conversion)]')
         
         % CARDIAC SIGNAL - LEG
-        subplot(2,3,5), hold on
+        subplot(2,2,4), hold on
         title('Leg impedance changes')
         plot(bioimp.nb.time(leading:end-lagging),...
             bioimp.nb.legS.card(leading:end-lagging),'Color','r','LineWidth',2)
