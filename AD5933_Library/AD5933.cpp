@@ -397,12 +397,16 @@ bool AD5933_Class::setPGA(byte pgaGain, int ctrReg) {
 
 	case GAIN_1:
 		ctrReg |= 0x00;
+#if LOGGING1
 		Serial.println("Changed to GAIN_1");
+#endif
 		break;
 
 	case GAIN_5:
 		ctrReg |= 0x01;
+#if LOGGING1
 		Serial.println("Changed to GAIN_5");
+#endif
 		break;
 
 	default:
