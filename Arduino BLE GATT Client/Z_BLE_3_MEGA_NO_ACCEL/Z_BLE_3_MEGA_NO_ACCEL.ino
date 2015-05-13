@@ -204,7 +204,7 @@ void setup() {
   // use 38400 since it works at 8MHz as well as 16MHz
 
   Serial.begin(38400);
-  while (!Serial);AD5258
+  while (!Serial);
 
   // open BLE Hardware serial port
   Serial1.begin(38400);
