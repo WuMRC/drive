@@ -18,13 +18,15 @@
 
 #define TWI_FREQ 400000L      // Set TWI/I2C Frequency to 400MHz.
 
-#define cycles_base 15       // Cycles to ignore before a measurement is taken. Max is 511.
+const int CYCLES_BASE = 15;       // Cycles to ignore before a measurement is taken. Max is 511.
 
-#define cycles_multiplier 1    // Multiple for cycles_base. Can be 1, 2, or 4.
+const int CYCLES_MULTIPLIER = 1;    // Multiple for CYCLES_BASE. Can be 1, 2, or 4.
 
-#define cal_resistance 470  // Calibration resistance for the gain factor. 
+const int CAL_RESISTANCE = 353;  // Calibration resistance for the gain factor. 
 
-#define cal_samples 10         // Number of measurements to take of the calibration resistance.
+const int CAL_SAMPLES = 10;         // Number of measurements to take of the calibration resistance.
+
+const int DELAY = 10; // Delay between toggling the multiplexer
 
 // Define bit clearing and setting variables
 
@@ -67,15 +69,17 @@ double stepSizeHz = 0; // AC frequency step size between consecutive values (Hz)
 
 double endFreqHz = 0; // End frequency for 2 point calibration.
 
-double gain_factor = 0;      // Initialize Gain factor.
-
-double Z_Value = 0;          // Initialize impedance magnitude.
+double zMagnitude = 0;          // Initialize impedance magnitude.
 
 double rComp = 0;            // Initialize real component value.
 
 double iComp = 0;            // Initialize imaginary component value.
 
-double systemPhaseShift = 0;       // Initialize system phase shift value.
+double GAIN_FACTOR = 0;      // Initialize Gain factor.
+
+double VOLTAGE_PHASE_SHIFT = 0;       // Initialize system phase shift value.
+
+double CURRENT_PHASE_SHIFT = 0;       // Initialize current phase shift value.
 
 double phaseAngle = 0;       // Initialize phase angle value.
 
@@ -89,7 +93,9 @@ double temp = 0; // Used to update AD5933's temperature.
 
 double* GF_Array = NULL; // Pointer for dynamic gain factor array size.
 
-double* PS_Array = NULL; // Pointer for dynamic phase shift array size.
+double* VS_Array = NULL; // Pointer for dynamic phase shift array size.
+
+double* CS_Array = NULL; // Pointer for dynamic current phase shift array size.
 
 double* CR_Array = NULL; // Pointer for calibration impedance at a certain frequency. Used for filtering.
 
@@ -127,7 +133,7 @@ uint8_t ble_bonding = 0xFF; // 0xFF = no bonding, otherwise = bonding handle
 // ================================================================
 
 #define LED_PIN         13  // Arduino Uno LED pin
-#define BLE_RESET_PIN   6   // BLE reset pin (active-low)
+#define BLE_RESET_PIN   10   // BLE reset pin (active-low)
 
 #define GATT_HANDLE_C_BIOIMPEDANCE_DATA   17  // 0x11, supports "read", "notify" and "indicate" operations
 #define GATT_HANDLE_C_SAMPLE_RATE   21  // 0x15, supports "read" and "write" operations
@@ -135,7 +141,7 @@ uint8_t ble_bonding = 0xFF; // 0xFF = no bonding, otherwise = bonding handle
 
 // use SoftwareSerial on pins D8/D8 for RX/TX (Arduino side)
 
-//Serial1 bleSerialPort(19, 18); // change this to 3, 4 when using TinyDuino as pins cannot be changed to use
+//Serial2 bleSerialPort(17, 16); // change this to 3, 4 when using TinyDuino as pins cannot be changed to use
 // AltSoftSerial
 
 // create BGLib object:
@@ -143,9 +149,9 @@ uint8_t ble_bonding = 0xFF; // 0xFF = no bonding, otherwise = bonding handle
 //  - use nothing for passthrough comms (0 = null pointer)
 //  - enable packet mode on API protocol since flow control is unavailable
 
-BGLib ble112((HardwareSerial *)&Serial1, 0, 1);
+BGLib ble113((HardwareSerial *)&Serial2, 0, 1);
 
-#define BGAPI_GET_RESPONSE(v, dType) dType *v = (dType *)ble112.getLastRXPayload()
+#define BGAPI_GET_RESPONSE(v, dType) dType *v = (dType *)ble113.getLastRXPayload()
 
 // ================================================================
 // ARDUINO APPLICATION SETUP AND LOOP FUNCTIONS
@@ -159,6 +165,8 @@ void setup() {
   // For AD5933
   // ================================================================
 
+  AD5933.setupDevicePins(LOW);
+
   Wire.begin(); // Start Arduino I2C library
 
   cbi(TWSR, TWPS0);
@@ -166,11 +174,13 @@ void setup() {
 
   AD5933.setExtClock(false); 
   AD5933.resetAD5933(); 
-  AD5933.setSettlingCycles(cycles_base,cycles_multiplier); 
-  AD5933.setStartFreq(startFreqHz); 
+  AD5933.setSettlingCycles(CYCLES_BASE,CYCLES_MULTIPLIER); 
+  AD5933.setStartFreq(startFreqHz);
+  AD5933.setRange(1);   
   AD5933.setPGA(1); 
   temp = AD5933.getTemperature(); 
-  AD5933.getGainFactor(cal_resistance, cal_samples, gain_factor, systemPhaseShift, false);
+  
+  AD5933.getGainFactorTetra(CAL_RESISTANCE, CAL_SAMPLES, GAIN_FACTOR, VOLTAGE_PHASE_SHIFT, CURRENT_PHASE_SHIFT, false);
 
   // ================================================================
   // For BLE, Serial Communication and Timer interrupts
@@ -185,18 +195,18 @@ void setup() {
   digitalWrite(BLE_RESET_PIN, HIGH);
 
   // set up internal status handlers (these are technically optional)
-  ble112.onBusy = onBusy;
-  ble112.onIdle = onIdle;
-  ble112.onTimeout = onTimeout;
+  ble113.onBusy = onBusy;
+  ble113.onIdle = onIdle;
+  ble113.onTimeout = onTimeout;
 
   // set up BGLib event handolers
-  ble112.ble_evt_system_boot = my_ble_evt_system_boot;
-  ble112.ble_evt_connection_status = my_ble_evt_connection_status;
-  ble112.ble_evt_connection_disconnected = my_ble_evt_connection_disconnect;
-  ble112.ble_evt_attributes_value = my_ble_evt_attributes_value;
-  ble112.ble_evt_attclient_indicated = my_ble_evt_attclient_indicated;
-  ble112.ble_evt_attributes_status = my_ble_evt_attributes_status;
-  ble112.ble_rsp_attributes_write = my_ble_rsp_attributes_write; 
+  ble113.ble_evt_system_boot = my_ble_evt_system_boot;
+  ble113.ble_evt_connection_status = my_ble_evt_connection_status;
+  ble113.ble_evt_connection_disconnected = my_ble_evt_connection_disconnect;
+  ble113.ble_evt_attributes_value = my_ble_evt_attributes_value;
+  ble113.ble_evt_attclient_indicated = my_ble_evt_attclient_indicated;
+  ble113.ble_evt_attributes_status = my_ble_evt_attributes_status;
+  ble113.ble_rsp_attributes_write = my_ble_rsp_attributes_write; 
 
   ctrReg = AD5933.getByte(0x80);
 
@@ -207,10 +217,10 @@ void setup() {
   while (!Serial);
 
   // open BLE Hardware serial port
-  Serial1.begin(38400);
+  Serial2.begin(38400);
 
   my_ble_evt_system_boot(NULL);
-
+  
   // reset module
   digitalWrite(BLE_RESET_PIN, LOW);
   delay(5); // wait 5ms
@@ -220,21 +230,25 @@ void setup() {
   Serial.print(startFreqHz);
   Serial.println();
 
-  Serial.print("System Phase Shift: ");
-  Serial.print(systemPhaseShift, 4);
+  Serial.print("Voltage Phase Shift: ");
+  Serial.print(VOLTAGE_PHASE_SHIFT, 4);
+  Serial.println();
+  
+  Serial.print("Current Phase Shift: ");
+  Serial.print(CURRENT_PHASE_SHIFT, 4);
   Serial.println();
 
   // Write default values for handles once. 
-  ble112.ble_cmd_attributes_write(GATT_HANDLE_C_SAMPLE_RATE, 0, 1, sampleRateArray);
+  ble113.ble_cmd_attributes_write(GATT_HANDLE_C_SAMPLE_RATE, 0, 1, sampleRateArray);
 
   delay(20); // Wait 20 ms so async callback isn't blocked.
 
-  ble112.ble_cmd_attributes_write(GATT_HANDLE_C_AC_FREQ, 0, 3, freqSweepArray); 
+  ble113.ble_cmd_attributes_write(GATT_HANDLE_C_AC_FREQ, 0, 3, freqSweepArray); 
 
   bioImpData[10] = startFreq; // initialize start frequency data.
 
   CR_Array = new double[1];
-  CR_Array[0] = cal_resistance; // initialize CR array;
+  CR_Array[0] = CAL_RESISTANCE; // initialize CR array;
 
   // Start with sampling rate of 50 hertz
   sampleRatePeriod = 20000;
@@ -250,7 +264,7 @@ void loop() {
 
   // keep polling for new data from BLE
 
-  ble112.checkActivity();
+  ble113.checkActivity();
 
   pseudo = pseudo + 0.1; // change psuedo signal independent of sample rate.
 
@@ -272,28 +286,62 @@ void loop() {
 
     if(!FREQ_SWEEP_FLAG) { // Repeat frequency, don't sweep.
       AD5933.setCtrMode(REPEAT_FREQ);
-      AD5933.getComplex(gain_factor, systemPhaseShift, Z_Value, phaseAngle);
+      
+      AD5933.getComplexTetra(DELAY, GAIN_FACTOR, VOLTAGE_PHASE_SHIFT, CURRENT_PHASE_SHIFT, zMagnitude, phaseAngle);
     }
 
     else { // Perform frequency sweep at the speed of the loop determined by SAMPLE_RATE_FLAG.
 
-      // Byte of ctrReg alredy gotten from changing mode to enable freq sweep.
-      if(currentStep == 0) {
+      if (currentStep == numOfIncrements + 1) { // Reset currentStep on overflow
+        currentStep = 0;
+      }
+
+
+      if(currentStep == 0) { // First step in frequency sweep; initialize, measure, then increase frequency
+
+        ctrReg = AD5933.getByte(0x80);
         AD5933.setCtrMode(STAND_BY, ctrReg);
         AD5933.setCtrMode(INIT_START_FREQ, ctrReg);
         AD5933.setCtrMode(START_FREQ_SWEEP, ctrReg);
+
+        AD5933.getComplexTetra(DELAY,
+        GF_Array[currentStep],
+        VS_Array[currentStep],
+        CS_Array[currentStep],
+        zMagnitude,
+        phaseAngle);
+
+        AD5933.setCtrMode(INCR_FREQ);
       }
 
-      AD5933.getComplex(GF_Array[currentStep], PS_Array[currentStep], Z_Value, phaseAngle);
 
-      if(currentStep == numOfIncrements) {
-        currentStep = 0;
+
+      else if(currentStep == numOfIncrements) {  // Last frequency in sweep; measure, power down, then reset values after printing
+
+        AD5933.getComplexTetra(DELAY,
+        GF_Array[currentStep],
+        VS_Array[currentStep],
+        CS_Array[currentStep],
+        zMagnitude,
+        phaseAngle);
+
         AD5933.setCtrMode(POWER_DOWN, ctrReg);
-      }
-      else {
-        AD5933.setCtrMode(INCR_FREQ, ctrReg);
-        currentStep++;
-      }
+      }   
+
+      else{ // for intermediate frequencies, measure then increase frequency
+
+        AD5933.getComplexTetra(DELAY,
+        GF_Array[currentStep],
+        VS_Array[currentStep],
+        CS_Array[currentStep],
+        zMagnitude,
+        phaseAngle);
+
+        AD5933.setCtrMode(INCR_FREQ);
+      }   
+
+      currentStep++;
+
     }
 
     // For BLE
@@ -307,7 +355,7 @@ void loop() {
     bioImpData[1] = 0;
     bioImpData[2] = 0;  
 
-    if(Z_Value > 7000) {
+    if(zMagnitude > 7000) {
 
       for(int i = 3; i <= 7; i++) {    // Transmit zero if filter is not satisfied.    
         bioImpData[i] = 0;
@@ -315,15 +363,15 @@ void loop() {
 
     }
     else {
-      Z_Value += 0.00005;
-      Z_Value *= 10000;
+      zMagnitude += 0.00005;
+      zMagnitude *= 10000;
       phaseAngle += 0.00005;
       phaseAngle *= 10000;
-      updateData((long) Z_Value, (long) phaseAngle, bioImpData);
+      updateData((long) zMagnitude, (long) phaseAngle, bioImpData);
     }     
 
-    //Write notification values to characteristic on ble112. Causes notification to be sent.
-    ble112.ble_cmd_attributes_write(GATT_HANDLE_C_BIOIMPEDANCE_DATA, 0, 11, bioImpData);
+    //Write notification values to characteristic on ble113. Causes notification to be sent.
+    ble113.ble_cmd_attributes_write(GATT_HANDLE_C_BIOIMPEDANCE_DATA, 0, 11, bioImpData);
     SAMPLE_RATE_FLAG = false; // Switch this flag back to false till timer interrupt switches it back on.     
   }   
   else {
@@ -417,14 +465,14 @@ void my_ble_evt_system_boot(const ble_msg_system_boot_evt_t *msg) {
 
   // set advertisement interval to 200-300ms, use all advertisement channels
   // (note min/max parameters are in units of 625 uSec)
-  ble112.ble_cmd_gap_set_adv_parameters(320, 480, 7);
-  while (ble112.checkActivity(1000));
+  ble113.ble_cmd_gap_set_adv_parameters(320, 480, 7);
+  while (ble113.checkActivity(1000));
 
   // USE THE FOLLOWING TO LET THE BLE STACK HANDLE YOUR ADVERTISEMENT PACKETS
   // ========================================================================
   // start advertising general discoverable / undirected connectable
-  //ble112.ble_cmd_gap_set_mode(BGLIB_GAP_GENERAL_DISCOVERABLE, BGLIB_GAP_UNDIRECTED_CONNECTABLE);
-  //while (ble112.checkActivity(1000));
+  //ble113.ble_cmd_gap_set_mode(BGLIB_GAP_GENERAL_DISCOVERABLE, BGLIB_GAP_UNDIRECTED_CONNECTABLE);
+  //while (ble113.checkActivity(1000));
 
   // USE THE FOLLOWING TO HANDLE YOUR OWN CUSTOM ADVERTISEMENT PACKETS
   // =================================================================
@@ -441,8 +489,8 @@ void my_ble_evt_system_boot(const ble_msg_system_boot_evt_t *msg) {
   };
 
   // set custom advertisement data
-  ble112.ble_cmd_gap_set_adv_data(0, 0x15, adv_data);
-  while (ble112.checkActivity(1000));
+  ble113.ble_cmd_gap_set_adv_data(0, 0x15, adv_data);
+  while (ble113.checkActivity(1000));
 
   // build custom scan response data (i.e. the Device Name value)
   // default BLE stack value: 140942474c69622055314131502033382e344e4657
@@ -455,8 +503,8 @@ void my_ble_evt_system_boot(const ble_msg_system_boot_evt_t *msg) {
   };
 
   // get BLE MAC address
-  ble112.ble_cmd_system_address_get();
-  while (ble112.checkActivity(1000));
+  ble113.ble_cmd_system_address_get();
+  while (ble113.checkActivity(1000));
   BGAPI_GET_RESPONSE(r0, ble_msg_system_address_get_rsp_t);
 
   // assign last three bytes of MAC address to ad packet friendly name (instead of 00:00:00 above)
@@ -468,12 +516,12 @@ void my_ble_evt_system_boot(const ble_msg_system_boot_evt_t *msg) {
   sr_data[20] = (r0 -> address.addr[0] & 0xF)  + 48 + ((r0 -> address.addr[0] & 0xF ) / 10 * 7); // MAC byte 6 1's digit
 
   // set custom scan response data (i.e. the Device Name value)
-  ble112.ble_cmd_gap_set_adv_data(1, 0x15, sr_data);
-  while (ble112.checkActivity(1000));
+  ble113.ble_cmd_gap_set_adv_data(1, 0x15, sr_data);
+  while (ble113.checkActivity(1000));
 
   // put module into discoverable/connectable mode (with user-defined advertisement data)
-  ble112.ble_cmd_gap_set_mode(BGLIB_GAP_USER_DATA, BGLIB_GAP_UNDIRECTED_CONNECTABLE);
-  while (ble112.checkActivity(1000));
+  ble113.ble_cmd_gap_set_mode(BGLIB_GAP_USER_DATA, BGLIB_GAP_UNDIRECTED_CONNECTABLE);
+  while (ble113.checkActivity(1000));
 
   // set state to ADVERTISING depending on timed out condition
   if(TIMED_OUT_FLAG == false) {
@@ -554,12 +602,12 @@ void my_ble_evt_connection_disconnect(const struct ble_msg_connection_disconnect
   // ^^^ skip above since we're going right back into advertising below
 
   // after disconnection, resume advertising as discoverable/connectable
-  //ble112.ble_cmd_gap_set_mode(BGLIB_GAP_GENERAL_DISCOVERABLE, BGLIB_GAP_UNDIRECTED_CONNECTABLE);
-  //while (ble112.checkActivity(1000));
+  //ble113.ble_cmd_gap_set_mode(BGLIB_GAP_GENERAL_DISCOVERABLE, BGLIB_GAP_UNDIRECTED_CONNECTABLE);
+  //while (ble113.checkActivity(1000));
 
   // after disconnection, resume advertising as discoverable/connectable (with user-defined advertisement data)
-  ble112.ble_cmd_gap_set_mode(BGLIB_GAP_USER_DATA, BGLIB_GAP_UNDIRECTED_CONNECTABLE);
-  while (ble112.checkActivity(1000));
+  ble113.ble_cmd_gap_set_mode(BGLIB_GAP_USER_DATA, BGLIB_GAP_UNDIRECTED_CONNECTABLE);
+  while (ble113.checkActivity(1000));
 
   // set state to ADVERTISING
   ble_state = BLE_STATE_ADVERTISING;
@@ -597,7 +645,7 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
 
     sampleRate = msg -> value.data[0];
     sampleRatePeriod = 1000000 / ((long) sampleRate);
-    
+
     sampleRateArray[0] = sampleRate;
     sampleRateArray[1] = 1;
 
@@ -610,7 +658,7 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
     Serial.print(" microseconds.");
     Serial.println();
 
-    ble112.ble_cmd_attributes_write(GATT_HANDLE_C_SAMPLE_RATE, 0, 2, sampleRateArray); 
+    ble113.ble_cmd_attributes_write(GATT_HANDLE_C_SAMPLE_RATE, 0, 2, sampleRateArray); 
 
     Micro40Timer::set(sampleRatePeriod, notify); 
     Micro40Timer::start();
@@ -619,7 +667,8 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
   if (msg -> handle == GATT_HANDLE_C_AC_FREQ && msg -> value.len > 0) {
 
     delete [] GF_Array; // Free memory from previous GF array.
-    delete [] PS_Array; // Free memory from previous PS array.
+    delete [] VS_Array; // Free memory from previous VS array.
+    delete [] CS_Array; // Free memory from previous CS array.
     delete [] CR_Array; // Free memory from previous CR array.
 
     Serial.println("Old Arrays Deleted.");
@@ -647,12 +696,14 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
 
       AD5933.setExtClock(false);
       AD5933.resetAD5933();
-      AD5933.setSettlingCycles(cycles_base, cycles_multiplier);
+      AD5933.setSettlingCycles(CYCLES_BASE, CYCLES_MULTIPLIER);
       AD5933.setStartFreq(startFreqHz);
+      AD5933.setRange(1);
       AD5933.setPGA(1);
-      AD5933.getGainFactor(cal_resistance, cal_samples, gain_factor, systemPhaseShift, false);
 
-      AD5933.getComplex(gain_factor, systemPhaseShift, CR_Array[0], phaseAngle);
+      AD5933.getGainFactorTetra(CAL_RESISTANCE, CAL_SAMPLES, GAIN_FACTOR, VOLTAGE_PHASE_SHIFT, CURRENT_PHASE_SHIFT, false);
+
+      AD5933.getComplexTetra(DELAY, GAIN_FACTOR, VOLTAGE_PHASE_SHIFT, CURRENT_PHASE_SHIFT, CR_Array[0], phaseAngle);
 
       Serial.println("Gain factors gotten.");
 
@@ -663,11 +714,15 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
       Serial.print("\t");
       Serial.print("Gain factor:");
       Serial.print("\t");
-      Serial.print(gain_factor);
+      Serial.print(GAIN_FACTOR);
       Serial.print("\t");
-      Serial.print("SystemPS:");
+      Serial.print("VoltagePS:");
       Serial.print("\t");
-      Serial.print(systemPhaseShift, 4);
+      Serial.print(VOLTAGE_PHASE_SHIFT, 4);
+      Serial.print("\t");
+      Serial.print("CurrentPS:");
+      Serial.print("\t");
+      Serial.print(CURRENT_PHASE_SHIFT, 4);
       Serial.print("\t");
       Serial.print("CR: ");
       Serial.print("\t");
@@ -684,43 +739,32 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
       // generate gain factor array using two point calibration.
 
       GF_Array = new double[numOfIncrements + 1];
-      PS_Array = new double[numOfIncrements + 1];
+      VS_Array = new double[numOfIncrements + 1];
+      CS_Array = new double[numOfIncrements + 1];
       CR_Array = new double[numOfIncrements + 1];
-
-      deltaGF = 0;
-      deltaPS = 0;
 
       for (int i = 0; i < numOfIncrements; i++) {
         GF_Array[i] = 0;    // Initialize all elements to zero.
-        PS_Array[i] = 0;    // Initialize all elements to zero.        
+        VS_Array[i] = 0;    // Initialize all elements to zero. 
+        CS_Array[i] = 0;    // Initialize all elements to zero. 
+        CR_Array[i] = 0;    // Initialize all elements to zero.                       
       }
 
       Serial.println("New Arrays created.");
+
+      cbi(TWSR, TWPS0);
+      cbi(TWSR, TWPS1); // Clear bits in port
 
       AD5933.setExtClock(false);
       AD5933.resetAD5933();
       AD5933.setStartFreq(startFreqHz);
       AD5933.setStepSize(stepSizeHz);
       AD5933.setNumofIncrement(numOfIncrements);      
-      AD5933.setSettlingCycles(cycles_base, cycles_multiplier);
-      AD5933.getTemperature();
+      AD5933.setSettlingCycles(CYCLES_BASE, CYCLES_MULTIPLIER);
       AD5933.setPGA(1);
 
-      /*AD5933.getGainFactors_LI(
-       cal_resistance, cal_samples, startFreqHz, endFreqHz,
-       GF_Array[0], GF_Array[numOfIncrements], 
-       PS_Array[0], PS_Array[numOfIncrements]);
-       
-       deltaGF = GF_Array[numOfIncrements] - GF_Array[0];
-       deltaPS = PS_Array[numOfIncrements] - PS_Array[0];
-       
-       AD5933.getArraysLI(
-       deltaGF, deltaPS,
-       stepSizeHz, numOfIncrements,
-       GF_Array[0], PS_Array[0],
-       GF_Array, PS_Array);*/
+      AD5933.getGainFactorsTetraSweep(CAL_RESISTANCE, CAL_SAMPLES, GF_Array, VS_Array, CS_Array);
 
-      AD5933.getGainFactorsSweep(cal_resistance, cal_samples, GF_Array, PS_Array);
 
       Serial.println("Gain factors gotten.");
 
@@ -733,16 +777,16 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
           AD5933.setCtrMode(STAND_BY, ctrReg);
           AD5933.setCtrMode(INIT_START_FREQ, ctrReg);
           AD5933.setCtrMode(START_FREQ_SWEEP, ctrReg);
-          AD5933.getComplex(GF_Array[i], PS_Array[i], CR_Array[i], phaseAngle);
+          AD5933.getComplexTetra(DELAY, GF_Array[i], VS_Array[i], CS_Array[i], CR_Array[i], phaseAngle);
         }
 
         else if(i > 0 &&  i < numOfIncrements) {
-          AD5933.getComplex(GF_Array[i], PS_Array[i], CR_Array[i], phaseAngle);
+          AD5933.getComplexTetra(DELAY, GF_Array[i], VS_Array[i], CS_Array[i], CR_Array[i], phaseAngle);
           AD5933.setCtrMode(INCR_FREQ, ctrReg);
         }
 
         else if(i = numOfIncrements) {
-          AD5933.getComplex(GF_Array[i], PS_Array[i], CR_Array[i], phaseAngle);
+          AD5933.getComplexTetra(DELAY, GF_Array[i], VS_Array[i], CS_Array[i], CR_Array[i], phaseAngle);
           AD5933.setCtrMode(POWER_DOWN, ctrReg);
         }
 
@@ -755,10 +799,15 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
         Serial.print("\t");
         Serial.print(GF_Array[i]);
         Serial.print("\t");
-        Serial.print("SystemPS term: ");
+        Serial.print("VoltagePS term: ");
         Serial.print(i);
         Serial.print("\t");
-        Serial.print(PS_Array[i], 4);
+        Serial.print(VS_Array[i], 4);
+        Serial.print("\t");
+        Serial.print("CurrentPS term: ");
+        Serial.print(i);
+        Serial.print("\t");
+        Serial.print(CS_Array[i], 4);
         Serial.print("\t");        
         Serial.print("CR term: ");
         Serial.print(i);
@@ -780,8 +829,8 @@ void my_ble_evt_attributes_value(const struct ble_msg_attributes_value_evt_t *ms
     Serial.print(numOfIncrements);
     Serial.println();
     Serial.println();
-    
-    ble112.ble_cmd_attributes_write(GATT_HANDLE_C_AC_FREQ, 0, 4, freqSweepArray); 
+
+    ble113.ble_cmd_attributes_write(GATT_HANDLE_C_AC_FREQ, 0, 4, freqSweepArray); 
 
     Micro40Timer::set(sampleRatePeriod, notify);
     Micro40Timer::start();    
@@ -864,10 +913,18 @@ void updateData(long magnitude, long phaseAng, uint8_t *values) {
 
 void resetBLE() {
   digitalWrite(BLE_RESET_PIN, LOW);
-  delay(50); // wait 5ms
+  delay(5); // wait 5ms
   digitalWrite(BLE_RESET_PIN, HIGH);
   Serial.println("Reset attempt.");
 }
+
+
+
+
+
+
+
+
 
 
 
