@@ -332,7 +332,7 @@ bool AD5933_Class::setRange(byte rangeToSet) {
 
 bool AD5933_Class::setRange(byte rangeToSet, int ctrReg) {
 
-	ctrReg &= 0xF9; // Get D9 & D10.
+	ctrReg &= 0xF9; // Clear D9 & D10 to modify
 
 	switch (rangeToSet) {
 
@@ -391,7 +391,7 @@ bool AD5933_Class::setPGA(byte pgaGain){
 
 bool AD5933_Class::setPGA(byte pgaGain, int ctrReg) {
 
-	ctrReg &= 0xFE; // Get D8.
+	ctrReg &= 0xFE; // Clear D8 to modify
 
 	switch (pgaGain) {
 
