@@ -12,9 +12,9 @@
 #include<Arduino.h> // For access to hardware pins
 #include<HardwareSerial.h> // for Serial Logging
 
-const int LOGGING1 = 0; // Basic Log, Error
-const int LOGGING2 = 0; // Related to Development Phase
-const int LOGGING3 = 0; // Detailed Log for Debugging
+#define LOGGING1 0 // Basic Log, Error
+#define LOGGING2 0 // Related to Development Phase
+#define LOGGING3 0 // Detailed Log for Debugging
 // Caution! Currently, verbose logging feature makes problem. Do not use them before proper debugging.
 
 const int AD5933_ADR = 0x0D; // Device Serial Bus Address
