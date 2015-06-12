@@ -55,7 +55,7 @@ bool AD5933_Class::tempUpdate() {
 	if (setCtrMode(TEMP_MEASURE) == false)
 	{
 #if LOGGING1
-		printer->println("getTemperature - Failed to set the control bit");
+		printer->println("tempUpdate - Failed to set the control bit");
 #endif
 		return false;
 	}
