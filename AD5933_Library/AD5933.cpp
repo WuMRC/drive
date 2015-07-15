@@ -825,6 +825,29 @@ bool AD5933_Class::getComplex(double gainFactor, double pShift, double &impVal, 
 }
 
 /*
+ * Gets the impedance magnitude for the AD5933 in a bi-polar configuration.
+ *
+ * @Param gainFactor The gainfactor caluclulated at calibration
+ * @Param impVal The magnitude of the impedance
+ */
+
+bool AD5933_Class::getImpedance(double gainFactor, double &impVal) {
+	while ( (getStatusReg() & 0x02) != 0x02 ); // Wait until measurement is complete.
+
+	int rComp, iComp;
+
+	byte impData[4];
+	blockRead(0x94, 4, impData);
+	rComp = impData[0] * 16 * 16 + impData[1];
+	iComp = impData[2] * 16 * 16 + impData[3];
+
+	double magSq = getMag(rComp, iComp);
+	impVal = gainFactor / magSq;
+	return true;
+}
+
+
+/*
  * Gets the impedance magnitude and phase angle for the AD5933 in a tetra-polar configuration.
  *
  * @Param gainFactor The gainfactor caluclulated at calibration

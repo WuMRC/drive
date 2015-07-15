@@ -94,6 +94,7 @@ public: // The detailed instruction will be on Wiki or ".cpp" file
 
 	bool getComplex(double, double, double &, double &);
 	bool getComplexTetra(int, double, double, double, double &, double &);
+	bool getImpedance(double, double &);
 
 	bool setupDevicePins(int);
 
