@@ -411,7 +411,7 @@ bool AD5933_Class::setPGA(byte pgaGain, int ctrReg) {
 
 	default:
 #if LOGGING1
-		printer->println("setRange - Invalid Parameter!");
+		printer->println("setPGA - Invalid Parameter!");
 #endif
 		return false; // return the signal of fail if there is not valid parameter.
 		break;
@@ -612,7 +612,7 @@ bool AD5933_Class::getGainFactorTetra(double calResistance, int avgNum, double &
 }
 
 /**
- * Calculates the gain factors and system phase shift for each step in a predrfined frequency sweep for the AD5933 in a bi-polar configuration
+ * Calculates the gain factors and system phase shift for each step in a predefined frequency sweep for the AD5933 in a bi-polar configuration
  *
  * @Param cResistance The calibration resistance
  * @Param avgNum The number of times each gain factor should be measured, and then averaged by.
@@ -942,6 +942,7 @@ bool AD5933_Class::setCtrMode(byte modetoSet, int ctrReg) {
 
 /*
  * Hidden Function to get the contents of a register address via I2C.
+ * Returns retrived byte data.
  *
  * @Param address The I2C register address to query
  */
@@ -1029,11 +1030,13 @@ bool AD5933_Class::setByte(int address, int value) {
 	}
 }
 
+/*
+ * Hidden Function to get magnitude value of impedance measurement. (It does not wait.)
+ * Returns the magnitude of impedance value
+ */
 double AD5933_Class::getMagValue() {
-	// Hidden Function to get magnitude value of impedance measurement. (It does not wait.)
-
+	
 	int rComp, iComp;
-
 
 	byte impData[4];
 	blockRead(0x94, 4, impData);
@@ -1048,8 +1051,11 @@ double AD5933_Class::getMagValue() {
 	return result;
 }
 
+/*
+ * Wrapper Function of getMagValue. It waits until the ADC completes the conversion.
+ *
+ */
 double AD5933_Class::getMagOnce()
-// Wrapper Function of getMagValue. It waits until the ADC completes the conversion.
 {
 	while (!isValueReady()) // wait until ADC conversion is complete.
 	{
@@ -1061,6 +1067,9 @@ double AD5933_Class::getMagOnce()
 
 /*
  * Reads a block of data from the AD5933
+ * Implemented for Block Access with reading multiple bytes in once as optimization
+ *
+ * Returns false when failed. Returns true when succeed.
  *
  * @Param address The address of the AD5933
  * @Param num2Read The number of values to read
@@ -1101,6 +1110,7 @@ bool AD5933_Class::blockRead(int address, int num2Read, byte *toSave)
 
 /*
  * Checks if the AD5933 has completed it's DFT algorithm and the results are present in the registers.
+ * It is private function. It should not be used outside of the program.
  */
 
 bool AD5933_Class::isValueReady()
@@ -1112,7 +1122,9 @@ bool AD5933_Class::isValueReady()
 }
 
 /*
- * Used to set I/O pins for custom AD5933 PCB
+ * Used to set I/O pins for custom AD5933 PCB (Tetrapolar, made by Henway)
+ * Programmed by Adetunji Dahunsi
+ * Designed for Henway Tetrapolar Custom AD5933 PCB Circuit
  *
  * @Param state Configure the AD5933 in bi-polar or tetra polar mode (LOW - TETRA, HIGH - BI)
  *
