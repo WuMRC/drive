@@ -24,7 +24,7 @@ nMarker = length(bioimp.acq.markers.szText);
 for indMarker = 2:nMarker
     markerText = bioimp.acq.markers.szText{:,indMarker};%(11:end);
     % FOR DIALYSIS
-    saveFilename = strcat('b','-after-',patientID,'-',markerText);
+    saveFilename = strcat('b','-before-',patientID,'-',markerText);
     saveFilename(ismember(saveFilename,' ,.:;!/')) = []
 %     if length(markerText) > 12
 %         markerText = markerText(11:end);
