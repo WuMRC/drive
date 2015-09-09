@@ -1,1 +1,3 @@
-Hello Annie. This is an example of Github stuff.
+Hello Annie. This is an example of Github deletion (and deleting).
+
+Here I am adding something.
