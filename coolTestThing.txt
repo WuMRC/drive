@@ -1,1 +1,9 @@
 Hello Brandon.
+
+if I = makes changes
+	Do cool things
+else
+	Maybe still do cool things
+end
+
+Cool.
