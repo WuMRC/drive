@@ -1,0 +1,62 @@
+%% STEP 1
+clc;clear;close
+% Select patient folder
+[filename,pathname]=uigetfile('*.*','Pick an ACQ file');
+addpath(genpath(pathname));
+cd(pathname)
+bioimp.acq = loadACQ(filename);
+
+% % Get patient ID
+patientID = filename(1:7);
+patientID(ismember(patientID,' ,.:;!/')) = [];
+%% STEP 2
+% Filename based on marker
+%bioimp.acq.markers.szText = bioimp.acq.markers.szText(2:end);
+nMarker = length(bioimp.acq.markers.szText);
+indMarker = 2;
+
+while indMarker < nMarker
+markerText = bioimp.acq.markers.szText(indMarker);
+markerText2 = markerText;
+timeLength = 15;
+    % GET RAW SIGNAL AND SAMPLING DATA
+    bioimp.nb.dt = (bioimp.acq.hdr.graph.sample_time)*0.001; % in sec
+    bioimp.nb.time = 0:bioimp.nb.dt:15-bioimp.nb.dt; %defines range of 15 sec after marker
+        bioimp.nb.FsBI = 1/bioimp.nb.dt;
+        bioimp.nb.data = bioimp.acq.data(...
+            bioimp.acq.markers.lSample(indMarker):...
+            bioimp.acq.markers.lSample(indMarker)...
+            +(timeLength*bioimp.nb.FsBI-1),:);
+        
+        % TOTAL SMOOTHED SIGNAL
+        bioimp.nb.armS.total = smooth(smooth(...
+            bioimp.nb.data(:,1),...
+            bioimp.nb.FsBI/2),bioimp.nb.FsBI/10);
+        bioimp.nb.legS.total = smooth(smooth(...
+            bioimp.nb.data(:,2),...
+            bioimp.nb.FsBI/2),bioimp.nb.FsBI/10);
+        
+        % RESPIRATORY SIGNAL
+        bioimp.nb.armS.resp = smooth(bioimp.nb.armS.total,bioimp.nb.FsBI);
+        bioimp.nb.legS.resp = smooth(bioimp.nb.legS.total,bioimp.nb.FsBI);
+        
+        % CARDIAC SIGNAL
+        bioimp.nb.armS.card = bioimp.nb.armS.total-bioimp.nb.armS.resp;
+        bioimp.nb.legS.card = bioimp.nb.legS.total-bioimp.nb.legS.resp;
+        
+        %Save Data
+        field1 = 'armTotal';  value1 = bioimp.nb.armS.total;
+        field2 = 'legTotal';  value2 = bioimp.nb.legS.total;
+        field3 = 'armResp';   value3 = bioimp.nb.armS.resp;
+        field4 = 'legResp';   value4 = bioimp.nb.legS.resp;
+        field5 = 'armCard';   value5 = bioimp.nb.armS.card;
+        field6 = 'legCard';   value6 = bioimp.nb.legS.card;
+        field7 = 'markerText'; value7 = markerText;
+       
+        bioimpData = struct(field1,value1,field2,value2,field3,value3,field4,value4,field5,value5,field6,value6,field7,value7);
+        indMarker=indMarker+1;
+    %Saving    
+    saveFilename = strcat(patientID,'_',markerText);
+    saveFilename = char(saveFilename);
+    save(saveFilename,'bioimpData');
+end
