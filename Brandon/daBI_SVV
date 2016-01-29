@@ -51,11 +51,11 @@ minLegLength=length(minLeg);
     end
     
 %Calculation of SVV
-deltaoverMax_Arm=(maxArm-minArm)/maxArm;
-deltaoverMin_Arm=(maxArm-minArm)/minArm;
+deltaoverMax_Arm=(maxArm-minArm)./maxArm;
+deltaoverMin_Arm=(maxArm-minArm)./minArm;
 
-deltaoverMax_Leg=(maxLeg-minLeg)/maxLeg;
-deltaoverMin_Leg=(maxLeg-minLeg)/maxLeg;
+deltaoverMax_Leg=(maxLeg-minLeg)./maxLeg;
+deltaoverMin_Leg=(maxLeg-minLeg)./maxLeg;
     
 
 %% Plotting
