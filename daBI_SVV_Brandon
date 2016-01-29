@@ -1,0 +1,90 @@
+%% daBI_SVV_Brandon: Drive Analysis - Bioimpedance
+% Stroke volume variation
+
+%Load .mat file with bioimpData stuct
+[filename,pathname] = uigetfile('*.*','Pick a filtered MAT file');
+addpath(genpath(pathname));
+cd(pathname);
+
+%Import card variables from bioimpData struct
+load(filename);
+armCard = bioimpData.armCard;
+legCard = bioimpData.legCard;
+
+
+%% Find Peaks
+[maxArm,maxArmIndex]=findpeaks(armCard,'MinPeakProminence',0.001);
+negativearmCard=-armCard;
+[minArm,minArmIndex]=findpeaks(negativearmCard,'MinPeakProminence',0.001);
+minArm=-minArm;
+
+[maxLeg,maxLegIndex]=findpeaks(legCard,'MinPeakProminence',0.001);
+negativelegCard=-legCard;
+[minLeg,minLegIndex]=findpeaks(negativelegCard,'MinPeakProminence',0.001);
+minLeg=-minLeg;
+
+%% SVV Calculation
+
+%Resizing max and min
+maxArmLength=length(maxArm);
+minArmLength=length(minArm);
+
+maxLegLength=length(maxLeg);
+minLegLength=length(minLeg);
+
+    %Arm Resizing
+    if maxArmLength > minArmLength;
+        maxArm=maxArm(1:minArmLength);
+        maxArmIndex=maxArmIndex(1:minArmLength);
+    elseif minArmLength > maxArmLength;
+        minArm=minArm(1:maxArmLength);
+        minArmIndex=maxArmIndex(1:minArmLength);
+    end
+
+    %Leg Resizing
+    if maxLegLength > minLegLength;
+        maxLeg=maxLeg(1:minLegLength);
+        maxLegIndex=maxLegIndex(1:minLegLength);
+    elseif minLegLength > maxLegLength;
+        minLeg=minLeg(1:maxLegLength);
+        minLegIndex=maxLegIndex(1:minLegLength);
+    end
+    
+%Calculation of SVV
+deltaoverMax_Arm=(maxArm-minArm)/maxArm;
+deltaoverMin_Arm=(maxArm-minArm)/minArm;
+
+deltaoverMax_Leg=(maxLeg-minLeg)/maxLeg;
+deltaoverMin_Leg=(maxLeg-minLeg)/maxLeg;
+    
+
+%% Plotting
+subplot(2,2,1), hold on
+    plot(armCard,'r');
+    plot(maxArmIndex,maxArm,'go');
+    plot(minArmIndex,minArm,'ro');
+    title('Arm Cardiac Signal, Filtered');
+    xlabel('Time [s]')
+    ylabel('Total and Resp Z [Volts (need conversion)]')
+    hold off
+    
+subplot(2,2,3), hold on
+    plot(legCard,'r');
+    plot(maxLegIndex,maxLeg,'go');
+    plot(minLegIndex,minLeg,'ro');
+    title('Leg Cardiac Signal, Filtered');
+    xlabel('Time[s]')
+    ylabel('Total and Resp Z [Volts (need conversion)]')
+    hold off
+    
+subplot(2,2,2), hold on
+    plot(deltaoverMax_Arm,'r');
+    plot(deltaoverMin_Arm,'b');
+    title('SVV (max-min)/max');
+    hold off
+    
+subplot(2,2,4), hold on
+    plot(deltaoverMax_Leg,'r');
+    plot(deltaoverMin_Leg,'b');
+    title('SVV (max-min)/min');
+    hold off   
