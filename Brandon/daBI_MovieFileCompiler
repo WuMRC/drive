@@ -1,0 +1,33 @@
+%% daBI_MovieFileSaver
+%   Saves various .fig files for eventual compilation into a movie.
+
+%% STEP 1: GET FILE
+[filename,pathname] = uigetfile('*,*','Pick a filtered MAT file');
+addpath(genpath(pathname));
+cd(pathname);
+
+load(filename);
+bioimp=bioimpData.armTotal(1:20:end);
+bioimpLength=length(bioimp);
+
+%% STEP 2: COLLECT FIG FILES
+
+for n = [1:bioimpLength];
+    figure
+    hold on
+    axis([0 150 -0.01 0]);
+    plot(bioimp(1:n),'r');
+    title('Normal Breathing');
+    xlabel('Time [s/10]');
+    ylabel('Bioimpedance');
+    
+    %Saving
+    filename = strcat('NB_',num2str(n));
+    savefig(filename);
+    F(n)=getframe(gcf);
+    close
+end
+
+movie(gcf,F);
+
+movie2avi(F,'WaveMovie.avi');
