@@ -1,0 +1,84 @@
+%% daBI_SVV_minmax: DRIVE ANALYSIS: Bioimpedance
+% Stroke Volume Variation
+
+%Description: Evaluates MAT files saved by "daBI_v04_BrandonRoughDraft"
+%Caclulates stroke volume variation using min/max technique
+% 1. SVV_1 = avg( (max-min)/max )
+
+%Other notes: 
+%   Currently uses the rough draft version of the conversion tool
+%   Analyzes only the cardiac signal from the arm
+
+%% IMPORT DATA
+clc;clear;close
+
+%Load 'Before' .mat file with bioimpData stuct
+[filename,pathname] = uigetfile('*.*','Pick a NB .MAT file');
+addpath(genpath(pathname));
+cd(pathname);
+
+%Import card variables from bioimpData struct
+load(filename);
+armCard = bioimpData.armCard;
+armResp = bioimpData.armResp;
+
+%% METHOD 1: SVV_1
+%   (max-min)/max, or delta/max
+
+%Peak finding
+[maxArm,maxArmIndex]=findpeaks(armCard,'MinPeakProminence',0.001);
+negativearmCard=-armCard;
+[minArm,minArmIndex]=findpeaks(negativearmCard,'MinPeakProminence',0.001);
+minArm=-minArm;
+
+%Resizing max and min
+maxArmLength=length(maxArm);
+minArmLength=length(minArm);
+
+if maxArmLength > minArmLength;
+    maxArm=maxArm(1:minArmLength);
+    maxArmIndex=maxArmIndex(1:minArmLength);
+elseif minArmLength > maxArmLength;
+    minArm=minArm(1:maxArmLength);
+    minArmIndex=maxArmIndex(1:minArmLength);
+end
+
+%Calculation of SVV_1
+totalSVV_1 = (maxArm-minArm)./maxArm;
+avgSVV_1 = mean(totalSVV_1)
+
+%% METHOD 2: SVV_2
+%   RMS = sqrt(mean/N^2)
+
+avgarmCard = mean(armCard);
+rms = sqrt(avgarmCard./(armCard).^2);
+rmsNoInf=rms~=Inf;
+avgRMS = mean(rmsNoInf)
+[maxRMS,maxRMSindex] = findpeaks(rms,'MinPeakProminence',100);
+
+%% PLOTTING
+
+%SVV_1
+subplot(2,1,1), hold on
+    plot(maxArmIndex,totalSVV_1*.002,'k');
+    plot(armCard,'r');
+    plot(maxArmIndex,maxArm,'go');
+    plot(minArmIndex,minArm,'ro');
+    plot(armResp,'b')
+    title('Stroke Volume Variation: (Max-Min)/Max');
+    xlabel('Time [s]');
+    legend('Stroke Volume Variation','Cardiac Signal (Arm)','Max Peaks',...
+        'Min Peaks','Respiratory Signal');
+    hold off
+ 
+%SVV_2
+subplot(2,1,2), hold on
+plot(rms*.000005,'k');
+plot(maxRMSindex,maxRMS*.000005,'go');
+plot(armCard,'r');
+plot(armResp,'b');
+title('Stroke Volume Variation: RMS');
+xlabel('Time [s]');
+legend('Stroke Volume Variation','Max Peak','Cardiac Signal',...
+    'Respiratory Signal');
+hold off
