@@ -1,90 +1,60 @@
 %% daBI_SVV_Brandon: Drive Analysis - Bioimpedance
 % Stroke volume variation
 
+clc;clear;close
+
 %Load .mat file with bioimpData stuct
-[filename,pathname] = uigetfile('*.*','Pick a filtered MAT file');
+[filename,pathname] = uigetfile('*.*','Pick a NB filtered MAT file');
 addpath(genpath(pathname));
 cd(pathname);
 
 %Import card variables from bioimpData struct
 load(filename);
 armCard = bioimpData.armCard;
-legCard = bioimpData.legCard;
+armResp = bioimpData.armResp;
 
-
-%% Find Peaks
+%% Peakfinding
+% Peak and trough of cardiac waveform found
 [maxArm,maxArmIndex]=findpeaks(armCard,'MinPeakProminence',0.001);
-negativearmCard=-armCard;
-[minArm,minArmIndex]=findpeaks(negativearmCard,'MinPeakProminence',0.001);
-minArm=-minArm;
 
-[maxLeg,maxLegIndex]=findpeaks(legCard,'MinPeakProminence',0.001);
-negativelegCard=-legCard;
-[minLeg,minLegIndex]=findpeaks(negativelegCard,'MinPeakProminence',0.001);
-minLeg=-minLeg;
+[highBeat,highBeatIndex] = findpeaks(maxArm);
+negMaxArm = -maxArm;
+[lowBeat,lowBeatIndex] = findpeaks(negMaxArm);
+lowBeat = -lowBeat;
 
-%% SVV Calculation
+highBeatIndex=maxArmIndex(highBeatIndex);
+lowBeatIndex=maxArmIndex(lowBeatIndex);
 
 %Resizing max and min
-maxArmLength=length(maxArm);
-minArmLength=length(minArm);
+highBeatLength=length(highBeat);
+lowBeatLength=length(lowBeat);
 
-maxLegLength=length(maxLeg);
-minLegLength=length(minLeg);
+if highBeatLength > lowBeatLength;
+    highBeat=highBeat(1:lowBeatLength);
+    highBeatIndex=highBeatIndex(1:lowBeatLength);
+elseif lowBeatLength > highBeatLength;
+    lowBeat=lowBeat(1:highBeatLength);
+    lowBeatIndex=lowBeatIndex(1:highBeatLength);
+end
+%% SVV Calculation
+% Max/min method, mmSVV
+mm_SVV=mean((highBeat-lowBeat)./(highBeat))
 
-    %Arm Resizing
-    if maxArmLength > minArmLength;
-        maxArm=maxArm(1:minArmLength);
-        maxArmIndex=maxArmIndex(1:minArmLength);
-    elseif minArmLength > maxArmLength;
-        minArm=minArm(1:maxArmLength);
-        minArmIndex=maxArmIndex(1:minArmLength);
-    end
+%RMS method, rmsSSV
+collective=[highBeat;lowBeat];
+rms_SVV=sqrt(mean(collective.^2))
 
-    %Leg Resizing
-    if maxLegLength > minLegLength;
-        maxLeg=maxLeg(1:minLegLength);
-        maxLegIndex=maxLegIndex(1:minLegLength);
-    elseif minLegLength > maxLegLength;
-        minLeg=minLeg(1:maxLegLength);
-        minLegIndex=maxLegIndex(1:minLegLength);
-    end
-    
-%Calculation of SVV
-deltaoverMax_Arm=(maxArm-minArm)./maxArm;
-deltaoverMin_Arm=(maxArm-minArm)./minArm;
 
-deltaoverMax_Leg=(maxLeg-minLeg)./maxLeg;
-deltaoverMin_Leg=(maxLeg-minLeg)./maxLeg;
-    
-
-%% Plotting
-subplot(2,2,1), hold on
+%% PLOTTING
+subplot(1,1,1), hold on
     plot(armCard,'r');
-    plot(maxArmIndex,maxArm,'go');
-    plot(minArmIndex,minArm,'ro');
-    title('Arm Cardiac Signal, Filtered');
-    xlabel('Time [s]')
-    ylabel('Total and Resp Z [Volts (need conversion)]')
-    hold off
-    
-subplot(2,2,3), hold on
-    plot(legCard,'r');
-    plot(maxLegIndex,maxLeg,'go');
-    plot(minLegIndex,minLeg,'ro');
-    title('Leg Cardiac Signal, Filtered');
-    xlabel('Time[s]')
-    ylabel('Total and Resp Z [Volts (need conversion)]')
-    hold off
-    
-subplot(2,2,2), hold on
-    plot(deltaoverMax_Arm,'r');
-    plot(deltaoverMin_Arm,'b');
-    title('SVV (max-min)/max');
-    hold off
-    
-subplot(2,2,4), hold on
-    plot(deltaoverMax_Leg,'r');
-    plot(deltaoverMin_Leg,'b');
-    title('SVV (max-min)/min');
-    hold off   
+    plot(maxArmIndex,maxArm,'k');
+    plot(highBeatIndex,highBeat,'go');
+    plot(lowBeatIndex,lowBeat,'ro');
+    plot(armResp,'b');
+    title('Stroke Volume Variation')
+    legend('Cardiac Signal','Max Peaks','High Beat','Low Beat','Respiratory Signal');
+
+
+
+
