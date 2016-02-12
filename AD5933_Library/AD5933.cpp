@@ -60,7 +60,7 @@ bool AD5933_Class::tempUpdate() {
 		return false;
 	}
 
-	while ( getStatusReg() & 0x01 != 0x01)
+	while ( (getStatusReg() & 0x01) != 0x01)
 	{
 		; // Wait Until Get Vaild Temp. Measurement.
 	}
