@@ -60,7 +60,7 @@ bool AD5933_Class::tempUpdate() {
 		return false;
 	}
 
-	while ( getStatusReg() & 0x01 != 0x01)
+	while ( (getStatusReg() & 0x01) != 0x01)
 	{
 		; // Wait Until Get Vaild Temp. Measurement.
 	}
@@ -74,7 +74,7 @@ bool AD5933_Class::tempUpdate() {
 
 bool AD5933_Class::resetAD5933() {
 
-	int temp = (getByte(0x81) & 0x04); // Read 0x81 with retrieving D3
+	int temp = (getByte(0x81) & 0x08); // Read 0x81 with retrieving D3
 	return setByte(0x81, (temp | 0x10)); // Set D4 as 1 (Reset Bit)
 }
 
@@ -90,7 +90,7 @@ bool AD5933_Class::setExtClock(bool swt) {
 	byte t1;
 	if ( swt )
 	{
-		t1 = 0x04; // Use Ext. Clock
+		t1 = 0x08; // Use Ext. Clock
 		opClock = 16000000;
 	}
 	else
